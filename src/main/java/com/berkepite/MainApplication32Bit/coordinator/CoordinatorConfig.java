@@ -1,18 +1,31 @@
 package com.berkepite.MainApplication32Bit.coordinator;
 
-import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.beans.factory.config.YamlPropertiesFactoryBean;
+import org.springframework.boot.context.properties.ConfigurationProperties;
+import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.core.io.ClassPathResource;
+
+import java.util.Properties;
 
 @Configuration
+@ConfigurationProperties(prefix = "coordinator")
 public class CoordinatorConfig {
-    private final CoordinatorProperties properties;
 
-    @Autowired
-    public CoordinatorConfig(CoordinatorPropertiesLoader propertiesLoader) {
-        this.properties = propertiesLoader.getCoordinatorProperties();
-    }
+    @Value("${coordinator.config-name}")
+    private String configName;
 
-    public CoordinatorProperties getProperties() {
-        return properties;
+    @Bean
+    public Properties subscribersProperties() {
+        try {
+            YamlPropertiesFactoryBean yaml = new YamlPropertiesFactoryBean();
+            yaml.setResources(new ClassPathResource(configName));
+            return yaml.getObject();
+        } catch (IllegalArgumentException e) {
+            e.printStackTrace();
+        }
+
+        return null;
     }
 }

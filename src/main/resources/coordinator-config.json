@@ -1,0 +1,14 @@
+{
+  "subscribers": [
+    {
+      "name": "Rest_Subscriber",
+      "enabled": "yes",
+      "configPath": ""
+    },
+    {
+      "name": "TCP_Subscriber",
+      "enabled": "yes",
+      "configPath": ""
+    }
+  ]
+}

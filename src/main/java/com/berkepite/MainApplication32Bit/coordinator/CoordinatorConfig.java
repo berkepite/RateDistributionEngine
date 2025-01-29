@@ -2,7 +2,6 @@ package com.berkepite.MainApplication32Bit.coordinator;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.beans.factory.config.YamlPropertiesFactoryBean;
-import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.io.ClassPathResource;
@@ -10,7 +9,6 @@ import org.springframework.core.io.ClassPathResource;
 import java.util.Properties;
 
 @Configuration
-@ConfigurationProperties(prefix = "coordinator")
 public class CoordinatorConfig {
 
     @Value("${coordinator.config-name}")

@@ -1,12 +1,10 @@
-package com.berkepite.MainApplication32Bit;
+package com.berkepite.MainApplication32Bit.subscribers;
 
-import com.berkepite.MainApplication32Bit.subscribers.SubscriberConfigLoader;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ActiveProfiles;
 
-import java.io.FileNotFoundException;
 import java.util.Properties;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;

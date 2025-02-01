@@ -1,0 +1,8 @@
+coordinator:
+  subscribers:
+    - name: TEST1
+      enabled: true
+      configPath: subscriber_configurations/rest.properties
+    - name: TEST2
+      enabled: true
+      configPath: subscriber_configurations/tcp.properties

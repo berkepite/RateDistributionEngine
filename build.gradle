@@ -18,12 +18,20 @@ repositories {
 }
 
 dependencies {
-    implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
-    implementation 'org.springframework.boot:spring-boot-starter-data-redis'
+    configurations.configureEach {
+        exclude group: 'org.springframework.boot', module: 'spring-boot-starter-logging'
+        exclude group: 'ch.qos.logback', module: 'logback-classic'
+        exclude group: 'ch.qos.logback', module: 'logback-core'
+    }
+
+    implementation 'org.springframework.boot:spring-boot-starter-log4j2'
+    implementation('org.springframework.boot:spring-boot-starter-data-jpa')
+    implementation('org.springframework.boot:spring-boot-starter-data-redis')
     implementation 'org.springframework.kafka:spring-kafka'
     implementation 'org.postgresql:postgresql:42.7.2'
     implementation 'com.fasterxml.jackson.core:jackson-databind:2.18.2'
-    testImplementation 'org.springframework.boot:spring-boot-starter-test'
+
+    testImplementation('org.springframework.boot:spring-boot-starter-test')
     testImplementation 'org.springframework.kafka:spring-kafka-test'
     testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
 }

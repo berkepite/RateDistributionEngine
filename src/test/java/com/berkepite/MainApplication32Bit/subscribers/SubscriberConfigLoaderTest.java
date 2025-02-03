@@ -3,7 +3,6 @@ package com.berkepite.MainApplication32Bit.subscribers;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.test.context.ActiveProfiles;
 
 import java.util.Properties;
 
@@ -11,7 +10,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 @SpringBootTest
-@ActiveProfiles("test")
 public class SubscriberConfigLoaderTest {
 
     @Autowired
@@ -28,14 +26,14 @@ public class SubscriberConfigLoaderTest {
         }
 
         assertNotNull(properties, "Properties should not be null");
-        assertEquals("subscriber", properties.getProperty("subscriber.name"));
+        assertEquals("subscriber", properties.getProperty("name"));
     }
 
     @Test
     public void testLoadSubscriberConfig_fileNotFound() {
         Exception exception = null;
         try {
-            Properties properties = subscriberConfigLoader.readFromFile("subscribser");
+            Properties properties = subscriberConfigLoader.readFromFile("invalidName");
 
         } catch (Exception e) {
             exception = e;

@@ -1,10 +1,27 @@
 package com.berkepite.MainApplication32Bit.subscribers;
 
+import com.berkepite.MainApplication32Bit.coordinator.ICoordinator;
 import com.berkepite.MainApplication32Bit.rates.IRate;
 import com.berkepite.MainApplication32Bit.rates.RateEnum;
 
+import java.util.List;
+
 public class TCPSubscriber implements ISubscriber {
     private SubscriberConfig config;
+    private ICoordinator coordinator;
+
+    public TCPSubscriber() {
+    }
+
+    @Override
+    public ICoordinator getCoordinator() {
+        return coordinator;
+    }
+
+    @Override
+    public void setCoordinator(ICoordinator coordinator) {
+        this.coordinator = coordinator;
+    }
 
     @Override
     public SubscriberConfig getConfig() {
@@ -18,7 +35,7 @@ public class TCPSubscriber implements ISubscriber {
 
     @Override
     public void connect() {
-        
+
     }
 
     @Override
@@ -27,12 +44,12 @@ public class TCPSubscriber implements ISubscriber {
     }
 
     @Override
-    public void subscribe(RateEnum rate) {
+    public void subscribe(List<RateEnum> rates) {
 
     }
 
     @Override
-    public void unSubscribe(RateEnum rate) {
+    public void unSubscribe(List<RateEnum> rates) {
 
     }
 

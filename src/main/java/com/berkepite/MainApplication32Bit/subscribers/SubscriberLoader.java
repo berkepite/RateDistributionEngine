@@ -1,5 +1,6 @@
 package com.berkepite.MainApplication32Bit.subscribers;
 
+import com.berkepite.MainApplication32Bit.coordinator.ICoordinator;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -22,11 +23,11 @@ public class SubscriberLoader {
         this.subscriberMapper = subscriberMapper;
     }
 
-    public ISubscriber load(SubscriberBindingConfig bindingConfig) {
+    public ISubscriber load(SubscriberBindingConfig bindingConfig, ICoordinator coordinator) {
         try {
             Properties props = subscriberConfigLoader.readFromFile(bindingConfig.getConfigName());
             SubscriberConfig model = subscriberMapper.mapSubscriberConfig(props);
-            return loadAsClass(model);
+            return loadAsClass(model, coordinator);
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -34,7 +35,7 @@ public class SubscriberLoader {
         return null;
     }
 
-    private ISubscriber loadAsClass(SubscriberConfig subscriberConfig) {
+    private ISubscriber loadAsClass(SubscriberConfig subscriberConfig, ICoordinator coordinator) {
         try {
             String className = subscriberConfig.getClassPath() + "." + subscriberConfig.getClassName();
 
@@ -45,6 +46,7 @@ public class SubscriberLoader {
                     .invoke();
 
             instance.setConfig(subscriberConfig);
+            instance.setCoordinator(coordinator);
 
             return instance;
         } catch (Throwable e) {

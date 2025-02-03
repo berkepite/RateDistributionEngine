@@ -9,4 +9,4 @@ coordinator:
     - name: CNN_TCP
       enabled: true
       configName: cnn_tcp
-  rates: { TRY_USD, EUR_USD, GBP_USD }
+  rates: { USD_TRY, USD_EUR, USD_GBP }

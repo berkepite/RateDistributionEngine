@@ -8,7 +8,6 @@ import org.springframework.test.context.ActiveProfiles;
 import org.junit.jupiter.api.Assertions;
 
 @SpringBootTest
-@ActiveProfiles("test")
 public class CoordinatorTest {
 
     @Autowired
@@ -17,5 +16,10 @@ public class CoordinatorTest {
     @Test
     public void testCoordinatorConstructor_OK() {
         Assertions.assertNotNull(coordinator);
+    }
+
+    @Test
+    public void testCoordinatorSubscribers_notNull() {
+        Assertions.assertNotNull(coordinator.getSubscribers());
     }
 }

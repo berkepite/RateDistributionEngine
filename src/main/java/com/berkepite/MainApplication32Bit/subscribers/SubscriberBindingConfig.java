@@ -1,9 +1,9 @@
 package com.berkepite.MainApplication32Bit.subscribers;
 
-public class SubscriberModel {
+public class SubscriberBindingConfig {
     private String name;
     private boolean enabled;
-    private String configPath;
+    private String configName;
 
     public String getName() {
         return name;
@@ -21,16 +21,16 @@ public class SubscriberModel {
         this.enabled = enabled;
     }
 
-    public String getConfigPath() {
-        return configPath;
+    public String getConfigName() {
+        return configName;
     }
 
-    public void setConfigPath(String configPath) {
-        this.configPath = configPath;
+    public void setConfigName(String configName) {
+        this.configName = configName;
     }
 
     @Override
     public String toString() {
-        return "Subscriber{name='" + name + "', enabled=" + enabled + ", configPath='" + configPath + "'}";
+        return "Subscriber{name='" + name + "', enabled=" + enabled + ", configName='" + configName + "'}";
     }
 }

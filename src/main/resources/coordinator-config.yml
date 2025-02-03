@@ -1,8 +1,12 @@
 coordinator:
   subscribers:
-    - name: Rest_Subscriber
+    - name: Bloomberg_Rest
       enabled: true
-      configPath: subscriber_configurations/rest.properties
-    - name: TCP_Subscriber
+      configName: bloomberg_rest
+    - name: Haberturk_Rest
       enabled: true
-      configPath: subscriber_configurations/tcp.properties
+      configName: haberturk_rest
+    - name: CNN_TCP
+      enabled: true
+      configName: cnn_tcp
+  rates: { TRY_USD, EUR_USD, GBP_USD }

@@ -1,17 +1,29 @@
 package com.berkepite.MainApplication32Bit.subscribers;
 
+import com.berkepite.MainApplication32Bit.rates.RateEnum;
+
+import java.util.List;
+
 public class SubscriberConfig {
     private String name;
     private String className;
     private String classPath;
     private String url;
-    private String port;
     private String username;
     private String password;
+    private List<RateEnum> includeRates;
+    private List<RateEnum> excludeRates;
 
     @Override
     public String toString() {
-        return "SubscriberModel [name=" + name + ", className=" + className + ", classPath=" + classPath + ", url=" + url + ", port=" + port + ", username=" + "*****" + ", password=" + "*****" + "]";
+        return "SubscriberModel [name=" + name + "," +
+                " className=" + className + "," +
+                " classPath=" + classPath + "," +
+                " url=" + url + "," +
+                " includeRates=" + includeRates + "," +
+                " excludeRates=" + excludeRates + "," +
+                " username=" + "*****" + "," +
+                " password=" + "*****" + "]";
     }
 
     public String getName() {
@@ -46,14 +58,6 @@ public class SubscriberConfig {
         this.url = url;
     }
 
-    public String getPort() {
-        return port;
-    }
-
-    public void setPort(String port) {
-        this.port = port;
-    }
-
     public String getUsername() {
         return username;
     }
@@ -68,5 +72,21 @@ public class SubscriberConfig {
 
     public void setPassword(String password) {
         this.password = password;
+    }
+
+    public List<RateEnum> getExcludeRates() {
+        return excludeRates;
+    }
+
+    public void setExcludeRates(List<RateEnum> excludeRates) {
+        this.excludeRates = excludeRates;
+    }
+
+    public List<RateEnum> getIncludeRates() {
+        return includeRates;
+    }
+
+    public void setIncludeRates(List<RateEnum> includeRates) {
+        this.includeRates = includeRates;
     }
 }

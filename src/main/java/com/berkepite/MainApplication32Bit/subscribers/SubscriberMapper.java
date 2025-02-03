@@ -1,10 +1,12 @@
 package com.berkepite.MainApplication32Bit.subscribers;
 
+import com.berkepite.MainApplication32Bit.rates.RateEnum;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.springframework.stereotype.Component;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Properties;
 
@@ -33,18 +35,28 @@ public class SubscriberMapper {
     }
 
     public SubscriberConfig mapSubscriberConfig(Properties properties) {
-        SubscriberConfig model = new SubscriberConfig();
+        SubscriberConfig config = new SubscriberConfig();
 
-        model.setName(properties.getProperty("name"));
-        model.setClassPath(properties.getProperty("classPath"));
-        model.setClassName(properties.getProperty("className"));
-        model.setUrl(properties.getProperty("url"));
-        model.setPort(properties.getProperty("port"));
-        model.setUsername(properties.getProperty("username"));
-        model.setPassword(properties.getProperty("password"));
+        config.setName(properties.getProperty("name"));
+        config.setClassPath(properties.getProperty("classPath"));
+        config.setClassName(properties.getProperty("className"));
+        config.setUrl(properties.getProperty("url"));
+        config.setUsername(properties.getProperty("username"));
+        config.setPassword(properties.getProperty("password"));
 
-        LOGGER.debug("Mapped subscriber model: {}", model);
+        if (properties.getProperty("includeRates") != null && !properties.getProperty("includeRates").isEmpty()) {
+            List<RateEnum> includeRates = new ArrayList<>();
+            Arrays.stream(properties.getProperty("includeRates").split(",")).forEach(rate -> includeRates.add(RateEnum.valueOf(rate)));
+            config.setIncludeRates(includeRates);
+        }
+        if (properties.getProperty("excludeRates") != null && !properties.getProperty("excludeRates").isEmpty()) {
+            List<RateEnum> excludeRates = new ArrayList<>();
+            Arrays.stream(properties.getProperty("excludeRates").split(",")).forEach(rate -> excludeRates.add(RateEnum.valueOf(rate)));
+            config.setExcludeRates(excludeRates);
+        }
 
-        return model;
+        LOGGER.info("Mapped subscriber config: {}", config);
+
+        return config;
     }
 }

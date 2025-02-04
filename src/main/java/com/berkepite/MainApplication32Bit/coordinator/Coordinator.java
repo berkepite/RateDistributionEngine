@@ -1,5 +1,6 @@
 package com.berkepite.MainApplication32Bit.coordinator;
 
+import com.berkepite.MainApplication32Bit.ConfigMapper;
 import com.berkepite.MainApplication32Bit.rates.IRate;
 import com.berkepite.MainApplication32Bit.rates.RateEnum;
 import com.berkepite.MainApplication32Bit.rates.RateStatus;
@@ -18,24 +19,22 @@ public class Coordinator implements CommandLineRunner, ICoordinator {
 
     private final Logger LOGGER = LogManager.getLogger(Coordinator.class);
 
-    private Properties coordinatorProperties;
     private CoordinatorConfig coordinatorConfig;
-    private final SubscriberMapper subscriberMapper;
+    private final ConfigMapper configMapper;
     private final SubscriberLoader subscriberLoader;
     private final CoordinatorConfigLoader coordinatorConfigLoader;
     private List<ISubscriber> subscribers;
 
     @Autowired
-    public Coordinator(CoordinatorConfigLoader coordinatorConfigLoader, SubscriberMapper subscriberMapper, SubscriberLoader subscriberLoader) {
+    public Coordinator(CoordinatorConfigLoader coordinatorConfigLoader, ConfigMapper configMapper, SubscriberLoader subscriberLoader) {
         this.coordinatorConfigLoader = coordinatorConfigLoader;
-        this.subscriberMapper = subscriberMapper;
+        this.configMapper = configMapper;
         this.subscriberLoader = subscriberLoader;
     }
 
     @PostConstruct
     private void init() {
-        coordinatorProperties = coordinatorConfigLoader.getProperties();
-        coordinatorConfig = coordinatorConfigLoader.loadConfig(coordinatorProperties);
+        coordinatorConfig = coordinatorConfigLoader.loadConfig();
         subscribers = new ArrayList<>();
 
         bindSubscribers();
@@ -50,8 +49,7 @@ public class Coordinator implements CommandLineRunner, ICoordinator {
     }
 
     private void bindSubscribers() {
-        List<SubscriberBindingConfig> subscriberBindingConfigs = subscriberMapper.mapSubscriberBindingConfigs(coordinatorProperties);
-        loadSubscriberClasses(subscriberBindingConfigs);
+        loadSubscriberClasses(coordinatorConfig.getSubscriberBindingConfigs());
     }
 
     private void loadSubscriberClasses(List<SubscriberBindingConfig> subscriberBindingConfigs) {

@@ -1,5 +1,6 @@
 package com.berkepite.MainApplication32Bit.subscribers;
 
+import com.berkepite.MainApplication32Bit.ConfigMapper;
 import com.berkepite.MainApplication32Bit.coordinator.ICoordinator;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -15,27 +16,31 @@ public class SubscriberLoader {
 
     private static final Logger LOGGER = LogManager.getLogger(SubscriberLoader.class);
     private final SubscriberConfigLoader subscriberConfigLoader;
-    private final SubscriberMapper subscriberMapper;
+    private final ConfigMapper configMapper;
 
     @Autowired
-    public SubscriberLoader(SubscriberConfigLoader subscriberConfigLoader, SubscriberMapper subscriberMapper) {
+    public SubscriberLoader(SubscriberConfigLoader subscriberConfigLoader, ConfigMapper configMapper) {
         this.subscriberConfigLoader = subscriberConfigLoader;
-        this.subscriberMapper = subscriberMapper;
+        this.configMapper = configMapper;
     }
 
     public ISubscriber load(SubscriberBindingConfig bindingConfig, ICoordinator coordinator) {
+        ISubscriber subscriber;
         try {
             Properties props = subscriberConfigLoader.readFromFile(bindingConfig.getConfigName());
-            SubscriberConfig model = subscriberMapper.mapSubscriberConfig(props);
-            return loadAsClass(model, coordinator);
+            SubscriberConfig config = configMapper.mapSubscriberConfig(props);
+            subscriber = loadAsClass(config, coordinator);
         } catch (Exception e) {
-            e.printStackTrace();
+            LOGGER.error("Failed to load subscriber config", e);
+            throw new RuntimeException();
         }
 
-        return null;
+        return subscriber;
     }
 
-    private ISubscriber loadAsClass(SubscriberConfig subscriberConfig, ICoordinator coordinator) {
+    private ISubscriber loadAsClass(SubscriberConfig subscriberConfig, ICoordinator coordinator) throws ClassNotFoundException {
+        ISubscriber subscriber;
+
         try {
             String className = subscriberConfig.getClassPath() + "." + subscriberConfig.getClassName();
 
@@ -48,10 +53,12 @@ public class SubscriberLoader {
             instance.setConfig(subscriberConfig);
             instance.setCoordinator(coordinator);
 
-            return instance;
+            subscriber = instance;
         } catch (Throwable e) {
-            e.printStackTrace();
+            LOGGER.error("Failed to load subscriber class", e);
+            throw new RuntimeException(e);
         }
-        return null;
+
+        return subscriber;
     }
 }

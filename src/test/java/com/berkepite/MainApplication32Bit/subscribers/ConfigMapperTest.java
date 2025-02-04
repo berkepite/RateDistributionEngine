@@ -1,5 +1,6 @@
 package com.berkepite.MainApplication32Bit.subscribers;
 
+import com.berkepite.MainApplication32Bit.ConfigMapper;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -12,10 +13,10 @@ import java.util.List;
 import java.util.Properties;
 
 @SpringBootTest
-public class SubscriberMapperTest {
+public class ConfigMapperTest {
 
     @Autowired
-    private SubscriberMapper mapper;
+    private ConfigMapper mapper;
 
     @Value("${coordinator.config-name}")
     private String configName;

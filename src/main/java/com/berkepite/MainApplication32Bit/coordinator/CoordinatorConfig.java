@@ -1,26 +1,27 @@
 package com.berkepite.MainApplication32Bit.coordinator;
 
 import com.berkepite.MainApplication32Bit.rates.RateEnum;
+import com.berkepite.MainApplication32Bit.subscribers.SubscriberBindingConfig;
 
-import java.util.ArrayList;
 import java.util.List;
 
 public class CoordinatorConfig {
+    private List<SubscriberBindingConfig> subscriberBindingConfigs;
     private List<RateEnum> rates;
-
-    public CoordinatorConfig() {
-        rates = new ArrayList<>();
-    }
 
     public List<RateEnum> getRates() {
         return rates;
     }
 
-    public void addRate(final RateEnum rate) {
-        rates.add(rate);
-    }
-
     public void setRates(List<RateEnum> rates) {
         this.rates = rates;
+    }
+
+    public List<SubscriberBindingConfig> getSubscriberBindingConfigs() {
+        return subscriberBindingConfigs;
+    }
+
+    public void setSubscriberBindingConfigs(List<SubscriberBindingConfig> subscriberBindingConfigs) {
+        this.subscriberBindingConfigs = subscriberBindingConfigs;
     }
 }

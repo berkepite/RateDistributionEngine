@@ -1,6 +1,8 @@
-package com.berkepite.MainApplication32Bit.subscribers;
+package com.berkepite.MainApplication32Bit;
 
 import com.berkepite.MainApplication32Bit.rates.RateEnum;
+import com.berkepite.MainApplication32Bit.subscribers.SubscriberBindingConfig;
+import com.berkepite.MainApplication32Bit.subscribers.SubscriberConfig;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.springframework.stereotype.Component;
@@ -11,10 +13,14 @@ import java.util.List;
 import java.util.Properties;
 
 @Component
-public class SubscriberMapper {
-    private final Logger LOGGER = LogManager.getLogger(SubscriberMapper.class);
+public class ConfigMapper {
+    private final Logger LOGGER = LogManager.getLogger(ConfigMapper.class);
 
-    public List<SubscriberBindingConfig> mapSubscriberBindingConfigs(Properties properties) {
+    public List<SubscriberBindingConfig> mapSubscriberBindingConfigs(Properties properties) throws NullPointerException {
+        if (properties == null)
+            throw new NullPointerException();
+
+
         List<SubscriberBindingConfig> subscriberBindingConfigs = new ArrayList<>();
         int index = 0;
 
@@ -35,28 +41,42 @@ public class SubscriberMapper {
     }
 
     public SubscriberConfig mapSubscriberConfig(Properties properties) {
-        SubscriberConfig config = new SubscriberConfig();
+        SubscriberConfig subscriberConfig = new SubscriberConfig();
 
-        config.setName(properties.getProperty("name"));
-        config.setClassPath(properties.getProperty("classPath"));
-        config.setClassName(properties.getProperty("className"));
-        config.setUrl(properties.getProperty("url"));
-        config.setUsername(properties.getProperty("username"));
-        config.setPassword(properties.getProperty("password"));
+        subscriberConfig.setName(properties.getProperty("name"));
+        subscriberConfig.setClassPath(properties.getProperty("classPath"));
+        subscriberConfig.setClassName(properties.getProperty("className"));
+        subscriberConfig.setUrl(properties.getProperty("url"));
+        subscriberConfig.setUsername(properties.getProperty("username"));
+        subscriberConfig.setPassword(properties.getProperty("password"));
 
         if (properties.getProperty("includeRates") != null && !properties.getProperty("includeRates").isEmpty()) {
             List<RateEnum> includeRates = new ArrayList<>();
             Arrays.stream(properties.getProperty("includeRates").split(",")).forEach(rate -> includeRates.add(RateEnum.valueOf(rate)));
-            config.setIncludeRates(includeRates);
+            subscriberConfig.setIncludeRates(includeRates);
         }
         if (properties.getProperty("excludeRates") != null && !properties.getProperty("excludeRates").isEmpty()) {
             List<RateEnum> excludeRates = new ArrayList<>();
             Arrays.stream(properties.getProperty("excludeRates").split(",")).forEach(rate -> excludeRates.add(RateEnum.valueOf(rate)));
-            config.setExcludeRates(excludeRates);
+            subscriberConfig.setExcludeRates(excludeRates);
         }
 
-        LOGGER.info("Mapped subscriber config: {}", config);
+        LOGGER.info("Mapped subscriber config: {}", subscriberConfig);
 
-        return config;
+        return subscriberConfig;
+    }
+
+    public List<RateEnum> mapCoordinatorRates(Properties properties) throws NullPointerException {
+        if (properties == null)
+            throw new NullPointerException();
+
+        List<RateEnum> rates = new ArrayList<>();
+
+        properties.keys().asIterator().forEachRemaining(key -> {
+            if (key.toString().contains("coordinator.rates"))
+                rates.add(RateEnum.valueOf(key.toString().substring("coordinator.rates".length() + 1)));
+        });
+
+        return rates;
     }
 }

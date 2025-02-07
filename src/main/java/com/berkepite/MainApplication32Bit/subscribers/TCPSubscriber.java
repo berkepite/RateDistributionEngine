@@ -57,4 +57,9 @@ public class TCPSubscriber implements ISubscriber {
     public IRate convertToRate() {
         return null;
     }
+
+    @Override
+    public List<RateEnum> getRatesToSubscribe() {
+        return List.of();
+    }
 }

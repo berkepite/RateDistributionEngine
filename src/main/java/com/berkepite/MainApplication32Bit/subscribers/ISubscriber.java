@@ -27,4 +27,6 @@ public interface ISubscriber {
 
     IRate convertToRate();
 
+    List<RateEnum> getRatesToSubscribe();
+
 }

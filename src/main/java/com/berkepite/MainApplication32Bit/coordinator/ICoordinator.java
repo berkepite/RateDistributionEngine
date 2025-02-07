@@ -1,19 +1,25 @@
 package com.berkepite.MainApplication32Bit.coordinator;
 
+import com.berkepite.MainApplication32Bit.status.ConnectionStatus;
 import com.berkepite.MainApplication32Bit.rates.IRate;
 import com.berkepite.MainApplication32Bit.rates.RateEnum;
-import com.berkepite.MainApplication32Bit.rates.RateStatus;
-import com.berkepite.MainApplication32Bit.subscribers.SubscriberConfig;
+import com.berkepite.MainApplication32Bit.status.RateStatus;
+import com.berkepite.MainApplication32Bit.subscribers.ISubscriber;
 
 public interface ICoordinator {
-    void onConnect(SubscriberConfig subscriberConfig, Boolean status);
+    void onConnect(ISubscriber subscriber, ConnectionStatus status);
 
-    void onDisConnect(SubscriberConfig subscriberConfig);
+    void onSubscribe(ISubscriber subscriber, ConnectionStatus status);
 
-    void onRateAvailable(SubscriberConfig subscriberConfig, RateEnum rate);
+    void onUnSubscribe(ISubscriber subscriber, ConnectionStatus status);
 
-    void onRateUpdate(SubscriberConfig subscriberConfig, IRate rate);
+    void onDisConnect(ISubscriber subscriber);
 
-    void onRateStatus(SubscriberConfig subscriberConfig, RateStatus rateStatus);
+    void onRateAvailable(ISubscriber subscriber, RateEnum rate);
 
+    void onRateUpdate(ISubscriber subscriber, IRate rate);
+
+    void onRateError(ISubscriber subscriber, RateStatus status);
+
+    void onConnectionError(ISubscriber subscriber, ConnectionStatus status);
 }

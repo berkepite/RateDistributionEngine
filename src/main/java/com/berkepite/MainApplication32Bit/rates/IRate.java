@@ -18,4 +18,6 @@ public interface IRate {
     void setAsk(Double ask);
 
     void setTimeStamp(Instant timeStamp);
+
+    String toString();
 }

@@ -11,6 +11,8 @@ public class SubscriberConfig {
     private String url;
     private String username;
     private String password;
+    private String requestInterval;
+    private String requestRetryLimit;
     private List<RateEnum> includeRates;
     private List<RateEnum> excludeRates;
 
@@ -20,10 +22,10 @@ public class SubscriberConfig {
                 " className=" + className + "," +
                 " classPath=" + classPath + "," +
                 " url=" + url + "," +
+                " requestInterval=" + requestInterval + "," +
+                " requestRetryLimit=" + requestRetryLimit + "," +
                 " includeRates=" + includeRates + "," +
-                " excludeRates=" + excludeRates + "," +
-                " username=" + "*****" + "," +
-                " password=" + "*****" + "]";
+                " excludeRates=" + excludeRates + "," + "]";
     }
 
     public String getName() {
@@ -75,6 +77,9 @@ public class SubscriberConfig {
     }
 
     public List<RateEnum> getExcludeRates() {
+        if (null == excludeRates) {
+            return List.of();
+        }
         return excludeRates;
     }
 
@@ -83,10 +88,29 @@ public class SubscriberConfig {
     }
 
     public List<RateEnum> getIncludeRates() {
+        if (null == includeRates) {
+            return List.of();
+        }
         return includeRates;
     }
 
     public void setIncludeRates(List<RateEnum> includeRates) {
         this.includeRates = includeRates;
+    }
+
+    public String getRequestInterval() {
+        return requestInterval;
+    }
+
+    public void setRequestInterval(String requestInterval) {
+        this.requestInterval = requestInterval;
+    }
+
+    public String getRequestRetryLimit() {
+        return requestRetryLimit;
+    }
+
+    public void setRequestRetryLimit(String requestRetryLimit) {
+        this.requestRetryLimit = requestRetryLimit;
     }
 }

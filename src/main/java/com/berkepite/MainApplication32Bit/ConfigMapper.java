@@ -49,6 +49,8 @@ public class ConfigMapper {
         subscriberConfig.setUrl(properties.getProperty("url"));
         subscriberConfig.setUsername(properties.getProperty("username"));
         subscriberConfig.setPassword(properties.getProperty("password"));
+        subscriberConfig.setRequestInterval(properties.getProperty("requestInterval"));
+        subscriberConfig.setRequestRetryLimit(properties.getProperty("requestRetryLimit"));
 
         if (properties.getProperty("includeRates") != null && !properties.getProperty("includeRates").isEmpty()) {
             List<RateEnum> includeRates = new ArrayList<>();
@@ -61,7 +63,7 @@ public class ConfigMapper {
             subscriberConfig.setExcludeRates(excludeRates);
         }
 
-        LOGGER.info("Mapped subscriber config: {}", subscriberConfig);
+        LOGGER.debug("Mapped subscriber config: {}", subscriberConfig);
 
         return subscriberConfig;
     }
@@ -76,6 +78,8 @@ public class ConfigMapper {
             if (key.toString().contains("coordinator.rates"))
                 rates.add(RateEnum.valueOf(key.toString().substring("coordinator.rates".length() + 1)));
         });
+
+        LOGGER.debug("Mapped rates: {}", rates);
 
         return rates;
     }

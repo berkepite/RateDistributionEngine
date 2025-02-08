@@ -29,7 +29,7 @@ public class BloombergRestSubscriber implements ISubscriber {
     private final Logger LOGGER = LogManager.getLogger(BloombergRestSubscriber.class);
     private List<RateEnum> ratesToSubscribe;
     private String credentials;
-    private ExecutorService executor = Executors.newCachedThreadPool();
+    private final ExecutorService executorService = Executors.newCachedThreadPool();
 
     @Override
     public void connect() {
@@ -78,7 +78,7 @@ public class BloombergRestSubscriber implements ISubscriber {
                 coordinator.onSubscribe(this, new ConnectionStatus(res, req));
                 coordinator.onRateAvailable(this, mapEndpointToRateEnum(endpoint));
 
-                executor.execute(() -> subscribeToRate(req, config));
+                executorService.execute(() -> subscribeToRate(req, config));
             } catch (IOException | InterruptedException e) {
                 coordinator.onConnectionError(this, new ConnectionStatus(e, req));
 

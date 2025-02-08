@@ -47,6 +47,7 @@ public class ConfigMapper {
         subscriberConfig.setClassPath(properties.getProperty("classPath"));
         subscriberConfig.setClassName(properties.getProperty("className"));
         subscriberConfig.setUrl(properties.getProperty("url"));
+        subscriberConfig.setPort(properties.getProperty("port"));
         subscriberConfig.setUsername(properties.getProperty("username"));
         subscriberConfig.setPassword(properties.getProperty("password"));
         subscriberConfig.setRequestInterval(properties.getProperty("requestInterval"));

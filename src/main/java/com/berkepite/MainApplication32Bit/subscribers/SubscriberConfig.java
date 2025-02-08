@@ -9,6 +9,7 @@ public class SubscriberConfig {
     private String className;
     private String classPath;
     private String url;
+    private String port;
     private String username;
     private String password;
     private String requestInterval;
@@ -58,6 +59,14 @@ public class SubscriberConfig {
 
     public void setUrl(String url) {
         this.url = url;
+    }
+
+    public String getPort() {
+        return port;
+    }
+
+    public void setPort(String port) {
+        this.port = port;
     }
 
     public String getUsername() {

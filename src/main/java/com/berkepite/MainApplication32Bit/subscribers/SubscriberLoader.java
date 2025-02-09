@@ -25,21 +25,25 @@ public class SubscriberLoader {
     }
 
     public ISubscriber load(SubscriberBindingConfig bindingConfig, ICoordinator coordinator) {
-        ISubscriber subscriber;
+        ISubscriber subscriber = null;
         try {
             Properties props = subscriberConfigLoader.readFromFile(bindingConfig.getConfigName());
-            SubscriberConfig config = configMapper.mapSubscriberConfig(props);
+            ISubscriberConfig config = configMapper.mapSubscriberConfig(props);
             subscriber = loadAsClass(config, coordinator);
         } catch (Exception e) {
             LOGGER.error("Failed to load subscriber config", e);
-            throw new RuntimeException();
         }
 
         return subscriber;
     }
 
-    private ISubscriber loadAsClass(SubscriberConfig subscriberConfig, ICoordinator coordinator) throws ClassNotFoundException {
-        ISubscriber subscriber;
+    private ISubscriber loadAsClass(ISubscriberConfig subscriberConfig, ICoordinator coordinator) throws ClassNotFoundException {
+        ISubscriber subscriber = null;
+
+        if (subscriberConfig == null) {
+            LOGGER.error("Failed to load subscriber class because subscriber config is null!");
+            return null;
+        }
 
         try {
             String className = subscriberConfig.getClassPath() + "." + subscriberConfig.getClassName();
@@ -55,8 +59,7 @@ public class SubscriberLoader {
 
             subscriber = instance;
         } catch (Throwable e) {
-            LOGGER.error("Failed to load subscriber class", e);
-            throw new RuntimeException(e);
+            LOGGER.error("Failed to load subscriber class {}, {}", subscriberConfig.getClassName(), e);
         }
 
         return subscriber;

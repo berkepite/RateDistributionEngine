@@ -2,6 +2,9 @@ package com.berkepite.MainApplication32Bit.status;
 
 public enum ConnectionStatusEnum {
     OK,
+    AUTHPROMPT,
+    AUTHSUCCESS,
+    AUTHFAILED,
     Resource_Not_Found,
     Unauthorized,
     Interrupted,

@@ -3,10 +3,10 @@ coordinator:
     - name: Bloomberg_Rest
       enabled: true
       configName: bloomberg_rest
+    - name: CNN_TCP
+      enabled: true
+      configName: cnn_tcp
     - name: Haberturk_Rest
       enabled: false
       configName: haberturk_rest
-    - name: CNN_TCP
-      enabled: false
-      configName: cnn_tcp
   rates: { USD_TRY, USD_EUR, USD_GBP }

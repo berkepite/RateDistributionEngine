@@ -24,12 +24,13 @@ import java.util.List;
 import java.util.concurrent.*;
 
 public class BloombergRestSubscriber implements ISubscriber {
-    private SubscriberConfig config;
+    private BloombergRestConfig config;
     private ICoordinator coordinator;
     private final Logger LOGGER = LogManager.getLogger(BloombergRestSubscriber.class);
     private List<RateEnum> ratesToSubscribe;
     private String credentials;
     private final ExecutorService executorService = Executors.newCachedThreadPool();
+
 
     @Override
     public void connect() {
@@ -90,7 +91,7 @@ public class BloombergRestSubscriber implements ISubscriber {
     }
 
 
-    private void subscribeToRate(HttpRequest req, SubscriberConfig config) {
+    private void subscribeToRate(HttpRequest req, BloombergRestConfig config) {
         int retryLimit = Integer.parseInt(config.getRequestRetryLimit());
         int requestInterval = Integer.parseInt(config.getRequestInterval());
 
@@ -142,18 +143,18 @@ public class BloombergRestSubscriber implements ISubscriber {
     }
 
     @Override
+    public void setConfig(ISubscriberConfig config) {
+        this.config = (BloombergRestConfig) config;
+    }
+
+    @Override
     public void setCoordinator(ICoordinator coordinator) {
         this.coordinator = coordinator;
     }
 
     @Override
-    public SubscriberConfig getConfig() {
+    public ISubscriberConfig getConfig() {
         return config;
-    }
-
-    @Override
-    public void setConfig(SubscriberConfig config) {
-        this.config = config;
     }
 
     @Override

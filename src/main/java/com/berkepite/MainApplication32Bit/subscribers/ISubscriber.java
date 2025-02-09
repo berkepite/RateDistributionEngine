@@ -13,9 +13,7 @@ public interface ISubscriber {
 
     void setCoordinator(ICoordinator coordinator);
 
-    SubscriberConfig getConfig();
-
-    void setConfig(SubscriberConfig config);
+    ISubscriberConfig getConfig();
 
     void connect();
 
@@ -29,4 +27,5 @@ public interface ISubscriber {
 
     List<RateEnum> getRatesToSubscribe();
 
+    void setConfig(ISubscriberConfig subscriberConfig);
 }

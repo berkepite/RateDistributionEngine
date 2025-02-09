@@ -57,8 +57,12 @@ public class Coordinator implements CommandLineRunner, ICoordinator {
 
     private void loadSubscriberClasses(List<SubscriberBindingConfig> subscriberBindingConfigs) {
         subscriberBindingConfigs.forEach(subscriberBindingConfig -> {
-            if (subscriberBindingConfig.isEnabled())
-                subscribers.add(subscriberLoader.load(subscriberBindingConfig, this));
+            if (subscriberBindingConfig.isEnabled()) {
+                ISubscriber subscriber = subscriberLoader.load(subscriberBindingConfig, this);
+                if (subscriber != null) {
+                    subscribers.add(subscriber);
+                }
+            }
         });
     }
 
@@ -76,16 +80,22 @@ public class Coordinator implements CommandLineRunner, ICoordinator {
 
     @Override
     public void onConnect(ISubscriber subscriber, ConnectionStatus status) {
-        SubscriberConfig config = subscriber.getConfig();
+        ISubscriberConfig config = subscriber.getConfig();
 
         switch (status.getStatus()) {
             case OK -> {
                 LOGGER.info("{} connected to {}, trying to subscribe...", config.getName(), config.getUrl());
                 executorService.execute(() -> subscriber.subscribe(coordinatorConfig.getRates()));
             }
+            case AUTHSUCCESS -> {
+                LOGGER.info("{} connected to {}, trying to subscribe...", config.getName(), config.getUrl());
+                executorService.execute(() -> subscriber.subscribe(coordinatorConfig.getRates()));
+            }
             case Interrupted -> LOGGER.warn("{} connection interrupted", config.getName());
             case Unauthorized ->
                     LOGGER.warn("{} could not connect to {} because it could not be AUTHORIZED!", config.getName(), config.getUrl());
+            case AUTHFAILED ->
+                    LOGGER.warn("{} could not connect to {} because AUTH FAILED!", config.getName(), config.getUrl());
             case IOException ->
                     LOGGER.warn("{} could not connect to {} due to UNEXPECTED IOException!", config.getName(), config.getUrl());
             case ConnectException ->
@@ -104,10 +114,11 @@ public class Coordinator implements CommandLineRunner, ICoordinator {
 
     @Override
     public void onSubscribe(ISubscriber subscriber, ConnectionStatus status) {
-        SubscriberConfig config = subscriber.getConfig();
+        ISubscriberConfig config = subscriber.getConfig();
 
         switch (status.getStatus()) {
             case OK -> LOGGER.info("{} subscribed to {}", config.getName(), status.getUrl());
+            case AUTHSUCCESS -> LOGGER.info("{} subscribed to {}", config.getName(), config.getUrl());
             default ->
                     LOGGER.error("\nAn Unexpected Error occured!\nSubscriber: {}\nConnection: {}", config.toString(), status.toString());
         }
@@ -135,7 +146,7 @@ public class Coordinator implements CommandLineRunner, ICoordinator {
 
     @Override
     public void onRateError(ISubscriber subscriber, RateStatus status) {
-        SubscriberConfig config = subscriber.getConfig();
+        ISubscriberConfig config = subscriber.getConfig();
 
         switch (status.getStatus()) {
             case OK ->
@@ -158,7 +169,7 @@ public class Coordinator implements CommandLineRunner, ICoordinator {
 
     @Override
     public void onConnectionError(ISubscriber subscriber, ConnectionStatus status) {
-        SubscriberConfig config = subscriber.getConfig();
+        ISubscriberConfig config = subscriber.getConfig();
 
         switch (status.getStatus()) {
             case OK ->

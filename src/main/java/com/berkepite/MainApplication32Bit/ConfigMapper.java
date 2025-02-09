@@ -1,8 +1,7 @@
 package com.berkepite.MainApplication32Bit;
 
 import com.berkepite.MainApplication32Bit.rates.RateEnum;
-import com.berkepite.MainApplication32Bit.subscribers.SubscriberBindingConfig;
-import com.berkepite.MainApplication32Bit.subscribers.SubscriberConfig;
+import com.berkepite.MainApplication32Bit.subscribers.*;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.springframework.stereotype.Component;
@@ -40,18 +39,35 @@ public class ConfigMapper {
         return subscriberBindingConfigs;
     }
 
-    public SubscriberConfig mapSubscriberConfig(Properties properties) {
-        SubscriberConfig subscriberConfig = new SubscriberConfig();
+    public ISubscriberConfig mapSubscriberConfig(Properties properties) {
+        ISubscriberConfig subscriberConfig;
+
+        if (properties.getProperty("name").equals("bloomberg_rest")) {
+
+            subscriberConfig = new BloombergRestConfig();
+            BloombergRestConfig temp = (BloombergRestConfig) subscriberConfig;
+            temp.setRequestInterval(properties.getProperty("requestInterval"));
+            temp.setRequestRetryLimit(properties.getProperty("requestRetryLimit"));
+
+        } else if (properties.getProperty("name").equals("cnn_tcp")) {
+
+            subscriberConfig = new CNNTCPConfig();
+            CNNTCPConfig temp = (CNNTCPConfig) subscriberConfig;
+            temp.setRequestInterval(properties.getProperty("requestInterval"));
+            temp.setRequestRetryLimit(properties.getProperty("requestRetryLimit"));
+
+        } else {
+            LOGGER.error("COULD NOT MAP subscriber config: {}", properties.getProperty("name"));
+            return null;
+        }
 
         subscriberConfig.setName(properties.getProperty("name"));
         subscriberConfig.setClassPath(properties.getProperty("classPath"));
         subscriberConfig.setClassName(properties.getProperty("className"));
         subscriberConfig.setUrl(properties.getProperty("url"));
-        subscriberConfig.setPort(properties.getProperty("port"));
+        subscriberConfig.setPort(Integer.parseInt(properties.getProperty("port")));
         subscriberConfig.setUsername(properties.getProperty("username"));
         subscriberConfig.setPassword(properties.getProperty("password"));
-        subscriberConfig.setRequestInterval(properties.getProperty("requestInterval"));
-        subscriberConfig.setRequestRetryLimit(properties.getProperty("requestRetryLimit"));
 
         if (properties.getProperty("includeRates") != null && !properties.getProperty("includeRates").isEmpty()) {
             List<RateEnum> includeRates = new ArrayList<>();

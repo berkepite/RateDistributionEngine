@@ -1,67 +1,47 @@
 package com.berkepite.MainApplication32Bit.subscribers;
 
-import com.berkepite.MainApplication32Bit.ConfigMapper;
 import com.berkepite.MainApplication32Bit.coordinator.ICoordinator;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.config.BeanDefinition;
+import org.springframework.beans.factory.support.DefaultListableBeanFactory;
+import org.springframework.beans.factory.support.GenericBeanDefinition;
+import org.springframework.context.ApplicationContext;
+import org.springframework.context.ConfigurableApplicationContext;
 import org.springframework.stereotype.Component;
-
-import java.lang.invoke.MethodHandles;
-import java.lang.invoke.MethodType;
-import java.util.Properties;
 
 @Component
 public class SubscriberLoader {
-
+    private final ApplicationContext applicationContext;
     private static final Logger LOGGER = LogManager.getLogger(SubscriberLoader.class);
-    private final SubscriberConfigLoader subscriberConfigLoader;
-    private final ConfigMapper configMapper;
 
-    @Autowired
-    public SubscriberLoader(SubscriberConfigLoader subscriberConfigLoader, ConfigMapper configMapper) {
-        this.subscriberConfigLoader = subscriberConfigLoader;
-        this.configMapper = configMapper;
+    public SubscriberLoader(ApplicationContext applicationContext) {
+        this.applicationContext = applicationContext;
     }
 
     public ISubscriber load(SubscriberBindingConfig bindingConfig, ICoordinator coordinator) {
         ISubscriber subscriber = null;
-        try {
-            Properties props = subscriberConfigLoader.readFromFile(bindingConfig.getConfigName());
-            ISubscriberConfig config = configMapper.mapSubscriberConfig(props);
-            subscriber = loadAsClass(config, coordinator);
-        } catch (Exception e) {
-            LOGGER.error("Failed to load subscriber config", e);
-        }
-
-        return subscriber;
-    }
-
-    private ISubscriber loadAsClass(ISubscriberConfig subscriberConfig, ICoordinator coordinator) throws ClassNotFoundException {
-        ISubscriber subscriber = null;
-
-        if (subscriberConfig == null) {
-            LOGGER.error("Failed to load subscriber class because subscriber config is null!");
-            return null;
-        }
 
         try {
-            String className = subscriberConfig.getClassPath() + "." + subscriberConfig.getClassName();
+            String fullClassName = bindingConfig.getClassPath() + "." + bindingConfig.getClassName();
+            Class<?> clazz = Class.forName(fullClassName);
 
-            Class<?> clazz = Class.forName(className);
+            ConfigurableApplicationContext context = (ConfigurableApplicationContext) applicationContext;
+            DefaultListableBeanFactory beanFactory = (DefaultListableBeanFactory) context.getBeanFactory();
 
-            ISubscriber instance = (ISubscriber) MethodHandles.lookup()
-                    .findConstructor(clazz, MethodType.methodType(void.class))
-                    .invoke();
+            GenericBeanDefinition beanDefinition = new GenericBeanDefinition();
+            beanDefinition.setBeanClass(clazz);
+            beanDefinition.setScope(BeanDefinition.SCOPE_SINGLETON);
+            beanDefinition.getPropertyValues().add("coordinator", coordinator);
 
-            instance.setConfig(subscriberConfig);
-            instance.setCoordinator(coordinator);
+            beanFactory.registerBeanDefinition(bindingConfig.getClassPath(), beanDefinition);
 
-            subscriber = instance;
+            subscriber = (ISubscriber) context.getBean(bindingConfig.getClassPath());
         } catch (Throwable e) {
-            LOGGER.error("Failed to load subscriber class {}, {}", subscriberConfig.getClassName(), e);
+            LOGGER.error("Failed to load subscriber class {}, {}", bindingConfig.getClassPath(), e);
         }
 
         return subscriber;
+
     }
 }

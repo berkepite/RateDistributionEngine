@@ -1,9 +1,15 @@
 package com.berkepite.MainApplication32Bit.subscribers;
 
 import com.berkepite.MainApplication32Bit.rates.RateEnum;
+import org.springframework.boot.context.properties.ConfigurationProperties;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.PropertySource;
 
 import java.util.List;
 
+@Configuration
+@ConfigurationProperties(prefix = "bloombergrest")
+@PropertySource(value = "classpath:subscriber_configurations/bloomberg_rest.properties")
 public class BloombergRestConfig implements ISubscriberConfig {
     private String name;
     private String className;
@@ -12,24 +18,24 @@ public class BloombergRestConfig implements ISubscriberConfig {
     private Integer port;
     private String username;
     private String password;
-    private String requestInterval;
-    private String requestRetryLimit;
+    private Integer requestInterval;
+    private Integer requestRetryLimit;
     private List<RateEnum> includeRates;
     private List<RateEnum> excludeRates;
 
-    public void setRequestInterval(String requestInterval) {
+    public void setRequestInterval(Integer requestInterval) {
         this.requestInterval = requestInterval;
     }
 
-    public void setRequestRetryLimit(String requestRetryLimit) {
+    public void setRequestRetryLimit(Integer requestRetryLimit) {
         this.requestRetryLimit = requestRetryLimit;
     }
 
-    public String getRequestInterval() {
+    public Integer getRequestInterval() {
         return requestInterval;
     }
 
-    public String getRequestRetryLimit() {
+    public Integer getRequestRetryLimit() {
         return requestRetryLimit;
     }
 

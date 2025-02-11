@@ -3,10 +3,16 @@ coordinator:
     - name: Bloomberg_Rest
       enabled: true
       configName: bloomberg_rest
+      classPath: com.berkepite.MainApplication32Bit.subscribers
+      className: BloombergRestSubscriber
     - name: CNN_TCP
-      enabled: true
+      enabled: false
       configName: cnn_tcp
+      classPath: com.berkepite.MainApplication32Bit.subscribers
+      className: CNNTCPSubscriber
     - name: Haberturk_Rest
       enabled: false
       configName: haberturk_rest
+      classPath: com.berkepite.MainApplication32Bit.subscribers
+      className: Hab..
   rates: { USD_TRY, USD_EUR, USD_GBP }

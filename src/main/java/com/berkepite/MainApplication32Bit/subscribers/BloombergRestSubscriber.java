@@ -2,7 +2,6 @@ package com.berkepite.MainApplication32Bit.subscribers;
 
 import com.berkepite.MainApplication32Bit.status.ConnectionStatus;
 import com.berkepite.MainApplication32Bit.coordinator.ICoordinator;
-import com.berkepite.MainApplication32Bit.rates.IRate;
 import com.berkepite.MainApplication32Bit.rates.BloombergRate;
 import com.berkepite.MainApplication32Bit.rates.RateEnum;
 import com.berkepite.MainApplication32Bit.status.RateStatus;
@@ -24,13 +23,15 @@ import java.util.List;
 import java.util.concurrent.*;
 
 public class BloombergRestSubscriber implements ISubscriber {
-    private BloombergRestConfig config;
+    private final BloombergRestConfig config;
     private ICoordinator coordinator;
     private final Logger LOGGER = LogManager.getLogger(BloombergRestSubscriber.class);
-    private List<RateEnum> ratesToSubscribe;
-    private String credentials;
     private final ExecutorService executorService = Executors.newCachedThreadPool();
+    private String credentials;
 
+    public BloombergRestSubscriber(final BloombergRestConfig config) {
+        this.config = config;
+    }
 
     @Override
     public void connect() {
@@ -52,6 +53,8 @@ public class BloombergRestSubscriber implements ISubscriber {
                 Thread.currentThread().interrupt();
             }
         }
+
+        client.close();
     }
 
     @Override
@@ -61,7 +64,7 @@ public class BloombergRestSubscriber implements ISubscriber {
 
     @Override
     public void subscribe(List<RateEnum> rates) {
-        ratesToSubscribe = new ArrayList<>(rates);
+        List<RateEnum> ratesToSubscribe = new ArrayList<>(rates);
         ratesToSubscribe.addAll(config.getIncludeRates());
         ratesToSubscribe.removeAll(config.getExcludeRates());
 
@@ -88,12 +91,13 @@ public class BloombergRestSubscriber implements ISubscriber {
                 }
             }
         }
+        client.close();
     }
 
 
     private void subscribeToRate(HttpRequest req, BloombergRestConfig config) {
-        int retryLimit = Integer.parseInt(config.getRequestRetryLimit());
-        int requestInterval = Integer.parseInt(config.getRequestInterval());
+        int retryLimit = config.getRequestRetryLimit();
+        int requestInterval = config.getRequestInterval();
 
         HttpClient client = HttpClient.newHttpClient();
 
@@ -118,13 +122,12 @@ public class BloombergRestSubscriber implements ISubscriber {
 
                 if (e instanceof InterruptedException) {
                     Thread.currentThread().interrupt();
-                    retryLimit--;
-                    continue;
                 }
 
                 retryLimit--;
             }
         }
+        client.close();
     }
 
     @Override
@@ -133,18 +136,8 @@ public class BloombergRestSubscriber implements ISubscriber {
     }
 
     @Override
-    public IRate convertToRate() {
-        return null;
-    }
-
-    @Override
     public ICoordinator getCoordinator() {
         return coordinator;
-    }
-
-    @Override
-    public void setConfig(ISubscriberConfig config) {
-        this.config = (BloombergRestConfig) config;
     }
 
     @Override
@@ -155,11 +148,6 @@ public class BloombergRestSubscriber implements ISubscriber {
     @Override
     public ISubscriberConfig getConfig() {
         return config;
-    }
-
-    @Override
-    public List<RateEnum> getRatesToSubscribe() {
-        return ratesToSubscribe;
     }
 
     private HttpRequest createRateRequest(String endpoint) {

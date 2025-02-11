@@ -21,17 +21,18 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 public class CNNTCPSubscriber implements ISubscriber {
-    private CNNTCPConfig config;
+    private final CNNTCPConfig config;
     private ICoordinator coordinator;
-    private List<RateEnum> ratesToSubscribe;
     private final Logger LOGGER = LogManager.getLogger(CNNTCPSubscriber.class);
     private final ExecutorService executorService = Executors.newCachedThreadPool();
     private Socket socket;
     private PrintWriter writer;
     private BufferedReader reader;
-    private volatile boolean isListeningOnMainThread = true;
+    private volatile boolean isListeningForInitialResponses = true;
+    private volatile boolean isListeningForRates = true;
 
-    public CNNTCPSubscriber() {
+    public CNNTCPSubscriber(final CNNTCPConfig config) {
+        this.config = config;
     }
 
     @Override
@@ -50,11 +51,6 @@ public class CNNTCPSubscriber implements ISubscriber {
     }
 
     @Override
-    public void setConfig(ISubscriberConfig config) {
-        this.config = (CNNTCPConfig) config;
-    }
-
-    @Override
     public void connect() {
         try {
             this.socket = new Socket(config.getUrl(), config.getPort());
@@ -65,8 +61,8 @@ public class CNNTCPSubscriber implements ISubscriber {
             writer.println(credentials);
 
             String response;
-            while ((response = reader.readLine()) != null && isListeningOnMainThread) {
-                System.out.println("listening on main thread");
+            while ((response = reader.readLine()) != null && isListeningForInitialResponses) {
+
                 handleInitialResponses(response);
             }
 
@@ -77,14 +73,15 @@ public class CNNTCPSubscriber implements ISubscriber {
 
     @Override
     public void disConnect() {
-
+        isListeningForRates = false;
+        coordinator.onDisConnect(this);
     }
 
     @Override
     public void subscribe(List<RateEnum> rates) {
-        isListeningOnMainThread = false;
+        isListeningForInitialResponses = false;
 
-        ratesToSubscribe = new ArrayList<>(rates);
+        List<RateEnum> ratesToSubscribe = new ArrayList<>(rates);
         ratesToSubscribe.addAll(config.getIncludeRates());
         ratesToSubscribe.removeAll(config.getExcludeRates());
 
@@ -97,10 +94,18 @@ public class CNNTCPSubscriber implements ISubscriber {
             writer.println("sub|" + endpoint);
     }
 
+    @Override
+    public void unSubscribe(List<RateEnum> rates) {
+        List<String> endpoints = mapRateEnumToEndpoints(rates);
+
+        for (String endpoint : endpoints)
+            writer.println("unsub|" + endpoint);
+    }
+
     private void listen() {
         try {
             String response;
-            while ((response = reader.readLine()) != null) {
+            while ((response = reader.readLine()) != null && isListeningForRates) {
                 final String data = response;
                 executorService.execute(() -> handleResponses(data));
             }
@@ -108,7 +113,7 @@ public class CNNTCPSubscriber implements ISubscriber {
         } catch (Exception e) {
             LOGGER.error("An unexpected error occurred!: ", e);
         } finally {
-            LOGGER.info("The {} server is not answering, initiating shutdown...", config.getName());
+            LOGGER.info("The listener ({}) stopped listening...", config.getName());
             executorService.shutdown();
         }
     }
@@ -131,10 +136,10 @@ public class CNNTCPSubscriber implements ISubscriber {
             coordinator.onConnectionError(this, new ConnectionStatus(socket, response));
     }
 
-    private CNNRate createRate(String response) {
-        CNNRate rate = new CNNRate();
+    public CNNRate createRate(String data) {
         try {
-            List<String> fields = Arrays.stream(response.split("\\|")).toList();
+            CNNRate rate = new CNNRate();
+            List<String> fields = Arrays.stream(data.split("\\|")).toList();
 
             List<String> nameField = Arrays.stream(fields.getFirst().split("=")).toList();
             List<String> bidField = Arrays.stream(fields.get(1).split("=")).toList();
@@ -146,48 +151,32 @@ public class CNNTCPSubscriber implements ISubscriber {
             rate.setBid(Double.parseDouble(bidField.get(1)));
             rate.setTimeStamp(Instant.parse(timestampField.get(1)));
 
+            return rate;
+
         } catch (Exception e) {
-            coordinator.onRateError(this, new RateStatus(e, socket));
             return null;
         }
-        return rate;
     }
 
-    private String mapRateEnumToEndpoint(RateEnum rate) {
+    private static String mapRateEnumToEndpoint(RateEnum rate) {
         String endpoint;
         endpoint = rate.toString().replace("_", "");
 
         return endpoint;
     }
 
-    private List<String> mapRateEnumToEndpoints(List<RateEnum> rates) {
+    private static List<String> mapRateEnumToEndpoints(List<RateEnum> rates) {
         List<String> endpoints = new ArrayList<>();
         rates.forEach(r -> endpoints.add(mapRateEnumToEndpoint(r)));
 
         return endpoints;
     }
 
-    private RateEnum mapEndpointToRateEnum(String rateStr) {
+    private static RateEnum mapEndpointToRateEnum(String rateStr) {
         RateEnum rate;
         rate = RateEnum.valueOf(rateStr.substring(0, 3) + "_" + rateStr.substring(3));
 
         return rate;
-    }
-
-    @Override
-    public void unSubscribe(List<RateEnum> rates) {
-        // WIP
-
-    }
-
-    @Override
-    public IRate convertToRate() {
-        return null;
-    }
-
-    @Override
-    public List<RateEnum> getRatesToSubscribe() {
-        return ratesToSubscribe;
     }
 
 }

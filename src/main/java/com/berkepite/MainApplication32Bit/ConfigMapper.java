@@ -29,6 +29,8 @@ public class ConfigMapper {
             model.setName(properties.getProperty("coordinator.subscribers[" + index + "].name"));
             model.setEnabled(Boolean.parseBoolean(properties.getProperty("coordinator.subscribers[" + index + "].enabled")));
             model.setConfigName(properties.getProperty("coordinator.subscribers[" + index + "].configName"));
+            model.setClassName(properties.getProperty("coordinator.subscribers[" + index + "].className"));
+            model.setClassPath(properties.getProperty("coordinator.subscribers[" + index + "].classPath"));
 
             subscriberBindingConfigs.add(model);
             index++;
@@ -37,52 +39,6 @@ public class ConfigMapper {
         LOGGER.debug("Mapped subscriber config models: {}", subscriberBindingConfigs);
 
         return subscriberBindingConfigs;
-    }
-
-    public ISubscriberConfig mapSubscriberConfig(Properties properties) {
-        ISubscriberConfig subscriberConfig;
-
-        if (properties.getProperty("name").equals("bloomberg_rest")) {
-
-            subscriberConfig = new BloombergRestConfig();
-            BloombergRestConfig temp = (BloombergRestConfig) subscriberConfig;
-            temp.setRequestInterval(properties.getProperty("requestInterval"));
-            temp.setRequestRetryLimit(properties.getProperty("requestRetryLimit"));
-
-        } else if (properties.getProperty("name").equals("cnn_tcp")) {
-
-            subscriberConfig = new CNNTCPConfig();
-            CNNTCPConfig temp = (CNNTCPConfig) subscriberConfig;
-            temp.setRequestInterval(properties.getProperty("requestInterval"));
-            temp.setRequestRetryLimit(properties.getProperty("requestRetryLimit"));
-
-        } else {
-            LOGGER.error("COULD NOT MAP subscriber config: {}", properties.getProperty("name"));
-            return null;
-        }
-
-        subscriberConfig.setName(properties.getProperty("name"));
-        subscriberConfig.setClassPath(properties.getProperty("classPath"));
-        subscriberConfig.setClassName(properties.getProperty("className"));
-        subscriberConfig.setUrl(properties.getProperty("url"));
-        subscriberConfig.setPort(Integer.parseInt(properties.getProperty("port")));
-        subscriberConfig.setUsername(properties.getProperty("username"));
-        subscriberConfig.setPassword(properties.getProperty("password"));
-
-        if (properties.getProperty("includeRates") != null && !properties.getProperty("includeRates").isEmpty()) {
-            List<RateEnum> includeRates = new ArrayList<>();
-            Arrays.stream(properties.getProperty("includeRates").split(",")).forEach(rate -> includeRates.add(RateEnum.valueOf(rate)));
-            subscriberConfig.setIncludeRates(includeRates);
-        }
-        if (properties.getProperty("excludeRates") != null && !properties.getProperty("excludeRates").isEmpty()) {
-            List<RateEnum> excludeRates = new ArrayList<>();
-            Arrays.stream(properties.getProperty("excludeRates").split(",")).forEach(rate -> excludeRates.add(RateEnum.valueOf(rate)));
-            subscriberConfig.setExcludeRates(excludeRates);
-        }
-
-        LOGGER.debug("Mapped subscriber config: {}", subscriberConfig);
-
-        return subscriberConfig;
     }
 
     public List<RateEnum> mapCoordinatorRates(Properties properties) throws NullPointerException {

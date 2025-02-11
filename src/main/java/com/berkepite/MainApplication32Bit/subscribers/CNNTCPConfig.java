@@ -1,10 +1,16 @@
 package com.berkepite.MainApplication32Bit.subscribers;
 
-
 import com.berkepite.MainApplication32Bit.rates.RateEnum;
+import org.springframework.boot.context.properties.ConfigurationProperties;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Primary;
+import org.springframework.context.annotation.PropertySource;
 
 import java.util.List;
 
+@Configuration
+@ConfigurationProperties(prefix = "cnntcp")
+@PropertySource(value = "classpath:subscriber_configurations/cnn_tcp.properties")
 public class CNNTCPConfig implements ISubscriberConfig {
     private String name;
     private String className;
@@ -13,24 +19,24 @@ public class CNNTCPConfig implements ISubscriberConfig {
     private Integer port;
     private String username;
     private String password;
-    private String requestInterval;
-    private String requestRetryLimit;
+    private Integer requestInterval;
+    private Integer requestRetryLimit;
     private List<RateEnum> includeRates;
     private List<RateEnum> excludeRates;
 
-    public void setRequestInterval(String requestInterval) {
-        this.requestInterval = requestInterval;
+    public String toString() {
+        return "CNNTCPConfig [name=" + name + ", className=" + className
+                + ", classPath=" + classPath + ", url=" + url + ", port=" + port
+                + ", username=" + username + ", password=" + password + ", requestInterval="
+                + requestInterval + ", requestRetryLimit=" + requestRetryLimit
+                + ", includeRates=" + includeRates + ", excludeRates=" + excludeRates + "]";
     }
 
-    public void setRequestRetryLimit(String requestRetryLimit) {
-        this.requestRetryLimit = requestRetryLimit;
-    }
-
-    public String getRequestInterval() {
+    public Integer getRequestInterval() {
         return requestInterval;
     }
 
-    public String getRequestRetryLimit() {
+    public Integer getRequestRetryLimit() {
         return requestRetryLimit;
     }
 
@@ -68,7 +74,6 @@ public class CNNTCPConfig implements ISubscriberConfig {
     public String getPassword() {
         return password;
     }
-
 
     @Override
     public List<RateEnum> getIncludeRates() {
@@ -129,5 +134,13 @@ public class CNNTCPConfig implements ISubscriberConfig {
     @Override
     public void setExcludeRates(List<RateEnum> excludeRates) {
         this.excludeRates = excludeRates;
+    }
+
+    public void setRequestInterval(Integer requestInterval) {
+        this.requestInterval = requestInterval;
+    }
+
+    public void setRequestRetryLimit(Integer requestRetryLimit) {
+        this.requestRetryLimit = requestRetryLimit;
     }
 }

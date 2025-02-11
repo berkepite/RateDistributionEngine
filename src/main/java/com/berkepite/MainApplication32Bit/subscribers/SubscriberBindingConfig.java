@@ -4,6 +4,24 @@ public class SubscriberBindingConfig {
     private String name;
     private boolean enabled;
     private String configName;
+    private String classPath;
+    private String className;
+
+    public String getClassName() {
+        return className;
+    }
+
+    public void setClassName(String className) {
+        this.className = className;
+    }
+
+    public String getClassPath() {
+        return classPath;
+    }
+
+    public void setClassPath(String classPath) {
+        this.classPath = classPath;
+    }
 
     public String getName() {
         return name;

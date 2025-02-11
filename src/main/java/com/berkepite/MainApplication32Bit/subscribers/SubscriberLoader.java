@@ -1,6 +1,5 @@
 package com.berkepite.MainApplication32Bit.subscribers;
 
-import com.berkepite.MainApplication32Bit.coordinator.ICoordinator;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.springframework.beans.factory.config.BeanDefinition;
@@ -19,7 +18,7 @@ public class SubscriberLoader {
         this.applicationContext = applicationContext;
     }
 
-    public ISubscriber load(SubscriberBindingConfig bindingConfig, ICoordinator coordinator) {
+    public ISubscriber load(SubscriberBindingConfig bindingConfig) {
         ISubscriber subscriber = null;
 
         try {
@@ -32,11 +31,10 @@ public class SubscriberLoader {
             GenericBeanDefinition beanDefinition = new GenericBeanDefinition();
             beanDefinition.setBeanClass(clazz);
             beanDefinition.setScope(BeanDefinition.SCOPE_SINGLETON);
-            beanDefinition.getPropertyValues().add("coordinator", coordinator);
 
-            beanFactory.registerBeanDefinition(bindingConfig.getClassPath(), beanDefinition);
+            beanFactory.registerBeanDefinition(bindingConfig.getClassName(), beanDefinition);
 
-            subscriber = (ISubscriber) context.getBean(bindingConfig.getClassPath());
+            subscriber = (ISubscriber) context.getBean(bindingConfig.getClassName());
         } catch (Throwable e) {
             LOGGER.error("Failed to load subscriber class {}, {}", bindingConfig.getClassPath(), e);
         }

@@ -1,5 +1,6 @@
 package com.berkepite.MainApplication32Bit.subscribers;
 
+import com.berkepite.MainApplication32Bit.coordinator.Coordinator;
 import com.berkepite.MainApplication32Bit.status.ConnectionStatus;
 import com.berkepite.MainApplication32Bit.coordinator.ICoordinator;
 import com.berkepite.MainApplication32Bit.rates.BloombergRate;
@@ -10,6 +11,9 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.core.task.TaskExecutor;
+import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 
 import java.io.IOException;
 import java.net.URI;
@@ -20,17 +24,18 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Base64;
 import java.util.List;
-import java.util.concurrent.*;
 
 public class BloombergRestSubscriber implements ISubscriber {
     private final BloombergRestConfig config;
-    private ICoordinator coordinator;
+    private final ICoordinator coordinator;
     private final Logger LOGGER = LogManager.getLogger(BloombergRestSubscriber.class);
-    private final ExecutorService executorService = Executors.newCachedThreadPool();
+    private final ThreadPoolTaskExecutor executorService;
     private String credentials;
 
-    public BloombergRestSubscriber(final BloombergRestConfig config) {
+    public BloombergRestSubscriber(final BloombergRestConfig config, Coordinator coordinator, @Qualifier("subscriberExecutor") ThreadPoolTaskExecutor executorService) {
         this.config = config;
+        this.coordinator = coordinator;
+        this.executorService = executorService;
     }
 
     @Override
@@ -138,11 +143,6 @@ public class BloombergRestSubscriber implements ISubscriber {
     @Override
     public ICoordinator getCoordinator() {
         return coordinator;
-    }
-
-    @Override
-    public void setCoordinator(ICoordinator coordinator) {
-        this.coordinator = coordinator;
     }
 
     @Override

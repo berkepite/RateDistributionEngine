@@ -1,5 +1,6 @@
 package com.berkepite.MainApplication32Bit.subscribers;
 
+import com.berkepite.MainApplication32Bit.coordinator.Coordinator;
 import com.berkepite.MainApplication32Bit.coordinator.ICoordinator;
 import com.berkepite.MainApplication32Bit.rates.CNNRate;
 import com.berkepite.MainApplication32Bit.rates.IRate;
@@ -8,6 +9,8 @@ import com.berkepite.MainApplication32Bit.status.ConnectionStatus;
 import com.berkepite.MainApplication32Bit.status.RateStatus;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
@@ -22,27 +25,24 @@ import java.util.concurrent.Executors;
 
 public class CNNTCPSubscriber implements ISubscriber {
     private final CNNTCPConfig config;
-    private ICoordinator coordinator;
+    private final ICoordinator coordinator;
     private final Logger LOGGER = LogManager.getLogger(CNNTCPSubscriber.class);
-    private final ExecutorService executorService = Executors.newCachedThreadPool();
+    private final ThreadPoolTaskExecutor executorService;
     private Socket socket;
     private PrintWriter writer;
     private BufferedReader reader;
     private volatile boolean isListeningForInitialResponses = true;
     private volatile boolean isListeningForRates = true;
 
-    public CNNTCPSubscriber(final CNNTCPConfig config) {
+    public CNNTCPSubscriber(final CNNTCPConfig config, Coordinator coordinator, @Qualifier("subscriberExecutor") ThreadPoolTaskExecutor executorService) {
         this.config = config;
+        this.coordinator = coordinator;
+        this.executorService = executorService;
     }
 
     @Override
     public ICoordinator getCoordinator() {
         return coordinator;
-    }
-
-    @Override
-    public void setCoordinator(ICoordinator coordinator) {
-        this.coordinator = coordinator;
     }
 
     @Override

@@ -9,7 +9,9 @@ import jakarta.annotation.PostConstruct;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.CommandLineRunner;
+import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import org.springframework.stereotype.Component;
 
 import java.util.*;
@@ -24,28 +26,29 @@ public class Coordinator implements CommandLineRunner, ICoordinator {
     private CoordinatorConfig coordinatorConfig;
     private final SubscriberLoader subscriberLoader;
     private final CoordinatorConfigLoader coordinatorConfigLoader;
+    private final ThreadPoolTaskExecutor executorService;
+
     private List<ISubscriber> subscribers;
 
-    private final ExecutorService executorService = Executors.newCachedThreadPool();
-
     @Autowired
-    public Coordinator(CoordinatorConfigLoader coordinatorConfigLoader, SubscriberLoader subscriberLoader) {
+    public Coordinator(CoordinatorConfigLoader coordinatorConfigLoader, SubscriberLoader subscriberLoader, @Qualifier("coordinatorExecutor") ThreadPoolTaskExecutor executorService) {
         this.coordinatorConfigLoader = coordinatorConfigLoader;
         this.subscriberLoader = subscriberLoader;
+        this.executorService = executorService;
     }
 
     @PostConstruct
     private void init() {
         coordinatorConfig = coordinatorConfigLoader.loadConfig();
-        subscribers = new ArrayList<>();
+        subscribers = new ArrayList<>(3);
 
-        bindSubscribers();
-
-        LOGGER.trace("Coordinator Initialized!");
+        LOGGER.debug("Coordinator Initialized!");
     }
 
     @Override
     public void run(String... args) throws Exception {
+        bindSubscribers();
+
         for (ISubscriber subscriber : subscribers) {
             executorService.execute(subscriber::connect);
         }
@@ -58,7 +61,7 @@ public class Coordinator implements CommandLineRunner, ICoordinator {
     private void loadSubscriberClasses(List<SubscriberBindingConfig> subscriberBindingConfigs) {
         subscriberBindingConfigs.forEach(subscriberBindingConfig -> {
             if (subscriberBindingConfig.isEnabled()) {
-                ISubscriber subscriber = subscriberLoader.load(subscriberBindingConfig, this);
+                ISubscriber subscriber = subscriberLoader.load(subscriberBindingConfig);
                 if (subscriber != null) {
                     subscribers.add(subscriber);
                 }
@@ -79,6 +82,7 @@ public class Coordinator implements CommandLineRunner, ICoordinator {
     }
 
     @Override
+    @CoordinatorEventLoggable
     public void onConnect(ISubscriber subscriber, ConnectionStatus status) {
         ISubscriberConfig config = subscriber.getConfig();
 
@@ -113,6 +117,7 @@ public class Coordinator implements CommandLineRunner, ICoordinator {
     }
 
     @Override
+    @CoordinatorEventLoggable
     public void onSubscribe(ISubscriber subscriber, ConnectionStatus status) {
         ISubscriberConfig config = subscriber.getConfig();
 
@@ -125,26 +130,31 @@ public class Coordinator implements CommandLineRunner, ICoordinator {
     }
 
     @Override
+    @CoordinatorEventLoggable
     public void onUnSubscribe(ISubscriber subscriber, ConnectionStatus status) {
 
     }
 
     @Override
+    @CoordinatorEventLoggable
     public void onDisConnect(ISubscriber subscriber) {
-
+        LOGGER.info("{} stopped listening/requesting.", subscriber.getConfig().getName());
     }
 
     @Override
+    @CoordinatorEventLoggable
     public void onRateAvailable(ISubscriber subscriber, RateEnum rate) {
         LOGGER.info("{} rate available", rate);
     }
 
     @Override
+    @CoordinatorEventLoggable
     public void onRateUpdate(ISubscriber subscriber, IRate rate) {
-        LOGGER.info("{} rate came", rate.toString());
+        LOGGER.info("{} rate received", rate.toString());
     }
 
     @Override
+    @CoordinatorEventLoggable
     public void onRateError(ISubscriber subscriber, RateStatus status) {
         ISubscriberConfig config = subscriber.getConfig();
 
@@ -168,6 +178,7 @@ public class Coordinator implements CommandLineRunner, ICoordinator {
     }
 
     @Override
+    @CoordinatorEventLoggable
     public void onConnectionError(ISubscriber subscriber, ConnectionStatus status) {
         ISubscriberConfig config = subscriber.getConfig();
 

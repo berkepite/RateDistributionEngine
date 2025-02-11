@@ -2,7 +2,6 @@ package com.berkepite.MainApplication32Bit.subscribers;
 
 
 import com.berkepite.MainApplication32Bit.coordinator.ICoordinator;
-import com.berkepite.MainApplication32Bit.rates.IRate;
 import com.berkepite.MainApplication32Bit.rates.RateEnum;
 
 import java.util.List;
@@ -10,8 +9,6 @@ import java.util.List;
 public interface ISubscriber {
 
     ICoordinator getCoordinator();
-
-    void setCoordinator(ICoordinator coordinator);
 
     ISubscriberConfig getConfig();
 
@@ -23,9 +20,4 @@ public interface ISubscriber {
 
     void unSubscribe(List<RateEnum> rates);
 
-    IRate convertToRate();
-
-    List<RateEnum> getRatesToSubscribe();
-
-    void setConfig(ISubscriberConfig subscriberConfig);
 }

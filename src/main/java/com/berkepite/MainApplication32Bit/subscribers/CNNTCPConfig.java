@@ -3,7 +3,6 @@ package com.berkepite.MainApplication32Bit.subscribers;
 import com.berkepite.MainApplication32Bit.rates.RateEnum;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.context.annotation.Primary;
 import org.springframework.context.annotation.PropertySource;
 
 import java.util.List;

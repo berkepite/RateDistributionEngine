@@ -44,7 +44,7 @@ public class Coordinator implements CommandLineRunner, ICoordinator {
     }
 
     @Override
-    public void run(String... args) throws Exception {
+    public void run(String... args) {
         bindSubscribers();
 
         for (ISubscriber subscriber : subscribers) {

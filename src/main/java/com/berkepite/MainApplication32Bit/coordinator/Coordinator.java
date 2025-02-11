@@ -15,8 +15,6 @@ import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import org.springframework.stereotype.Component;
 
 import java.util.*;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 
 @Component
 public class Coordinator implements CommandLineRunner, ICoordinator {
@@ -77,12 +75,8 @@ public class Coordinator implements CommandLineRunner, ICoordinator {
         return coordinatorConfig;
     }
 
-    public void setCoordinatorConfig(CoordinatorConfig coordinatorConfig) {
-        this.coordinatorConfig = coordinatorConfig;
-    }
-
     @Override
-    @CoordinatorEventLoggable
+    @CoordinatorEventStatus
     public void onConnect(ISubscriber subscriber, ConnectionStatus status) {
         ISubscriberConfig config = subscriber.getConfig();
 
@@ -117,7 +111,7 @@ public class Coordinator implements CommandLineRunner, ICoordinator {
     }
 
     @Override
-    @CoordinatorEventLoggable
+    @CoordinatorEventStatus
     public void onSubscribe(ISubscriber subscriber, ConnectionStatus status) {
         ISubscriberConfig config = subscriber.getConfig();
 
@@ -130,31 +124,29 @@ public class Coordinator implements CommandLineRunner, ICoordinator {
     }
 
     @Override
-    @CoordinatorEventLoggable
+    @CoordinatorEventStatus
     public void onUnSubscribe(ISubscriber subscriber, ConnectionStatus status) {
 
     }
 
     @Override
-    @CoordinatorEventLoggable
+    @CoordinatorEventStatus
     public void onDisConnect(ISubscriber subscriber) {
         LOGGER.info("{} stopped listening/requesting.", subscriber.getConfig().getName());
     }
 
     @Override
-    @CoordinatorEventLoggable
     public void onRateAvailable(ISubscriber subscriber, RateEnum rate) {
         LOGGER.info("{} rate available", rate);
     }
 
     @Override
-    @CoordinatorEventLoggable
     public void onRateUpdate(ISubscriber subscriber, IRate rate) {
         LOGGER.info("{} rate received", rate.toString());
     }
 
     @Override
-    @CoordinatorEventLoggable
+    @CoordinatorEventStatus
     public void onRateError(ISubscriber subscriber, RateStatus status) {
         ISubscriberConfig config = subscriber.getConfig();
 
@@ -178,7 +170,7 @@ public class Coordinator implements CommandLineRunner, ICoordinator {
     }
 
     @Override
-    @CoordinatorEventLoggable
+    @CoordinatorEventStatus
     public void onConnectionError(ISubscriber subscriber, ConnectionStatus status) {
         ISubscriberConfig config = subscriber.getConfig();
 

@@ -76,61 +76,26 @@ public class Coordinator implements CommandLineRunner, ICoordinator {
     }
 
     @Override
-    @CoordinatorEventStatus
-    public void onConnect(ISubscriber subscriber, ConnectionStatus status) {
+    public void onConnect(ISubscriber subscriber) {
         ISubscriberConfig config = subscriber.getConfig();
 
-        switch (status.getStatus()) {
-            case OK -> {
-                LOGGER.info("{} connected to {}, trying to subscribe...", config.getName(), config.getUrl());
-                executorService.execute(() -> subscriber.subscribe(coordinatorConfig.getRates()));
-            }
-            case AUTHSUCCESS -> {
-                LOGGER.info("{} connected to {}, trying to subscribe...", config.getName(), config.getUrl());
-                executorService.execute(() -> subscriber.subscribe(coordinatorConfig.getRates()));
-            }
-            case Interrupted -> LOGGER.warn("{} connection interrupted", config.getName());
-            case Unauthorized ->
-                    LOGGER.warn("{} could not connect to {} because it could not be AUTHORIZED!", config.getName(), config.getUrl());
-            case AUTHFAILED ->
-                    LOGGER.warn("{} could not connect to {} because AUTH FAILED!", config.getName(), config.getUrl());
-            case IOException ->
-                    LOGGER.warn("{} could not connect to {} due to UNEXPECTED IOException!", config.getName(), config.getUrl());
-            case ConnectException ->
-                    LOGGER.warn("{} could not connect to {} due to UNEXPECTED ConnectException!", config.getName(), config.getUrl());
-            case SocketTimeoutException ->
-                    LOGGER.warn("{} could not connect to {} because SOCKET TIMEOUT!", config.getName(), config.getUrl());
-            case Resource_Not_Found ->
-                    LOGGER.warn("{} could not connect to {} because the server returned 404 NOT FOUND!", config.getName(), config.getUrl());
-            case Internal_Server_Error ->
-                    LOGGER.warn("{} could not connect to {} because the server returned 500 INTERNAL SERVER ERROR!", config.getName(), config.getUrl());
-            default ->
-                    LOGGER.error("\nAn Unexpected Error occured!\nSubscriber: {}\nConnection: {}", config.toString(), status.toString());
-
-        }
+        LOGGER.info("{} connected to {}, trying to subscribe...", config.getName(), config.getUrl());
+        executorService.execute(() -> subscriber.subscribe(coordinatorConfig.getRates()));
     }
 
     @Override
-    @CoordinatorEventStatus
-    public void onSubscribe(ISubscriber subscriber, ConnectionStatus status) {
+    public void onSubscribe(ISubscriber subscriber) {
         ISubscriberConfig config = subscriber.getConfig();
 
-        switch (status.getStatus()) {
-            case OK -> LOGGER.info("{} subscribed to {}", config.getName(), status.getUrl());
-            case AUTHSUCCESS -> LOGGER.info("{} subscribed to {}", config.getName(), config.getUrl());
-            default ->
-                    LOGGER.error("\nAn Unexpected Error occured!\nSubscriber: {}\nConnection: {}", config.toString(), status.toString());
-        }
+        LOGGER.info("{} subscribed to {}", config.getName(), config.getUrl());
     }
 
     @Override
-    @CoordinatorEventStatus
-    public void onUnSubscribe(ISubscriber subscriber, ConnectionStatus status) {
+    public void onUnSubscribe(ISubscriber subscriber) {
 
     }
 
     @Override
-    @CoordinatorEventStatus
     public void onDisConnect(ISubscriber subscriber) {
         LOGGER.info("{} stopped listening/requesting.", subscriber.getConfig().getName());
     }
@@ -148,49 +113,13 @@ public class Coordinator implements CommandLineRunner, ICoordinator {
     @Override
     @CoordinatorEventStatus
     public void onRateError(ISubscriber subscriber, RateStatus status) {
-        ISubscriberConfig config = subscriber.getConfig();
 
-        switch (status.getStatus()) {
-            case OK ->
-                    LOGGER.error("\nAn Unexpected Error occured!\nSubscriber: {}\nStatus: {}", config.toString(), status.toString());
-            case Interrupted -> LOGGER.warn("{} connection interrupted", config.getName());
-            case Unauthorized ->
-                    LOGGER.warn("{} could not get rate from {} because it could not be AUTHORIZED!", config.getName(), status.getUrl());
-            case IOException ->
-                    LOGGER.warn("{} could not get rate from {} due to UNEXPECTED IOException!", config.getName(), status.getUrl());
-            case ConnectException ->
-                    LOGGER.warn("{} could not get rate from {} due to UNEXPECTED ConnectException!", config.getName(), status.getUrl());
-            case SocketTimeoutException ->
-                    LOGGER.warn("{} could not get rate from {} because SOCKET TIMEOUT!", config.getName(), status.getUrl());
-            case Resource_Not_Found ->
-                    LOGGER.warn("{} could not get rate from {} because the server returned 404 NOT FOUND!", config.getName(), status.getUrl());
-            case Internal_Server_Error ->
-                    LOGGER.warn("{} could not get rate from {} because the server returned 500 INTERNAL SERVER ERROR!", config.getName(), status.getUrl());
-        }
     }
 
     @Override
     @CoordinatorEventStatus
     public void onConnectionError(ISubscriber subscriber, ConnectionStatus status) {
-        ISubscriberConfig config = subscriber.getConfig();
 
-        switch (status.getStatus()) {
-            case OK ->
-                    LOGGER.error("\nAn Unexpected Error occured!\nSubscriber: {}\nStatus: {}", config.toString(), status.toString());
-            case Interrupted -> LOGGER.warn("{} connection interrupted", config.getName());
-            case Unauthorized ->
-                    LOGGER.warn("{} could not connect to {} because it could not be AUTHORIZED!", config.getName(), config.getUrl());
-            case IOException ->
-                    LOGGER.warn("{} could not connect to {} due to UNEXPECTED IOException!", config.getName(), config.getUrl());
-            case ConnectException ->
-                    LOGGER.warn("{} could not connect to {} due to UNEXPECTED ConnectException!", config.getName(), status.getUrl());
-            case SocketTimeoutException ->
-                    LOGGER.warn("{} could not connect to {} because SOCKET TIMEOUT!", config.getName(), status.getUrl());
-            case Resource_Not_Found ->
-                    LOGGER.warn("{} could not connect to {} because the server returned 404 NOT FOUND!", config.getName(), status.getUrl());
-            case Internal_Server_Error ->
-                    LOGGER.warn("{} could not connect to {} because the server returned 500 INTERNAL SERVER ERROR!", config.getName(), config.getUrl());
-        }
     }
 
 }

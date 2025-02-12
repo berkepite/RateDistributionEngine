@@ -52,7 +52,7 @@ public class BloombergRestSubscriber implements ISubscriber {
         try {
             HttpResponse<String> response = client.send(req, HttpResponse.BodyHandlers.ofString());
 
-            coordinator.onConnect(this, new ConnectionStatus(response, req));
+            coordinator.onConnect(this);
         } catch (IOException | InterruptedException e) {
             coordinator.onConnectionError(this, new ConnectionStatus(e, req));
 
@@ -86,7 +86,7 @@ public class BloombergRestSubscriber implements ISubscriber {
             try {
                 HttpResponse<String> res = client.send(req, HttpResponse.BodyHandlers.ofString());
 
-                coordinator.onSubscribe(this, new ConnectionStatus(res, req));
+                coordinator.onSubscribe(this);
                 coordinator.onRateAvailable(this, rateMapper.mapEndpointToRateEnum(endpoint));
 
                 executorService.execute(() -> subscribeToRate(req, config));

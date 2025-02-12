@@ -65,7 +65,7 @@ public class CNNTCPSubscriber implements ISubscriber {
             }
 
         } catch (Exception e) {
-            LOGGER.error("An unexpected error occurred!: {}", e.getMessage());
+            coordinator.onConnectionError(this, new ConnectionStatus(e, socket, config.getUrl() + ":" + config.getPort()));
         }
     }
 
@@ -110,7 +110,7 @@ public class CNNTCPSubscriber implements ISubscriber {
             }
 
         } catch (Exception e) {
-            LOGGER.error("An unexpected error occurred!: ", e);
+            coordinator.onConnectionError(this, new ConnectionStatus(e, socket, config.getUrl() + ":" + config.getPort()));
         } finally {
             LOGGER.info("The listener ({}) stopped listening...", config.getName());
             executorService.shutdown();
@@ -129,7 +129,7 @@ public class CNNTCPSubscriber implements ISubscriber {
 
     private void handleInitialResponses(String response) {
         if (response.equals("AUTH SUCCESS"))
-            coordinator.onConnect(this, new ConnectionStatus(socket, response));
+            coordinator.onConnect(this);
         else if (response.equals("AUTH FAILED"))
             coordinator.onConnectionError(this, new ConnectionStatus(socket, response));
     }

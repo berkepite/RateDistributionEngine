@@ -6,7 +6,7 @@ coordinator:
       classPath: com.berkepite.MainApplication32Bit.subscribers
       className: BloombergRestSubscriber
     - name: CNN_TCP
-      enabled: false
+      enabled: true
       configName: cnn_tcp
       classPath: com.berkepite.MainApplication32Bit.subscribers
       className: CNNTCPSubscriber

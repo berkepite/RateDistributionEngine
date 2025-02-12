@@ -10,6 +10,13 @@ public class RateStatus {
         this.exception = exception;
     }
 
+    public String getData() {
+        return data;
+    }
+
+    public Exception getException() {
+        return exception;
+    }
 
     @Override
     public String toString() {

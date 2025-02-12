@@ -7,11 +7,11 @@ import com.berkepite.MainApplication32Bit.status.RateStatus;
 import com.berkepite.MainApplication32Bit.subscribers.ISubscriber;
 
 public interface ICoordinator {
-    void onConnect(ISubscriber subscriber, ConnectionStatus status);
+    void onConnect(ISubscriber subscriber);
 
-    void onSubscribe(ISubscriber subscriber, ConnectionStatus status);
+    void onSubscribe(ISubscriber subscriber);
 
-    void onUnSubscribe(ISubscriber subscriber, ConnectionStatus status);
+    void onUnSubscribe(ISubscriber subscriber);
 
     void onDisConnect(ISubscriber subscriber);
 

@@ -2,9 +2,7 @@ package com.berkepite.MainApplication32Bit.subscribers;
 
 import com.berkepite.MainApplication32Bit.coordinator.Coordinator;
 import com.berkepite.MainApplication32Bit.coordinator.ICoordinator;
-import com.berkepite.MainApplication32Bit.rates.CNNRate;
-import com.berkepite.MainApplication32Bit.rates.IRate;
-import com.berkepite.MainApplication32Bit.rates.RateEnum;
+import com.berkepite.MainApplication32Bit.rates.*;
 import com.berkepite.MainApplication32Bit.status.ConnectionStatus;
 import com.berkepite.MainApplication32Bit.status.RateStatus;
 import org.apache.logging.log4j.LogManager;
@@ -16,13 +14,13 @@ import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.net.Socket;
-import java.time.Instant;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 
 public class CNNTCPSubscriber implements ISubscriber {
     private final CNNTCPConfig config;
+    private final CNNRateMapper rateMapper;
+    private final RateFactory rateFactory;
     private final ICoordinator coordinator;
     private final Logger LOGGER = LogManager.getLogger(CNNTCPSubscriber.class);
     private final ThreadPoolTaskExecutor executorService;
@@ -32,10 +30,12 @@ public class CNNTCPSubscriber implements ISubscriber {
     private volatile boolean isListeningForInitialResponses = true;
     private volatile boolean isListeningForRates = true;
 
-    public CNNTCPSubscriber(final CNNTCPConfig config, Coordinator coordinator, @Qualifier("subscriberExecutor") ThreadPoolTaskExecutor executorService) {
+    public CNNTCPSubscriber(CNNTCPConfig config, CNNRateMapper rateMapper, RateFactory rateFactory, Coordinator coordinator, @Qualifier("subscriberExecutor") ThreadPoolTaskExecutor executorService) {
         this.config = config;
         this.coordinator = coordinator;
         this.executorService = executorService;
+        this.rateMapper = rateMapper;
+        this.rateFactory = rateFactory;
     }
 
     @Override
@@ -84,7 +84,7 @@ public class CNNTCPSubscriber implements ISubscriber {
         ratesToSubscribe.removeAll(config.getExcludeRates());
 
         LOGGER.info("{} trying to subscribe to {} ", config.getName(), ratesToSubscribe);
-        List<String> endpoints = mapRateEnumToEndpoints(ratesToSubscribe);
+        List<String> endpoints = rateMapper.mapRateEnumToEndpoints(ratesToSubscribe);
 
         executorService.execute(this::listen);
 
@@ -94,7 +94,7 @@ public class CNNTCPSubscriber implements ISubscriber {
 
     @Override
     public void unSubscribe(List<RateEnum> rates) {
-        List<String> endpoints = mapRateEnumToEndpoints(rates);
+        List<String> endpoints = rateMapper.mapRateEnumToEndpoints(rates);
 
         for (String endpoint : endpoints)
             writer.println("unsub|" + endpoint);
@@ -105,7 +105,8 @@ public class CNNTCPSubscriber implements ISubscriber {
             String response;
             while ((response = reader.readLine()) != null && isListeningForRates) {
                 final String data = response;
-                executorService.execute(() -> handleResponses(data));
+                if (!data.isEmpty())
+                    executorService.execute(() -> handleResponses(data));
             }
 
         } catch (Exception e) {
@@ -116,14 +117,13 @@ public class CNNTCPSubscriber implements ISubscriber {
         }
     }
 
-    private void handleResponses(String data) {
-        if (data.startsWith("name=")) {
-            IRate rate;
-            if ((rate = createRate(data)) != null) {
-                coordinator.onRateUpdate(this, rate);
-            } else {
-                coordinator.onRateError(this, new RateStatus(socket, data));
-            }
+    private void handleResponses(final String data) {
+        IRate rate;
+        try {
+            rate = rateFactory.createRate(SubscriberEnum.CNN_TCP, data);
+            coordinator.onRateUpdate(this, rate);
+        } catch (Exception e) {
+            coordinator.onRateError(this, new RateStatus(data, e));
         }
     }
 
@@ -132,49 +132,6 @@ public class CNNTCPSubscriber implements ISubscriber {
             coordinator.onConnect(this, new ConnectionStatus(socket, response));
         else if (response.equals("AUTH FAILED"))
             coordinator.onConnectionError(this, new ConnectionStatus(socket, response));
-    }
-
-    public CNNRate createRate(String data) {
-        try {
-            CNNRate rate = new CNNRate();
-            List<String> fields = Arrays.stream(data.split("\\|")).toList();
-
-            List<String> nameField = Arrays.stream(fields.getFirst().split("=")).toList();
-            List<String> bidField = Arrays.stream(fields.get(1).split("=")).toList();
-            List<String> askField = Arrays.stream(fields.get(2).split("=")).toList();
-            List<String> timestampField = Arrays.stream(fields.get(3).split("=")).toList();
-
-            rate.setType(mapEndpointToRateEnum(nameField.get(1)));
-            rate.setAsk(Double.parseDouble(askField.get(1)));
-            rate.setBid(Double.parseDouble(bidField.get(1)));
-            rate.setTimeStamp(Instant.parse(timestampField.get(1)));
-
-            return rate;
-
-        } catch (Exception e) {
-            return null;
-        }
-    }
-
-    private static String mapRateEnumToEndpoint(RateEnum rate) {
-        String endpoint;
-        endpoint = rate.toString().replace("_", "");
-
-        return endpoint;
-    }
-
-    private static List<String> mapRateEnumToEndpoints(List<RateEnum> rates) {
-        List<String> endpoints = new ArrayList<>();
-        rates.forEach(r -> endpoints.add(mapRateEnumToEndpoint(r)));
-
-        return endpoints;
-    }
-
-    private static RateEnum mapEndpointToRateEnum(String rateStr) {
-        RateEnum rate;
-        rate = RateEnum.valueOf(rateStr.substring(0, 3) + "_" + rateStr.substring(3));
-
-        return rate;
     }
 
 }

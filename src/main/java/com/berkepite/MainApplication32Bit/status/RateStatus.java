@@ -1,37 +1,20 @@
 package com.berkepite.MainApplication32Bit.status;
 
-import java.net.Socket;
-import java.net.http.HttpRequest;
-import java.net.http.HttpResponse;
+public class RateStatus {
 
-/*
- * WIP
- */
-public class RateStatus extends ConnectionStatus {
+    private final String data;
+    private final Exception exception;
 
-    public RateStatus(HttpResponse<?> response, HttpRequest req) {
-        super(response, req);
+    public RateStatus(final String data, final Exception exception) {
+        this.data = data;
+        this.exception = exception;
     }
 
-    public RateStatus(Socket socket, String response) {
-        super(socket, response);
-    }
-
-    public RateStatus(Exception e, HttpRequest req) {
-        super(e, req);
-    }
-
-    public RateStatus(Exception e, Socket socket) {
-        super(e, socket);
-    }
 
     @Override
     public String toString() {
-        return "RateStatus [status=" + status + "," +
-                " HttpRequest=" + httpRequest.toString() + "," +
-                " HttpResponse=" + httpResponse.toString() + "," +
-                " URL=" + url + "," +
-                " Exception=" + exception.toString() + "," + "]";
+        return "RateStatus [data=" + data + " | " +
+                "exception=" + exception + "]";
     }
 
 }

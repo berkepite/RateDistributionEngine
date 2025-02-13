@@ -5,6 +5,7 @@ import com.berkepite.MainApplication32Bit.coordinator.ICoordinator;
 import com.berkepite.MainApplication32Bit.rates.*;
 import com.berkepite.MainApplication32Bit.status.ConnectionStatus;
 import com.berkepite.MainApplication32Bit.status.RateStatus;
+import jakarta.annotation.PostConstruct;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -36,6 +37,17 @@ public class CNNTCPSubscriber implements ISubscriber {
         this.executorService = executorService;
         this.rateMapper = rateMapper;
         this.rateFactory = rateFactory;
+    }
+
+    @PostConstruct
+    public void init() {
+        Runtime.getRuntime().addShutdownHook(new Thread(() -> {
+            isListeningForRates = false;
+            isListeningForInitialResponses = false;
+            executorService.shutdown();
+
+            LOGGER.warn("Subscriber stopped. ({})", config.getName());
+        }, "shutdown-hook-" + config.getName()));
     }
 
     @Override
@@ -103,22 +115,23 @@ public class CNNTCPSubscriber implements ISubscriber {
     private void listen() {
         try {
             String response;
-            while ((response = reader.readLine()) != null && isListeningForRates) {
+            while (isListeningForRates && (response = reader.readLine()) != null) {
                 final String data = response;
-                if (!data.isEmpty())
+                if (!data.isEmpty()) {
                     executorService.execute(() -> handleResponses(data));
+                }
             }
 
         } catch (Exception e) {
             coordinator.onConnectionError(this, new ConnectionStatus(e, socket, config.getUrl() + ":" + config.getPort()));
         } finally {
-            LOGGER.info("The listener ({}) stopped listening...", config.getName());
+            LOGGER.info("The listener ({}) stopped listening because the server sent null or thread interrupted.", config.getName());
             executorService.shutdown();
         }
     }
 
     private void handleResponses(final String data) {
-        IRate rate;
+        RateEntity rate;
         try {
             rate = rateFactory.createRate(SubscriberEnum.CNN_TCP, data);
             coordinator.onRateUpdate(this, rate);

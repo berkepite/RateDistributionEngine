@@ -2,13 +2,13 @@ package com.berkepite.MainApplication32Bit.subscribers;
 
 import com.berkepite.MainApplication32Bit.coordinator.Coordinator;
 import com.berkepite.MainApplication32Bit.rates.BloombergRateMapper;
+import com.berkepite.MainApplication32Bit.rates.RateEntity;
 import com.berkepite.MainApplication32Bit.rates.RateFactory;
 import com.berkepite.MainApplication32Bit.status.ConnectionStatus;
 import com.berkepite.MainApplication32Bit.coordinator.ICoordinator;
-import com.berkepite.MainApplication32Bit.rates.BloombergRate;
 import com.berkepite.MainApplication32Bit.rates.RateEnum;
 import com.berkepite.MainApplication32Bit.status.RateStatus;
-import com.fasterxml.jackson.core.JsonProcessingException;
+import jakarta.annotation.PostConstruct;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -19,6 +19,7 @@ import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Base64;
 import java.util.List;
@@ -40,6 +41,15 @@ public class BloombergRestSubscriber implements ISubscriber {
         this.rateFactory = rateFactory;
     }
 
+    @PostConstruct
+    public void init() {
+        Runtime.getRuntime().addShutdownHook(new Thread(() -> {
+            executorService.shutdown();
+
+            LOGGER.warn("Subscriber stopped. ({})", config.getName());
+        }, "shutdown-hook-" + config.getName()));
+    }
+
     @Override
     public void connect() {
         String username_password = config.getUsername() + ":" + config.getPassword();
@@ -58,6 +68,7 @@ public class BloombergRestSubscriber implements ISubscriber {
 
             if (e instanceof InterruptedException) {
                 Thread.currentThread().interrupt();
+                LOGGER.warn("Thread is interrupted. ({})", Thread.currentThread().getName());
             }
         }
 
@@ -78,7 +89,9 @@ public class BloombergRestSubscriber implements ISubscriber {
         LOGGER.info("{} subscribing to {} ", config.getName(), ratesToSubscribe);
         List<String> endpoints = rateMapper.mapRateEnumToEndpoints(ratesToSubscribe);
 
-        HttpClient client = HttpClient.newHttpClient();
+        HttpClient client = HttpClient.newBuilder()
+                .connectTimeout(Duration.ofSeconds(10))
+                .build();
 
         for (String endpoint : endpoints) {
             HttpRequest req = createRateRequest(endpoint);
@@ -95,6 +108,7 @@ public class BloombergRestSubscriber implements ISubscriber {
 
                 if (e instanceof InterruptedException) {
                     Thread.currentThread().interrupt();
+                    LOGGER.warn("Thread is interrupted. ({})", Thread.currentThread().getName());
                 }
             }
         }
@@ -106,21 +120,28 @@ public class BloombergRestSubscriber implements ISubscriber {
         int retryLimit = config.getRequestRetryLimit();
         int requestInterval = config.getRequestInterval();
 
-        HttpClient client = HttpClient.newHttpClient();
+        HttpClient client = HttpClient.newBuilder()
+                .connectTimeout(Duration.ofSeconds(10))
+                .build();
 
         while (retryLimit > 0) {
+            if (Thread.currentThread().isInterrupted()) {
+                LOGGER.warn("Thread is interrupted. ({})", Thread.currentThread().getName());
+                break;
+            }
+
             try {
                 Thread.sleep(requestInterval);
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
-                retryLimit--;
-                continue;
+                LOGGER.warn("Thread is interrupted. ({})", Thread.currentThread().getName());
+                break;
             }
 
             try {
                 HttpResponse<String> res = client.send(req, HttpResponse.BodyHandlers.ofString());
                 try {
-                    BloombergRate rate = (BloombergRate) rateFactory.createRate(SubscriberEnum.BLOOMBERG_REST, res.body());
+                    RateEntity rate = rateFactory.createRate(SubscriberEnum.BLOOMBERG_REST, res.body());
                     coordinator.onRateUpdate(this, rate);
 
                 } catch (Exception e) {
@@ -132,11 +153,14 @@ public class BloombergRestSubscriber implements ISubscriber {
 
                 if (e instanceof InterruptedException) {
                     Thread.currentThread().interrupt();
+                    LOGGER.warn("Thread is interrupted. ({})", Thread.currentThread().getName());
+                    break;
                 }
 
                 retryLimit--;
             }
         }
+        LOGGER.warn("Shutting down subscriber task. ({})", Thread.currentThread().getName());
         client.close();
     }
 
@@ -160,6 +184,7 @@ public class BloombergRestSubscriber implements ISubscriber {
                 .uri(URI.create(config.getUrl() + "/api/currencies/" + endpoint))
                 .setHeader("Authorization", credentials)
                 .GET()
+                .timeout(Duration.ofSeconds(5))
                 .build();
     }
 

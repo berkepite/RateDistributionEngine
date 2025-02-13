@@ -1,5 +1,6 @@
 package com.berkepite.MainApplication32Bit.rates;
 
+import com.berkepite.MainApplication32Bit.subscribers.SubscriberEnum;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -19,18 +20,18 @@ public class BloombergRateMapper {
         return endpoints;
     }
 
-    public BloombergRate mapRate(String data, BloombergRate rate) throws JsonProcessingException {
+    public RateEntity mapRate(String data, RateEntity rate) throws JsonProcessingException {
 
         ObjectMapper objectMapper = new ObjectMapper();
         JsonNode json = objectMapper.readTree(data);
 
         RateEnum type = mapEndpointToRateEnum(json.get("name").asText());
-        rate.setType(type);
+        rate.setRate(type);
         rate.setAsk(json.get("ask").asDouble());
         rate.setBid(json.get("bid").asDouble());
         Instant timestamp = Instant.parse(json.get("timestamp").asText());
-        rate.setTimeStamp(timestamp);
-
+        rate.setTimestamp(timestamp);
+        rate.setProvider(SubscriberEnum.BLOOMBERG_REST);
 
         return rate;
     }

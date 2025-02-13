@@ -1,5 +1,6 @@
 package com.berkepite.MainApplication32Bit.rates;
 
+import com.berkepite.MainApplication32Bit.subscribers.SubscriberEnum;
 import org.springframework.stereotype.Component;
 
 import java.time.Instant;
@@ -10,7 +11,7 @@ import java.util.List;
 @Component
 public class CNNRateMapper {
 
-    public CNNRate mapRate(String data, CNNRate rate) throws Exception {
+    public RateEntity mapRate(String data, RateEntity rate) throws Exception {
         List<String> fields = Arrays.stream(data.split("\\|")).toList();
 
         List<String> nameField = Arrays.stream(fields.getFirst().split("=")).toList();
@@ -20,10 +21,11 @@ public class CNNRateMapper {
 
         RateEnum rateType = mapEndpointToRateEnum(nameField.get(1));
 
-        rate.setType(rateType);
+        rate.setRate(rateType);
         rate.setAsk(Double.parseDouble(askField.get(1)));
         rate.setBid(Double.parseDouble(bidField.get(1)));
-        rate.setTimeStamp(Instant.parse(timestampField.get(1)));
+        rate.setTimestamp(Instant.parse(timestampField.get(1)));
+        rate.setProvider(SubscriberEnum.CNN_TCP);
 
         return rate;
     }

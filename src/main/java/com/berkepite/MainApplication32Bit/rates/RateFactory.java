@@ -15,18 +15,18 @@ public class RateFactory {
         this.bloombergRateMapper = bloombergRateMapper;
     }
 
-    public IRate createRate(SubscriberEnum type, String data) throws Exception {
+    public RateEntity createRate(SubscriberEnum type, String data) throws Exception {
 
         switch (type) {
             case CNN_TCP -> {
-                CNNRate rate = new CNNRate();
-                cnnRateMapper.mapRate(data, rate);
-                return rate;
+                RateEntity rateEntity = new RateEntity();
+                cnnRateMapper.mapRate(data, rateEntity);
+                return rateEntity;
             }
             case BLOOMBERG_REST -> {
-                BloombergRate rate = new BloombergRate();
-                bloombergRateMapper.mapRate(data, rate);
-                return rate;
+                RateEntity rateEntity = new RateEntity();
+                bloombergRateMapper.mapRate(data, rateEntity);
+                return rateEntity;
             }
             default -> throw new IllegalArgumentException("Unknown subscriber type: " + type);
         }

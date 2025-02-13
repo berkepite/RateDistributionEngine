@@ -12,6 +12,7 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 
 import java.io.BufferedReader;
+import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.net.Socket;
@@ -42,6 +43,11 @@ public class CNNTCPSubscriber implements ISubscriber {
     @PostConstruct
     public void init() {
         Runtime.getRuntime().addShutdownHook(new Thread(() -> {
+            try {
+                socket.shutdownInput();
+            } catch (IOException e) {
+                LOGGER.error("UNEXPECTED ERROR WHILE CLOSING DOWN SOCKET INPUT", e);
+            }
             isListeningForRates = false;
             isListeningForInitialResponses = false;
             executorService.shutdown();

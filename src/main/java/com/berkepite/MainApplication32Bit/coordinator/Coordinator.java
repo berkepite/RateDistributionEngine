@@ -16,7 +16,6 @@ import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import org.springframework.stereotype.Component;
 
 import java.util.*;
-import java.util.concurrent.TimeUnit;
 
 @Component
 public class Coordinator implements CommandLineRunner, ICoordinator {
@@ -56,8 +55,6 @@ public class Coordinator implements CommandLineRunner, ICoordinator {
 
     @Override
     public void run(String... args) {
-
-
         bindSubscribers();
 
         for (ISubscriber subscriber : subscribers) {
@@ -115,12 +112,12 @@ public class Coordinator implements CommandLineRunner, ICoordinator {
 
     @Override
     public void onRateAvailable(ISubscriber subscriber, RateEnum rate) {
-        LOGGER.info("{} rate available ({})", rate, subscriber.getConfig().getName());
+        LOGGER.info("({}) rate available {}", subscriber.getConfig().getName(), rate);
     }
 
     @Override
     public void onRateUpdate(ISubscriber subscriber, RateEntity rate) {
-        LOGGER.info("{} rate received ({})", rate.toString(), subscriber.getConfig().getName());
+        LOGGER.info("({}) rate received {}", subscriber.getConfig().getName(), rate.toString());
 
         rateService.saveRate(rate);
     }

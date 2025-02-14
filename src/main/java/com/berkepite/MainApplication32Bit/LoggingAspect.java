@@ -36,7 +36,7 @@ public class LoggingAspect {
 
         } else if (status instanceof RateStatus rateStatus) {
             if (rateStatus.getException() != null) {
-                LOGGER.warn("{} has encountered an incorrect data {}", config.getName(), rateStatus.toString());
+                LOGGER.warn("{} has encountered a problem with data {}", config.getName(), rateStatus.toString());
             }
         }
     }

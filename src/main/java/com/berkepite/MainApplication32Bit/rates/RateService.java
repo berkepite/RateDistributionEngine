@@ -22,7 +22,6 @@ public class RateService {
                 .orElse(null); // Return the fetched rate or null if not found
     }
 
-    @Cacheable(value = "rates", key = "'rates:ALL'")
     public List<RateEntity> getAllRates() {
         return rateRepository.findAll();
     }

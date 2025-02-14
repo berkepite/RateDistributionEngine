@@ -4,6 +4,7 @@ import com.berkepite.MainApplication32Bit.subscribers.SubscriberEnum;
 import org.springframework.stereotype.Component;
 
 import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -19,14 +20,14 @@ public class CNNRateMapper {
         List<String> askField = Arrays.stream(fields.get(2).split("=")).toList();
         List<String> timestampField = Arrays.stream(fields.get(3).split("=")).toList();
 
-        RateEnum rateType = mapEndpointToRateEnum(nameField.get(1));
+        RateEnum type = mapEndpointToRateEnum(nameField.get(1));
 
-        rate.setRate(rateType);
+        rate.setRate(type.toString());
         rate.setAsk(Double.parseDouble(askField.get(1)));
         rate.setBid(Double.parseDouble(bidField.get(1)));
-        rate.setTimestamp(Instant.parse(timestampField.get(1)));
-        rate.setProvider(SubscriberEnum.CNN_TCP);
-
+        Instant truncatedTimestamp = Instant.parse(timestampField.get(1)).truncatedTo(ChronoUnit.SECONDS);
+        rate.setTimestamp(truncatedTimestamp);
+        rate.setProvider(SubscriberEnum.CNN_TCP.toString());
         return rate;
     }
 

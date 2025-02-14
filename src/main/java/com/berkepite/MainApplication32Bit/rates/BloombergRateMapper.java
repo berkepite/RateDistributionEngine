@@ -7,6 +7,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.stereotype.Component;
 
 import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -26,12 +27,12 @@ public class BloombergRateMapper {
         JsonNode json = objectMapper.readTree(data);
 
         RateEnum type = mapEndpointToRateEnum(json.get("name").asText());
-        rate.setRate(type);
+        rate.setRate(type.toString());
         rate.setAsk(json.get("ask").asDouble());
         rate.setBid(json.get("bid").asDouble());
-        Instant timestamp = Instant.parse(json.get("timestamp").asText());
-        rate.setTimestamp(timestamp);
-        rate.setProvider(SubscriberEnum.BLOOMBERG_REST);
+        Instant truncatedTimestamp = Instant.parse(json.get("timestamp").asText()).truncatedTo(ChronoUnit.SECONDS);
+        rate.setTimestamp(truncatedTimestamp);
+        rate.setProvider(SubscriberEnum.BLOOMBERG_REST.toString());
 
         return rate;
     }

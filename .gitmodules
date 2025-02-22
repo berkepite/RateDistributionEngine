@@ -1,0 +1,3 @@
+[submodule "vendor/decimal.js"]
+	path = vendor/decimal.js
+	url = https://github.com/MikeMcl/decimal.js.git

@@ -8,6 +8,8 @@ import java.util.List;
 public class CoordinatorConfig {
     private List<SubscriberBindingConfig> subscriberBindingConfigs;
     private List<RateEnum> rates;
+    private String rateCalculationStrategy;
+    private String rateCalculationSourcePath;
 
     public List<RateEnum> getRates() {
         return rates;
@@ -23,5 +25,21 @@ public class CoordinatorConfig {
 
     public void setSubscriberBindingConfigs(List<SubscriberBindingConfig> subscriberBindingConfigs) {
         this.subscriberBindingConfigs = subscriberBindingConfigs;
+    }
+
+    public String getRateCalculationStrategy() {
+        return rateCalculationStrategy;
+    }
+
+    public void setRateCalculationStrategy(String rateCalculationStrategy) {
+        this.rateCalculationStrategy = rateCalculationStrategy;
+    }
+
+    public String getRateCalculationSourcePath() {
+        return rateCalculationSourcePath;
+    }
+
+    public void setRateCalculationSourcePath(String rateCalculationSourcePath) {
+        this.rateCalculationSourcePath = rateCalculationSourcePath;
     }
 }

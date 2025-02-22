@@ -12,7 +12,7 @@ import java.util.List;
 @Component
 public class CNNRateMapper {
 
-    public RateEntity mapRate(String data, RateEntity rate) throws Exception {
+    public RawRate mapRate(String data, RawRate rate) throws Exception {
         List<String> fields = Arrays.stream(data.split("\\|")).toList();
 
         List<String> nameField = Arrays.stream(fields.getFirst().split("=")).toList();
@@ -22,7 +22,7 @@ public class CNNRateMapper {
 
         RateEnum type = mapEndpointToRateEnum(nameField.get(1));
 
-        rate.setRate(type.toString());
+        rate.setType(type.toString());
         rate.setAsk(Double.parseDouble(askField.get(1)));
         rate.setBid(Double.parseDouble(bidField.get(1)));
         Instant truncatedTimestamp = Instant.parse(timestampField.get(1)).truncatedTo(ChronoUnit.SECONDS);

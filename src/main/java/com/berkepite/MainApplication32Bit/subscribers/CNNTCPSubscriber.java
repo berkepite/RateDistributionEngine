@@ -137,9 +137,9 @@ public class CNNTCPSubscriber implements ISubscriber {
     }
 
     private void handleResponses(final String data) {
-        RateEntity rate;
+        RawRate rate;
         try {
-            rate = rateFactory.createRate(SubscriberEnum.CNN_TCP, data);
+            rate = rateFactory.createRateFromData(SubscriberEnum.CNN_TCP, data);
             coordinator.onRateUpdate(this, rate);
         } catch (Exception e) {
             coordinator.onRateError(this, new RateStatus(data, e));

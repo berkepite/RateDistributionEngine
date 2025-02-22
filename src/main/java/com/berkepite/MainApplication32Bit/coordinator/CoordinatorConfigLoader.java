@@ -1,7 +1,5 @@
 package com.berkepite.MainApplication32Bit.coordinator;
 
-import com.berkepite.MainApplication32Bit.rates.RateEnum;
-import com.berkepite.MainApplication32Bit.ConfigMapper;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.springframework.beans.factory.annotation.Value;
@@ -13,13 +11,13 @@ import java.util.Properties;
 
 @Component
 public class CoordinatorConfigLoader {
-    @Value("${coordinator.config-name}")
+    @Value("${app.coordinator-config-name}")
     private String configName;
-    private final ConfigMapper configMapper;
+    private final CoordinatorConfigMapper coordinatorConfigMapper;
     private final Logger LOGGER = LogManager.getLogger(CoordinatorConfigLoader.class);
 
-    public CoordinatorConfigLoader(ConfigMapper configMapper) {
-        this.configMapper = configMapper;
+    public CoordinatorConfigLoader(CoordinatorConfigMapper coordinatorConfigMapper) {
+        this.coordinatorConfigMapper = coordinatorConfigMapper;
     }
 
     private Properties loadProperties() {
@@ -41,8 +39,10 @@ public class CoordinatorConfigLoader {
         CoordinatorConfig coordinatorConfig = new CoordinatorConfig();
 
         try {
-            coordinatorConfig.setSubscriberBindingConfigs(configMapper.mapSubscriberBindingConfigs(properties));
-            coordinatorConfig.setRates(configMapper.mapCoordinatorRates(properties));
+            coordinatorConfig.setSubscriberBindingConfigs(coordinatorConfigMapper.mapSubscriberBindingConfigs(properties));
+            coordinatorConfig.setRates(coordinatorConfigMapper.mapCoordinatorRates(properties));
+            coordinatorConfig.setRateCalculationStrategy(coordinatorConfigMapper.mapCoordinatorRateCalculationStrategy(properties));
+            coordinatorConfig.setRateCalculationSourcePath(coordinatorConfigMapper.mapCoordinatorRateCalculationSourcePath(properties));
         } catch (NullPointerException e) {
             LOGGER.error("Could not map coordinator configs from {}", configName, e);
             throw new RuntimeException();

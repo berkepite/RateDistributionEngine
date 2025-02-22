@@ -21,13 +21,13 @@ public class BloombergRateMapper {
         return endpoints;
     }
 
-    public RateEntity mapRate(String data, RateEntity rate) throws JsonProcessingException {
+    public RawRate mapRate(String data, RawRate rate) throws JsonProcessingException {
 
         ObjectMapper objectMapper = new ObjectMapper();
         JsonNode json = objectMapper.readTree(data);
 
         RateEnum type = mapEndpointToRateEnum(json.get("name").asText());
-        rate.setRate(type.toString());
+        rate.setType(type.toString());
         rate.setAsk(json.get("ask").asDouble());
         rate.setBid(json.get("bid").asDouble());
         Instant truncatedTimestamp = Instant.parse(json.get("timestamp").asText()).truncatedTo(ChronoUnit.SECONDS);

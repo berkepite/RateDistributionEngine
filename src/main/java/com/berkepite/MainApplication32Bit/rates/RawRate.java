@@ -1,39 +1,26 @@
 package com.berkepite.MainApplication32Bit.rates;
 
-import jakarta.persistence.*;
-
 import java.io.Serial;
 import java.io.Serializable;
 import java.time.Instant;
 
-@Entity
-@Table(name = "rates")
-public class RateEntity implements Serializable {
+public class RawRate implements Serializable {
     @Serial
     private static final long serialVersionUID = 1L;
-    
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
 
     private String provider;
-    private String rate;
+    private String type;
     private double bid;
     private double ask;
-    @Column(columnDefinition = "TIMESTAMP WITHOUT TIME ZONE")
     private Instant timestamp;
 
     @Override
     public String toString() {
-        return "Rate [type=" + rate + "," +
+        return "RawRate [type=" + type + "," +
                 " provider=" + provider + "," +
                 " bid=" + bid + "," +
                 " ask=" + ask + "," +
                 " timestamp=" + timestamp.toString() + "]";
-    }
-
-    public Long getId() {
-        return id;
     }
 
     public String getProvider() {
@@ -44,12 +31,12 @@ public class RateEntity implements Serializable {
         this.provider = provider;
     }
 
-    public String getRate() {
-        return rate;
+    public String getType() {
+        return type;
     }
 
-    public void setRate(String currencyPair) {
-        this.rate = currencyPair;
+    public void setType(String currencyPair) {
+        this.type = currencyPair;
     }
 
     public double getBid() {
@@ -75,4 +62,5 @@ public class RateEntity implements Serializable {
     public void setTimestamp(Instant timestamp) {
         this.timestamp = timestamp;
     }
+
 }

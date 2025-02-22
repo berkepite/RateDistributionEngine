@@ -16,3 +16,5 @@ coordinator:
       classPath: com.berkepite.MainApplication32Bit.subscribers
       className: Hab..
   rates: { USD_TRY, USD_EUR, USD_GBP }
+  rateCalculationStrategy: Javascript
+  rateCalculationSourcePath: rate_calculators/javascript.mjs

@@ -1,6 +1,6 @@
 package com.berkepite.MainApplication32Bit.coordinator;
 
-import com.berkepite.MainApplication32Bit.rates.RateEntity;
+import com.berkepite.MainApplication32Bit.rates.RawRate;
 import com.berkepite.MainApplication32Bit.status.ConnectionStatus;
 import com.berkepite.MainApplication32Bit.rates.RateEnum;
 import com.berkepite.MainApplication32Bit.status.RateStatus;
@@ -17,7 +17,7 @@ public interface ICoordinator {
 
     void onRateAvailable(ISubscriber subscriber, RateEnum rate);
 
-    void onRateUpdate(ISubscriber subscriber, RateEntity rate);
+    void onRateUpdate(ISubscriber subscriber, RawRate rate);
 
     void onRateError(ISubscriber subscriber, RateStatus status);
 

@@ -1,4 +1,4 @@
-package com.berkepite.MainApplication32Bit;
+package com.berkepite.MainApplication32Bit.coordinator;
 
 import com.berkepite.MainApplication32Bit.rates.RateEnum;
 import com.berkepite.MainApplication32Bit.subscribers.*;
@@ -11,8 +11,8 @@ import java.util.List;
 import java.util.Properties;
 
 @Component
-public class ConfigMapper {
-    private final Logger LOGGER = LogManager.getLogger(ConfigMapper.class);
+public class CoordinatorConfigMapper {
+    private final Logger LOGGER = LogManager.getLogger(CoordinatorConfigMapper.class);
 
     public List<SubscriberBindingConfig> mapSubscriberBindingConfigs(Properties properties) throws NullPointerException {
         if (properties == null)
@@ -54,5 +54,25 @@ public class ConfigMapper {
         LOGGER.debug("Mapped rates: {}", rates);
 
         return rates;
+    }
+
+    public String mapCoordinatorRateCalculationStrategy(Properties properties) throws NullPointerException {
+        if (properties == null)
+            throw new NullPointerException();
+
+        String strategy = properties.getProperty("coordinator.rateCalculationStrategy");
+
+        LOGGER.debug("Mapped rate calculation strategy: {}", strategy);
+        return strategy;
+    }
+
+    public String mapCoordinatorRateCalculationSourcePath(Properties properties) throws NullPointerException {
+        if (properties == null)
+            throw new NullPointerException();
+
+        String path = properties.getProperty("coordinator.rateCalculationSourcePath");
+
+        LOGGER.debug("Mapped rate calculation source path: {}", path);
+        return path;
     }
 }

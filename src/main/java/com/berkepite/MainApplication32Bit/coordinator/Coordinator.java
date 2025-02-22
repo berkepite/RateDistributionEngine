@@ -1,6 +1,8 @@
 package com.berkepite.MainApplication32Bit.coordinator;
 
-import com.berkepite.MainApplication32Bit.rates.RateEntity;
+import com.berkepite.MainApplication32Bit.calculators.CalculatorFactory;
+import com.berkepite.MainApplication32Bit.calculators.IRateCalculator;
+import com.berkepite.MainApplication32Bit.rates.RawRate;
 import com.berkepite.MainApplication32Bit.rates.RateService;
 import com.berkepite.MainApplication32Bit.status.ConnectionStatus;
 import com.berkepite.MainApplication32Bit.rates.RateEnum;
@@ -22,7 +24,9 @@ public class Coordinator implements CommandLineRunner, ICoordinator {
 
     private final Logger LOGGER = LogManager.getLogger(Coordinator.class);
 
+    private IRateCalculator rateCalculator;
     private CoordinatorConfig coordinatorConfig;
+    private final CalculatorFactory calculatorFactory;
     private final RateService rateService;
     private final SubscriberLoader subscriberLoader;
     private final CoordinatorConfigLoader coordinatorConfigLoader;
@@ -31,11 +35,12 @@ public class Coordinator implements CommandLineRunner, ICoordinator {
     private List<ISubscriber> subscribers;
 
     @Autowired
-    public Coordinator(RateService rateService, CoordinatorConfigLoader coordinatorConfigLoader, SubscriberLoader subscriberLoader, @Qualifier("coordinatorExecutor") ThreadPoolTaskExecutor executorService) {
+    public Coordinator(CalculatorFactory calculatorFactory, RateService rateService, CoordinatorConfigLoader coordinatorConfigLoader, SubscriberLoader subscriberLoader, @Qualifier("coordinatorExecutor") ThreadPoolTaskExecutor executorService) {
         this.coordinatorConfigLoader = coordinatorConfigLoader;
         this.subscriberLoader = subscriberLoader;
         this.executorService = executorService;
         this.rateService = rateService;
+        this.calculatorFactory = calculatorFactory;
     }
 
     @PostConstruct
@@ -56,14 +61,23 @@ public class Coordinator implements CommandLineRunner, ICoordinator {
     @Override
     public void run(String... args) {
         bindSubscribers();
+        bindCalculator();
 
         for (ISubscriber subscriber : subscribers) {
             executorService.execute(subscriber::connect);
         }
+
     }
 
     private void bindSubscribers() {
         loadSubscriberClasses(coordinatorConfig.getSubscriberBindingConfigs());
+    }
+
+    private void bindCalculator() {
+        String strategy = coordinatorConfig.getRateCalculationStrategy();
+        String sourcePath = coordinatorConfig.getRateCalculationSourcePath();
+
+        rateCalculator = calculatorFactory.getCalculator(strategy, sourcePath);
     }
 
     private void loadSubscriberClasses(List<SubscriberBindingConfig> subscriberBindingConfigs) {
@@ -116,10 +130,12 @@ public class Coordinator implements CommandLineRunner, ICoordinator {
     }
 
     @Override
-    public void onRateUpdate(ISubscriber subscriber, RateEntity rate) {
+    public void onRateUpdate(ISubscriber subscriber, RawRate rate) {
         LOGGER.info("({}) rate received {}", subscriber.getConfig().getName(), rate.toString());
 
-        rateService.saveRate(rate);
+        executorService.execute(() -> {
+            rateService.manageRawRate(rate);
+        });
     }
 
     @Override

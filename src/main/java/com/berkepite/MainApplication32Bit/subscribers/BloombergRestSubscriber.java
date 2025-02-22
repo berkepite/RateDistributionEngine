@@ -2,7 +2,7 @@ package com.berkepite.MainApplication32Bit.subscribers;
 
 import com.berkepite.MainApplication32Bit.coordinator.Coordinator;
 import com.berkepite.MainApplication32Bit.rates.BloombergRateMapper;
-import com.berkepite.MainApplication32Bit.rates.RateEntity;
+import com.berkepite.MainApplication32Bit.rates.RawRate;
 import com.berkepite.MainApplication32Bit.rates.RateFactory;
 import com.berkepite.MainApplication32Bit.status.ConnectionStatus;
 import com.berkepite.MainApplication32Bit.coordinator.ICoordinator;
@@ -141,7 +141,7 @@ public class BloombergRestSubscriber implements ISubscriber {
             try {
                 HttpResponse<String> res = client.send(req, HttpResponse.BodyHandlers.ofString());
                 try {
-                    RateEntity rate = rateFactory.createRate(SubscriberEnum.BLOOMBERG_REST, res.body());
+                    RawRate rate = rateFactory.createRateFromData(SubscriberEnum.BLOOMBERG_REST, res.body());
                     coordinator.onRateUpdate(this, rate);
 
                 } catch (Exception e) {

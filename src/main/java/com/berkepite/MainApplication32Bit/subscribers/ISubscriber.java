@@ -2,7 +2,7 @@ package com.berkepite.MainApplication32Bit.subscribers;
 
 
 import com.berkepite.MainApplication32Bit.coordinator.ICoordinator;
-import com.berkepite.MainApplication32Bit.rates.RateEnum;
+import com.berkepite.MainApplication32Bit.rates.RawRateEnum;
 
 import java.util.List;
 
@@ -16,8 +16,8 @@ public interface ISubscriber {
 
     void disConnect();
 
-    void subscribe(List<RateEnum> rates);
+    void subscribe(List<RawRateEnum> rates);
 
-    void unSubscribe(List<RateEnum> rates);
+    void unSubscribe(List<RawRateEnum> rates);
 
 }

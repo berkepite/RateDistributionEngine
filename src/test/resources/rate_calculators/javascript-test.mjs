@@ -1,7 +1,7 @@
 import {Decimal} from '../../../../vendor/decimal.js/decimal.mjs';
 
-export function calculateMean(bids, asks) {
-    const [bid_mean, ask_mean] = _calculateMeans(bids, asks);
+export function calculateMeansOfRawRates(bids, asks) {
+    const [bid_mean, ask_mean] = calculateMeans(bids, asks);
 
     return [bid_mean.toNumber(), ask_mean.toNumber()];
 }
@@ -21,29 +21,41 @@ export function hasAtLeastOnePercentDiff(rate1_bid, rate1_ask, rate2_bid, rate2_
 }
 
 export function calculateUSDMID(bids, asks) {
-    const [bid_mean, ask_mean] = _calculateMeans(bids, asks);
+    const [bid_mean, ask_mean] = calculateMeans(bids, asks);
 
     const usdmid = bid_mean.plus(ask_mean).dividedBy('2');
 
     return usdmid.toNumber();
 }
 
-function _calculateMeans(bids, asks) {
-    let bid_sum = new Decimal(0);
+export function calculateMean(numbers) {
+    let sum = new Decimal(0);
 
-    for (const bid of bids) {
-        bid_sum = bid_sum.plus(bid.toString());
+    for (const num of numbers) {
+        sum = sum.plus(new Decimal(num.toString()));
     }
 
-    const bid_mean = new Decimal(bid_sum.dividedBy(bids.length));
-
-    let ask_sum = new Decimal(0);
-
-    for (const ask of asks) {
-        ask_sum = ask_sum.plus(ask.toString());
-    }
-
-    const ask_mean = new Decimal(ask_sum.dividedBy(asks.length));
-
-    return [bid_mean, ask_mean]
+    return sum.dividedBy(numbers.length);
 }
+
+export function calculateForType(usdmid, bids, asks) {
+    const [bid_mean, ask_mean] = calculateMeans(bids, asks);
+
+    const usdmid_dec = new Decimal(usdmid.toString());
+
+    return [bid_mean.mul(usdmid_dec).toNumber(), ask_mean.mul(usdmid_dec).toNumber()];
+}
+
+export function calculateForUSD_TRY(bids, asks) {
+    const [bid_mean, ask_mean] = calculateMeans(bids, asks);
+    return [bid_mean.toNumber(), ask_mean.toNumber()];
+}
+
+function calculateMeans(bids, asks) {
+    const bid_mean = calculateMean(bids);
+    const ask_mean = calculateMean(asks);
+
+    return [bid_mean, ask_mean];
+}
+
+

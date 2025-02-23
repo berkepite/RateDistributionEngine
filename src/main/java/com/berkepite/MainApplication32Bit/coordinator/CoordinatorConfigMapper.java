@@ -1,6 +1,6 @@
 package com.berkepite.MainApplication32Bit.coordinator;
 
-import com.berkepite.MainApplication32Bit.rates.RateEnum;
+import com.berkepite.MainApplication32Bit.rates.RawRateEnum;
 import com.berkepite.MainApplication32Bit.subscribers.*;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -40,15 +40,15 @@ public class CoordinatorConfigMapper {
         return subscriberBindingConfigs;
     }
 
-    public List<RateEnum> mapCoordinatorRates(Properties properties) throws NullPointerException {
+    public List<RawRateEnum> mapCoordinatorRates(Properties properties) throws NullPointerException {
         if (properties == null)
             throw new NullPointerException();
 
-        List<RateEnum> rates = new ArrayList<>();
+        List<RawRateEnum> rates = new ArrayList<>();
 
         properties.keys().asIterator().forEachRemaining(key -> {
             if (key.toString().contains("coordinator.rates"))
-                rates.add(RateEnum.valueOf(key.toString().substring("coordinator.rates".length() + 1)));
+                rates.add(RawRateEnum.valueOf(key.toString().substring("coordinator.rates".length() + 1)));
         });
 
         LOGGER.debug("Mapped rates: {}", rates);

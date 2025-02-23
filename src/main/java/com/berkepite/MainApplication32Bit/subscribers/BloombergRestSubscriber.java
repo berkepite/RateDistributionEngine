@@ -6,7 +6,7 @@ import com.berkepite.MainApplication32Bit.rates.RawRate;
 import com.berkepite.MainApplication32Bit.rates.RateFactory;
 import com.berkepite.MainApplication32Bit.status.ConnectionStatus;
 import com.berkepite.MainApplication32Bit.coordinator.ICoordinator;
-import com.berkepite.MainApplication32Bit.rates.RateEnum;
+import com.berkepite.MainApplication32Bit.rates.RawRateEnum;
 import com.berkepite.MainApplication32Bit.status.RateStatus;
 import jakarta.annotation.PostConstruct;
 import org.apache.logging.log4j.LogManager;
@@ -81,8 +81,8 @@ public class BloombergRestSubscriber implements ISubscriber {
     }
 
     @Override
-    public void subscribe(List<RateEnum> rates) {
-        List<RateEnum> ratesToSubscribe = new ArrayList<>(rates);
+    public void subscribe(List<RawRateEnum> rates) {
+        List<RawRateEnum> ratesToSubscribe = new ArrayList<>(rates);
         ratesToSubscribe.addAll(config.getIncludeRates());
         ratesToSubscribe.removeAll(config.getExcludeRates());
 
@@ -165,7 +165,7 @@ public class BloombergRestSubscriber implements ISubscriber {
     }
 
     @Override
-    public void unSubscribe(List<RateEnum> rates) {
+    public void unSubscribe(List<RawRateEnum> rates) {
 
     }
 

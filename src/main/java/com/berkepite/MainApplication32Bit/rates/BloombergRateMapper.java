@@ -14,7 +14,7 @@ import java.util.List;
 @Component
 public class BloombergRateMapper {
 
-    public List<String> mapRateEnumToEndpoints(List<RateEnum> rates) {
+    public List<String> mapRateEnumToEndpoints(List<RawRateEnum> rates) {
         List<String> endpoints = new ArrayList<>();
         rates.forEach(r -> endpoints.add(mapRateEnumToEndpoint(r)));
 
@@ -26,7 +26,7 @@ public class BloombergRateMapper {
         ObjectMapper objectMapper = new ObjectMapper();
         JsonNode json = objectMapper.readTree(data);
 
-        RateEnum type = mapEndpointToRateEnum(json.get("name").asText());
+        RawRateEnum type = mapEndpointToRateEnum(json.get("name").asText());
         rate.setType(type.toString());
         rate.setAsk(json.get("ask").asDouble());
         rate.setBid(json.get("bid").asDouble());
@@ -37,16 +37,16 @@ public class BloombergRateMapper {
         return rate;
     }
 
-    public String mapRateEnumToEndpoint(RateEnum rate) {
+    public String mapRateEnumToEndpoint(RawRateEnum rate) {
         String endpoint;
         endpoint = rate.toString().replace("_", "");
 
         return endpoint;
     }
 
-    public RateEnum mapEndpointToRateEnum(String rateStr) {
-        RateEnum rate;
-        rate = RateEnum.valueOf(rateStr.substring(0, 3) + "_" + rateStr.substring(3));
+    public RawRateEnum mapEndpointToRateEnum(String rateStr) {
+        RawRateEnum rate;
+        rate = RawRateEnum.valueOf(rateStr.substring(0, 3) + "_" + rateStr.substring(3));
 
         return rate;
     }

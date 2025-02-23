@@ -1,6 +1,6 @@
 package com.berkepite.MainApplication32Bit.subscribers;
 
-import com.berkepite.MainApplication32Bit.rates.RateEnum;
+import com.berkepite.MainApplication32Bit.rates.RawRateEnum;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.PropertySource;
@@ -20,8 +20,8 @@ public class BloombergRestConfig implements ISubscriberConfig {
     private String password;
     private Integer requestInterval;
     private Integer requestRetryLimit;
-    private List<RateEnum> includeRates;
-    private List<RateEnum> excludeRates;
+    private List<RawRateEnum> includeRates;
+    private List<RawRateEnum> excludeRates;
 
     public void setRequestInterval(Integer requestInterval) {
         this.requestInterval = requestInterval;
@@ -75,7 +75,7 @@ public class BloombergRestConfig implements ISubscriberConfig {
     }
 
     @Override
-    public List<RateEnum> getIncludeRates() {
+    public List<RawRateEnum> getIncludeRates() {
         if (null == includeRates) {
             return List.of();
         }
@@ -83,7 +83,7 @@ public class BloombergRestConfig implements ISubscriberConfig {
     }
 
     @Override
-    public List<RateEnum> getExcludeRates() {
+    public List<RawRateEnum> getExcludeRates() {
         if (null == excludeRates) {
             return List.of();
         }
@@ -126,12 +126,12 @@ public class BloombergRestConfig implements ISubscriberConfig {
     }
 
     @Override
-    public void setIncludeRates(List<RateEnum> includeRates) {
+    public void setIncludeRates(List<RawRateEnum> includeRates) {
         this.includeRates = includeRates;
     }
 
     @Override
-    public void setExcludeRates(List<RateEnum> excludeRates) {
+    public void setExcludeRates(List<RawRateEnum> excludeRates) {
         this.excludeRates = excludeRates;
     }
 

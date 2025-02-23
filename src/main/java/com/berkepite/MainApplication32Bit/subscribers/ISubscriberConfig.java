@@ -1,6 +1,6 @@
 package com.berkepite.MainApplication32Bit.subscribers;
 
-import com.berkepite.MainApplication32Bit.rates.RateEnum;
+import com.berkepite.MainApplication32Bit.rates.RawRateEnum;
 
 import java.util.List;
 
@@ -19,9 +19,9 @@ public interface ISubscriberConfig {
 
     String getPassword();
 
-    List<RateEnum> getIncludeRates();
+    List<RawRateEnum> getIncludeRates();
 
-    List<RateEnum> getExcludeRates();
+    List<RawRateEnum> getExcludeRates();
 
     void setName(String name);
 
@@ -37,8 +37,8 @@ public interface ISubscriberConfig {
 
     void setPassword(String password);
 
-    void setIncludeRates(List<RateEnum> rates);
+    void setIncludeRates(List<RawRateEnum> rates);
 
-    void setExcludeRates(List<RateEnum> rates);
+    void setExcludeRates(List<RawRateEnum> rates);
 
 }

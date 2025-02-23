@@ -1,8 +1,7 @@
 package com.berkepite.MainApplication32Bit.rates;
 
-public enum RateEnum {
+public enum RawRateEnum {
     USD_TRY,
-    USD_EUR,
-    USD_GBP,
-    ALL
+    EUR_USD,
+    GBP_USD,
 }

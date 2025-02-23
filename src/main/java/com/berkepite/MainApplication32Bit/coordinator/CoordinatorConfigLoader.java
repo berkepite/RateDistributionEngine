@@ -41,8 +41,6 @@ public class CoordinatorConfigLoader {
         try {
             coordinatorConfig.setSubscriberBindingConfigs(coordinatorConfigMapper.mapSubscriberBindingConfigs(properties));
             coordinatorConfig.setRates(coordinatorConfigMapper.mapCoordinatorRates(properties));
-            coordinatorConfig.setRateCalculationStrategy(coordinatorConfigMapper.mapCoordinatorRateCalculationStrategy(properties));
-            coordinatorConfig.setRateCalculationSourcePath(coordinatorConfigMapper.mapCoordinatorRateCalculationSourcePath(properties));
         } catch (NullPointerException e) {
             LOGGER.error("Could not map coordinator configs from {}", configName, e);
             throw new RuntimeException();

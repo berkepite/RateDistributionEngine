@@ -94,10 +94,10 @@ public class CNNTCPSubscriber implements ISubscriber {
     }
 
     @Override
-    public void subscribe(List<RateEnum> rates) {
+    public void subscribe(List<RawRateEnum> rates) {
         isListeningForInitialResponses = false;
 
-        List<RateEnum> ratesToSubscribe = new ArrayList<>(rates);
+        List<RawRateEnum> ratesToSubscribe = new ArrayList<>(rates);
         ratesToSubscribe.addAll(config.getIncludeRates());
         ratesToSubscribe.removeAll(config.getExcludeRates());
 
@@ -111,7 +111,7 @@ public class CNNTCPSubscriber implements ISubscriber {
     }
 
     @Override
-    public void unSubscribe(List<RateEnum> rates) {
+    public void unSubscribe(List<RawRateEnum> rates) {
         List<String> endpoints = rateMapper.mapRateEnumToEndpoints(rates);
 
         for (String endpoint : endpoints)

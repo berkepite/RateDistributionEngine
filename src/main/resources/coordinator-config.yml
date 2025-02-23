@@ -10,11 +10,4 @@ coordinator:
       configName: cnn_tcp
       classPath: com.berkepite.MainApplication32Bit.subscribers
       className: CNNTCPSubscriber
-    - name: Haberturk_Rest
-      enabled: false
-      configName: haberturk_rest
-      classPath: com.berkepite.MainApplication32Bit.subscribers
-      className: Hab..
-  rates: { USD_TRY, USD_EUR, USD_GBP }
-  rateCalculationStrategy: Javascript
-  rateCalculationSourcePath: rate_calculators/javascript.mjs
+  rates: { USD_TRY, EUR_USD, GBP_USD }

@@ -70,6 +70,9 @@ public class JavascriptCalculator implements IRateCalculator {
 
     @Override
     public CalculatedRate calculateForType(String type, Double usdmid, Double[] bids, Double[] asks) {
+        if (bids.length == 0 || asks.length == 0) {
+            return null;
+        }
         try (Context context = Context.newBuilder("js")
                 .allowAllAccess(true)
                 .option("js.esm-eval-returns-exports", "true")
@@ -92,6 +95,9 @@ public class JavascriptCalculator implements IRateCalculator {
 
     @Override
     public CalculatedRate calculateForUSD_TRY(Double[] bids, Double[] asks) {
+        if (bids.length == 0 || asks.length == 0) {
+            return null;
+        }
         try (Context context = Context.newBuilder("js")
                 .allowAllAccess(true)
                 .option("js.esm-eval-returns-exports", "true")
@@ -129,6 +135,9 @@ public class JavascriptCalculator implements IRateCalculator {
 
     @Override
     public Double calculateUSDMID(Double[] bids, Double[] asks) {
+        if (bids.length == 0 || asks.length == 0) {
+            return null;
+        }
         try (Context context = Context.newBuilder("js")
                 .allowAllAccess(true)
                 .option("js.esm-eval-returns-exports", "true")

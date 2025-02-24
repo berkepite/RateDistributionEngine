@@ -20,7 +20,7 @@ public class RawRateMappersUnitTest {
     public void shouldNotThrowWhenCorrectData() {
         Assertions.assertThatCode(() -> bloombergRateMapper.mapRate("{\"name\":\"USDTRY\",\"bid\":35.58865287000356,\"ask\":36.593605245433096,\"timestamp\":\"2025-02-12T17:56:03.341276687Z\"}", new RawRate()))
                 .doesNotThrowAnyException();
-        Assertions.assertThatCode(() -> cnnRateMapper.mapRate("name=USDGBP|bid=0.794749723591663|ask=0.8345469814393971|timestamp=2025-02-11T21:17:35.845273291Z", new RawRate()))
+        Assertions.assertThatCode(() -> cnnRateMapper.mapRate("name=GBPUSD|bid=0.794749723591663|ask=0.8345469814393971|timestamp=2025-02-11T21:17:35.845273291Z", new RawRate()))
                 .doesNotThrowAnyException();
     }
 

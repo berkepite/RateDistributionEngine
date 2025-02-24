@@ -3,11 +3,11 @@ package com.berkepite.MainApplication32Bit.rates;
 import java.util.List;
 
 public interface IRateCacheService {
-    CalculatedRate getRate(CalculatedRate rate);
+    CalculatedRate getCalcRate(CalculatedRate rate);
 
     RawRate getRawRate(RawRate rate);
 
-    CalculatedRate saveRate(CalculatedRate rate);
+    CalculatedRate saveCalcRate(CalculatedRate rate);
 
     Double saveUSDMID(Double value);
 

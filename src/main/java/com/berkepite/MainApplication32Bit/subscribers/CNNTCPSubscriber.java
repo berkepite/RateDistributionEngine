@@ -45,12 +45,13 @@ public class CNNTCPSubscriber implements ISubscriber {
         Runtime.getRuntime().addShutdownHook(new Thread(() -> {
             try {
                 socket.shutdownInput();
-            } catch (IOException e) {
-                LOGGER.error("UNEXPECTED ERROR WHILE CLOSING DOWN SOCKET INPUT", e);
+            } catch (Exception e) {
+                LOGGER.warn("Socket is probably null : {}", e.getMessage());
             }
+            executorService.shutdown();
+
             isListeningForRates = false;
             isListeningForInitialResponses = false;
-            executorService.shutdown();
 
             LOGGER.warn("Subscriber stopped. ({})", config.getName());
         }, "shutdown-hook-" + config.getName()));

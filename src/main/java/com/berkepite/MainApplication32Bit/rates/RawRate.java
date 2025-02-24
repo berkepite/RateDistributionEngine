@@ -20,7 +20,7 @@ public class RawRate implements Serializable {
                 " provider=" + provider + "," +
                 " bid=" + bid + "," +
                 " ask=" + ask + "," +
-                " timestamp=" + timestamp.toString() + "]";
+                " timestamp=" + timestamp + "]";
     }
 
     public String getProvider() {

@@ -5,7 +5,6 @@ import com.berkepite.MainApplication32Bit.calculators.IRateCalculator;
 import jakarta.annotation.PostConstruct;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
@@ -26,7 +25,7 @@ public class RateService {
     @Value("${app.rate-calculation-source-path}")
     private String rateCalculationSourcePath;
 
-    public RateService(@Qualifier("rateCacheServiceRedisAPI") IRateCacheService rateCacheService, CalculatorFactory calculatorFactory) {
+    public RateService(IRateCacheService rateCacheService, CalculatorFactory calculatorFactory) {
         this.rateCacheService = rateCacheService;
         this.calculatorFactory = calculatorFactory;
     }
@@ -76,21 +75,23 @@ public class RateService {
 
         switch (type) {
             case "USD_TRY" -> {
-                calcRate = rateCalculator.calculateForUSD_TRY(bids, asks);
-                rateCacheService.saveRate(calcRate);
-                //save to database
+                if (asks.length != 0 && bids.length != 0) {
+                    calcRate = rateCalculator.calculateForUSD_TRY(bids, asks);
+                    rateCacheService.saveCalcRate(calcRate);
+                    //save to database
+                }
             }
             case "EUR_USD" -> {
-                if (usdmid != null) {
+                if (usdmid != null && asks.length != 0 && bids.length != 0) {
                     calcRate = rateCalculator.calculateForType("EUR_TRY", usdmid, bids, asks);
-                    rateCacheService.saveRate(calcRate);
+                    rateCacheService.saveCalcRate(calcRate);
                     //save to database
                 }
             }
             case "GBP_USD" -> {
-                if (usdmid != null) {
+                if (usdmid != null && asks.length != 0 && bids.length != 0) {
                     calcRate = rateCalculator.calculateForType("GBP_TRY", usdmid, bids, asks);
-                    rateCacheService.saveRate(calcRate);
+                    rateCacheService.saveCalcRate(calcRate);
                     //save to database
                 }
             }
@@ -109,7 +110,10 @@ public class RateService {
 
         Double usdmid = rateCalculator.calculateUSDMID(bids, asks);
         LOGGER.info("usdmid: {}", usdmid);
-        rateCacheService.saveUSDMID(usdmid);
+
+        if (usdmid != null) {
+            rateCacheService.saveUSDMID(usdmid);
+        }
     }
 
     private List<Double[]> getBidsAndAsks(List<RawRate> rates) {

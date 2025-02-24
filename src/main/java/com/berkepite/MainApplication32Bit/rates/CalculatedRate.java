@@ -18,7 +18,7 @@ public class CalculatedRate implements Serializable {
         return "CalculatedRate [type=" + type + "," +
                 " bid=" + bid + "," +
                 " ask=" + ask + "," +
-                " timestamp=" + timestamp.toString() + "]";
+                " timestamp=" + timestamp + "]";
     }
 
     public String getType() {

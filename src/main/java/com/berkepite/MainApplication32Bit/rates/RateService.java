@@ -46,21 +46,41 @@ public class RateService {
         RawRate meanRawRate = rateCalculator.calculateMeansOfRawRates(incomingRate, bids, asks);
 
         if (!rateCalculator.hasAtLeastOnePercentDiff(meanRawRate.getBid(), meanRawRate.getAsk(), incomingRate.getBid(), incomingRate.getAsk())) {
-            LOGGER.info("has one p diff: {}", incomingRate.getType());
+            LOGGER.info("does not have one p diff: {}", incomingRate.getType());
             rateCacheService.saveRawRate(incomingRate);
 
             if (incomingRate.getType().equals(RawRateEnum.USD_TRY.toString())) {
                 calculateAndSaveUSDMID();
+                calculateAndSaveForUSD_TRY();
 
-                Arrays.stream(RawRateEnum.values()).forEach(
-                        val ->
-                                calculateAndSaveForType(val.toString())
-                );
+                Arrays.stream(RawRateEnum.values())
+                        .filter(val -> !val.toString().equals("USD_TRY"))
+                        .forEach(
+                                val ->
+                                        calculateAndSaveForType(val.toString())
+                        );
 
             } else {
                 calculateAndSaveForType(incomingRate.getType());
             }
         }
+    }
+
+    private void calculateAndSaveForUSD_TRY() {
+        List<RawRate> allRawRates = rateCacheService.getAllRawRatesForType(RawRateEnum.USD_TRY.toString());
+        List<Double[]> values = getBidsAndAsks(allRawRates);
+
+        Double[] bids = values.get(0);
+        Double[] asks = values.get(1);
+
+        if (asks.length != 0 && bids.length != 0) {
+            CalculatedRate calcRate = rateCalculator.calculateForUSD_TRY(bids, asks);
+            rateCacheService.saveCalcRate(calcRate);
+            //save to database
+        } else {
+            LOGGER.debug("Bids and/or asks are empty!\nbids: {} asks: {}", bids, asks);
+        }
+
     }
 
     private void calculateAndSaveForType(String type) {
@@ -71,33 +91,15 @@ public class RateService {
         Double[] bids = values.get(0);
         Double[] asks = values.get(1);
 
-        CalculatedRate calcRate;
+        String calcRateType = mapRawRateTypeToCalcRateType(type);
+        if (calcRateType == null) return;
 
-        switch (type) {
-            case "USD_TRY" -> {
-                if (asks.length != 0 && bids.length != 0) {
-                    calcRate = rateCalculator.calculateForUSD_TRY(bids, asks);
-                    rateCacheService.saveCalcRate(calcRate);
-                    //save to database
-                }
-            }
-            case "EUR_USD" -> {
-                if (usdmid != null && asks.length != 0 && bids.length != 0) {
-                    calcRate = rateCalculator.calculateForType("EUR_TRY", usdmid, bids, asks);
-                    rateCacheService.saveCalcRate(calcRate);
-                    //save to database
-                }
-            }
-            case "GBP_USD" -> {
-                if (usdmid != null && asks.length != 0 && bids.length != 0) {
-                    calcRate = rateCalculator.calculateForType("GBP_TRY", usdmid, bids, asks);
-                    rateCacheService.saveCalcRate(calcRate);
-                    //save to database
-                }
-            }
-            default -> {
-                LOGGER.error("Invalid raw rate type: {}", type);
-            }
+        if (usdmid != null && asks.length != 0 && bids.length != 0) {
+            CalculatedRate calcRate = rateCalculator.calculateForType(calcRateType, usdmid, bids, asks);
+            rateCacheService.saveCalcRate(calcRate);
+            //save to database
+        } else {
+            LOGGER.debug("Bids and/or asks are empty or usdmid is null!\nusdmid: {} bids: {} asks: {}", usdmid, bids, asks);
         }
     }
 
@@ -124,5 +126,21 @@ public class RateService {
         rates.forEach(platformRate -> asks.add(platformRate.getAsk()));
 
         return Arrays.asList(bids.toArray(new Double[0]), asks.toArray(new Double[0]));
+    }
+
+    private String mapRawRateTypeToCalcRateType(String type) {
+        String significantHalf = type.substring(0, 4);
+
+        List<CalculatedRateEnum> list = Arrays.stream(CalculatedRateEnum.values())
+                .filter(val -> val.toString().substring(0, 4).equals(significantHalf))
+                .toList();
+
+        if (list.getFirst() != null) {
+            return list.getFirst().toString();
+        } else {
+            Exception ex = new IllegalArgumentException("Unknown raw rate type: " + type);
+            LOGGER.error(ex);
+            return null;
+        }
     }
 }

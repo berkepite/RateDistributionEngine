@@ -28,16 +28,6 @@ export function calculateUSDMID(bids, asks) {
     return usdmid.toNumber();
 }
 
-export function calculateMean(numbers) {
-    let sum = new Decimal(0);
-
-    for (const num of numbers) {
-        sum = sum.plus(new Decimal(num.toString()));
-    }
-
-    return sum.dividedBy(numbers.length);
-}
-
 export function calculateForType(usdmid, bids, asks) {
     const [bid_mean, ask_mean] = calculateMeans(bids, asks);
 
@@ -58,4 +48,12 @@ function calculateMeans(bids, asks) {
     return [bid_mean, ask_mean];
 }
 
+export function calculateMean(numbers) {
+    let sum = new Decimal(0);
 
+    for (const num of numbers) {
+        sum = sum.plus(new Decimal(num.toString()));
+    }
+
+    return sum.dividedBy(numbers.length);
+}

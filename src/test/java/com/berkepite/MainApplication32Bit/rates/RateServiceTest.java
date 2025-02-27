@@ -39,54 +39,42 @@ public class RateServiceTest {
 
         Assertions.assertThat(cachedRawRate.toString()).isEqualTo(rawRate.toString());
     }
-
+    
     @Test
-    public void shouldManageRawRate_USDTRY_whenRawRatesExist_USDMIDnull() {
-        RawRate rawRateUSDTRY = rateFactory.createRawRate(
-                RawRateEnum.USD_TRY.toString(), "arbitrary", 35.0, 35.0, null
+    public void shouldManageRawRate_nonUSD_TRY_whenRawRatesEmpty() {
+        RawRate rawRate1 = rateFactory.createRawRate(
+                RawRateEnum.EUR_USD.toString(), "arbitrary", 1.0, 2.0, Instant.now()
         );
-        RawRate rawRatetcpEURUSD = rateFactory.createRawRate(
-                RawRateEnum.EUR_USD.toString(), "tcp", 1.0, 2.0, null
-        );
-        RawRate rawRatetcpGBPUSD = rateFactory.createRawRate(
-                RawRateEnum.GBP_USD.toString(), "tcp", 1.0, 2.0, null
+        RawRate rawRate2 = rateFactory.createRawRate(
+                RawRateEnum.GBP_USD.toString(), "arbitrary", 10.0, 20.0, Instant.now()
         );
 
-        rateService.manageRawRate(rawRateUSDTRY);
+        rateService.manageRawRate(rawRate1);
+        rateService.manageRawRate(rawRate2);
 
-        rateCacheService.saveRawRate(rawRatetcpEURUSD);
-        rateCacheService.saveRawRate(rawRatetcpGBPUSD);
+        RawRate cachedRawRate1 = rateCacheService.getRawRate(rawRate1);
+        RawRate cachedRawRate2 = rateCacheService.getRawRate(rawRate2);
 
-        CalculatedRate calcRateEURTRY = rateFactory.createCalcRate(CalculatedRateEnum.EUR_TRY.toString(), 0.0, 0.0, null);
-        CalculatedRate calcRateGBPTRY = rateFactory.createCalcRate(CalculatedRateEnum.GBP_TRY.toString(), 0.0, 0.0, null);
-
-        CalculatedRate cachedEURTRY = rateCacheService.getCalcRate(calcRateEURTRY);
-        CalculatedRate cachedGBPTRY = rateCacheService.getCalcRate(calcRateGBPTRY);
-
-        Assertions.assertThat(cachedEURTRY).isEqualTo(null);
-        Assertions.assertThat(cachedGBPTRY).isEqualTo(null);
+        Assertions.assertThat(cachedRawRate1.toString()).isEqualTo(rawRate1.toString());
+        Assertions.assertThat(cachedRawRate2.toString()).isEqualTo(rawRate2.toString());
     }
 
     @Test
-    public void shouldManageRawRate_USDTRY_whenRawRatesExist_USDMID35() {
-        RawRate rawRateUSDTRY = rateFactory.createRawRate(
-                RawRateEnum.USD_TRY.toString(), "CNN_TCP", 35.0, 35.0, null
+    public void shouldManageRawRate_nonUSD_TRY_whenRawRatesEmpty_USDMID30() {
+        RawRate rawRateEURUSD = rateFactory.createRawRate(
+                RawRateEnum.EUR_USD.toString(), "CNN_TCP", 1.0, 2.0, null
         );
-        RawRate rawRatetcpEURUSD = rateFactory.createRawRate(
-                RawRateEnum.EUR_USD.toString(), "CNN_TCP", 1.0, 4.0, null
-        );
-        RawRate rawRatetcpGBPUSD = rateFactory.createRawRate(
-                RawRateEnum.GBP_USD.toString(), "CNN_TCP", 3.0, 1.5, null
+        RawRate rawRateGBPUSD = rateFactory.createRawRate(
+                RawRateEnum.GBP_USD.toString(), "CNN_TCP", 3.0, 4.0, null
         );
 
-        rateCacheService.saveRawRate(rawRatetcpEURUSD);
-        rateCacheService.saveRawRate(rawRatetcpGBPUSD);
-        rateCacheService.saveUSDMID(35.0);
+        rateCacheService.saveUSDMID(30.0);
 
-        rateService.manageRawRate(rawRateUSDTRY);
+        rateService.manageRawRate(rawRateEURUSD);
+        rateService.manageRawRate(rawRateGBPUSD);
 
-        CalculatedRate calcRateEURTRY = rateFactory.createCalcRate(CalculatedRateEnum.EUR_TRY.toString(), 35.0, 140.0, null);
-        CalculatedRate calcRateGBPTRY = rateFactory.createCalcRate(CalculatedRateEnum.GBP_TRY.toString(), 105.0, 52.5, null);
+        CalculatedRate calcRateEURTRY = rateFactory.createCalcRate(CalculatedRateEnum.EUR_TRY.toString(), 30.0, 60.0, null);
+        CalculatedRate calcRateGBPTRY = rateFactory.createCalcRate(CalculatedRateEnum.GBP_TRY.toString(), 90.0, 120.0, null);
 
         CalculatedRate cachedEURTRY = rateCacheService.getCalcRate(calcRateEURTRY);
         CalculatedRate cachedGBPTRY = rateCacheService.getCalcRate(calcRateGBPTRY);
@@ -97,4 +85,39 @@ public class RateServiceTest {
         Assertions.assertThat(cachedGBPTRY.getAsk()).isEqualTo(calcRateGBPTRY.getAsk());
     }
 
+    @Test
+    public void shouldManageRawRate_nonUSD_TRY_whenRawRatesExist_USDMID10() {
+        // Should not have %1 difference in order to calculate
+
+        RawRate rawRateInCacheEURUSD = rateFactory.createRawRate(
+                RawRateEnum.EUR_USD.toString(), "BLOOMBERG_REST", 1.0, 2.0, null
+        );
+        RawRate rawRateEURUSD = rateFactory.createRawRate(
+                RawRateEnum.EUR_USD.toString(), "CNN_TCP", 1.005, 2.02, null
+        );
+        RawRate rawRateInCacheGBPUSD = rateFactory.createRawRate(
+                RawRateEnum.GBP_USD.toString(), "BLOOMBERG_REST", 3.0, 4.0, null
+        );
+        RawRate rawRateGBPUSD = rateFactory.createRawRate(
+                RawRateEnum.GBP_USD.toString(), "CNN_TCP", 3.01, 4.04, null
+        );
+
+        rateCacheService.saveRawRate(rawRateInCacheEURUSD);
+        rateCacheService.saveRawRate(rawRateInCacheGBPUSD);
+        rateCacheService.saveUSDMID(10.0);
+
+        rateService.manageRawRate(rawRateEURUSD);
+        rateService.manageRawRate(rawRateGBPUSD);
+
+        CalculatedRate calcRateEURTRY = rateFactory.createCalcRate(CalculatedRateEnum.EUR_TRY.toString(), 10.025, 20.1, null);
+        CalculatedRate calcRateGBPTRY = rateFactory.createCalcRate(CalculatedRateEnum.GBP_TRY.toString(), 30.05, 40.2, null);
+
+        CalculatedRate cachedEURTRY = rateCacheService.getCalcRate(calcRateEURTRY);
+        CalculatedRate cachedGBPTRY = rateCacheService.getCalcRate(calcRateGBPTRY);
+
+        Assertions.assertThat(cachedEURTRY.getBid()).isEqualTo(calcRateEURTRY.getBid());
+        Assertions.assertThat(cachedEURTRY.getAsk()).isEqualTo(calcRateEURTRY.getAsk());
+        Assertions.assertThat(cachedGBPTRY.getBid()).isEqualTo(calcRateGBPTRY.getBid());
+        Assertions.assertThat(cachedGBPTRY.getAsk()).isEqualTo(calcRateGBPTRY.getAsk());
+    }
 }

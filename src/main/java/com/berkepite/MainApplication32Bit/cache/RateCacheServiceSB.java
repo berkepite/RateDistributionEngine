@@ -9,23 +9,19 @@ import org.springframework.stereotype.Service;
 
 import java.util.List;
 
+// WIP
+
 @Service
 @Profile({"dev"})
 public class RateCacheServiceSB implements IRateCacheService {
     @Override
-    @Cacheable(value = "rates", key = "'rates:' + #rate.provider.toString() + ':' + #rate.type.toString()")
+    @Cacheable(value = "calc_rates", key = "'rates:' + #rate.type.toString()")
     public CalculatedRate getCalcRate(CalculatedRate rate) {
         return null;
     }
 
     @Override
-    @Cacheable(value = "raw_rates", key = "'rates:' + #rate.provider.toString() + ':' + #rate.type.toString()")
-    public RawRate getRawRate(RawRate rate) {
-        return rate;
-    }
-
-    @Override
-    @CachePut(value = "rates", key = "'rates:' + #rate.provider.toString() + ':' + #rate.type.toString()")
+    @CachePut(value = "calc_rates", key = "'rates:' + #rate.type.toString()")
     public CalculatedRate saveCalcRate(CalculatedRate rate) {
         return rate;
     }
@@ -43,6 +39,12 @@ public class RateCacheServiceSB implements IRateCacheService {
     @Override
     @CachePut(value = "raw_rates", key = "'rates:' + #rate.provider.toString() + ':' + #rate.type.toString()")
     public RawRate saveRawRate(RawRate rate) {
+        return rate;
+    }
+
+    @Override
+    @Cacheable(value = "raw_rates", key = "'rates:' + #rate.provider.toString() + ':' + #rate.type.toString()")
+    public RawRate getRawRate(RawRate rate) {
         return rate;
     }
 

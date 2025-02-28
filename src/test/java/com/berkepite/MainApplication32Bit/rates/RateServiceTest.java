@@ -13,7 +13,6 @@ import org.springframework.test.context.ActiveProfiles;
 import java.time.Instant;
 
 @SpringBootTest
-@ExtendWith(MockitoExtension.class)
 @ActiveProfiles("test")
 public class RateServiceTest {
 
@@ -39,7 +38,7 @@ public class RateServiceTest {
 
         Assertions.assertThat(cachedRawRate.toString()).isEqualTo(rawRate.toString());
     }
-    
+
     @Test
     public void shouldManageRawRate_nonUSD_TRY_whenRawRatesEmpty() {
         RawRate rawRate1 = rateFactory.createRawRate(

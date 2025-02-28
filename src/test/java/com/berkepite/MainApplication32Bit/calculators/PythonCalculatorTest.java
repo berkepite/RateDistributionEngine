@@ -1,17 +1,14 @@
 package com.berkepite.MainApplication32Bit.calculators;
 
 import com.berkepite.MainApplication32Bit.rates.CalculatedRate;
-import com.berkepite.MainApplication32Bit.rates.RateFactory;
 import com.berkepite.MainApplication32Bit.rates.RawRate;
 import org.junit.jupiter.api.Assertions;
-import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ActiveProfiles;
 
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;

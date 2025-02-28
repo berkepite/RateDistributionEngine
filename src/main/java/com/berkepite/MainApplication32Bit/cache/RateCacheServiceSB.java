@@ -1,5 +1,7 @@
-package com.berkepite.MainApplication32Bit.rates;
+package com.berkepite.MainApplication32Bit.cache;
 
+import com.berkepite.MainApplication32Bit.rates.CalculatedRate;
+import com.berkepite.MainApplication32Bit.rates.RawRate;
 import org.springframework.cache.annotation.CachePut;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.context.annotation.Profile;

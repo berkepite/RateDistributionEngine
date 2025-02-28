@@ -1,10 +1,9 @@
 package com.berkepite.MainApplication32Bit.rates;
 
+import com.berkepite.MainApplication32Bit.cache.IRateCacheService;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
 
-import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.test.context.SpringBootTest;

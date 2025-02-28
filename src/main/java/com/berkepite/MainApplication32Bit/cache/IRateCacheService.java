@@ -1,4 +1,7 @@
-package com.berkepite.MainApplication32Bit.rates;
+package com.berkepite.MainApplication32Bit.cache;
+
+import com.berkepite.MainApplication32Bit.rates.CalculatedRate;
+import com.berkepite.MainApplication32Bit.rates.RawRate;
 
 import java.util.List;
 

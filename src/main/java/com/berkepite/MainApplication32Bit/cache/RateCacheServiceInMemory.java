@@ -1,9 +1,9 @@
-package com.berkepite.MainApplication32Bit.rates;
+package com.berkepite.MainApplication32Bit.cache;
 
+import com.berkepite.MainApplication32Bit.rates.CalculatedRate;
+import com.berkepite.MainApplication32Bit.rates.RawRate;
 import com.berkepite.MainApplication32Bit.subscribers.SubscriberEnum;
-import org.springframework.context.annotation.Primary;
 import org.springframework.context.annotation.Profile;
-import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 
 import java.util.*;

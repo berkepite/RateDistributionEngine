@@ -1,4 +1,4 @@
-package com.berkepite.MainApplication32Bit;
+package com.berkepite.MainApplication32Bit.cache;
 
 import java.time.Duration;
 

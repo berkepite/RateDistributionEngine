@@ -1,5 +1,6 @@
 package com.berkepite.MainApplication32Bit.rates;
 
+import com.berkepite.MainApplication32Bit.cache.IRateCacheService;
 import com.berkepite.MainApplication32Bit.calculators.CalculatorFactory;
 import com.berkepite.MainApplication32Bit.calculators.IRateCalculator;
 import jakarta.annotation.PostConstruct;

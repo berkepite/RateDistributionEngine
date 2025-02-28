@@ -1,6 +1,7 @@
 package com.berkepite.MainApplication32Bit.calculators;
 
 import com.berkepite.MainApplication32Bit.rates.CalculatedRate;
+import com.berkepite.MainApplication32Bit.rates.RateFactory;
 import com.berkepite.MainApplication32Bit.rates.RawRate;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
@@ -17,15 +18,15 @@ import java.util.List;
 
 @SpringBootTest
 @ActiveProfiles("test")
-public class JavascriptCalculatorTest {
+public class PythonCalculatorTest {
     @Autowired
     private CalculatorFactory calculatorFactory;
 
-    private JavascriptCalculator javascriptCalculator;
+    private PythonCalculator pythonCalculator;
 
     @BeforeEach
     public void setUp() {
-        javascriptCalculator = (JavascriptCalculator) calculatorFactory.getCalculator("Javascript", "rate_calculators/javascript-test.mjs");
+        pythonCalculator = (PythonCalculator) calculatorFactory.getCalculator("Python", "rate_calculators/python-test.py");
     }
 
     @Test
@@ -33,7 +34,7 @@ public class JavascriptCalculatorTest {
         RawRate rate1 = createRateWithBidAndAsk(1.005, 2.1);
         RawRate rate2 = createRateWithBidAndAsk(1.01, 2);
 
-        Boolean result = javascriptCalculator.hasAtLeastOnePercentDiff(rate1.getBid(), rate1.getAsk(), rate2.getBid(), rate2.getAsk());
+        Boolean result = pythonCalculator.hasAtLeastOnePercentDiff(rate1.getBid(), rate1.getAsk(), rate2.getBid(), rate2.getAsk());
 
         Assertions.assertEquals(true, result);
     }
@@ -49,7 +50,7 @@ public class JavascriptCalculatorTest {
         Double[] bids = values.get(0);
         Double[] asks = values.get(1);
 
-        RawRate rate = javascriptCalculator.calculateMeansOfRawRates(incomingRate, bids, asks);
+        RawRate rate = pythonCalculator.calculateMeansOfRawRates(incomingRate, bids, asks);
 
         Assertions.assertEquals(5, rate.getBid());
         Assertions.assertEquals(4, rate.getAsk());
@@ -66,7 +67,7 @@ public class JavascriptCalculatorTest {
         Double[] bids = values.get(0);
         Double[] asks = values.get(1);
 
-        RawRate rate = javascriptCalculator.calculateMeansOfRawRates(incomingRate, bids, asks);
+        RawRate rate = pythonCalculator.calculateMeansOfRawRates(incomingRate, bids, asks);
 
         Assertions.assertEquals(0.15, rate.getBid());
         Assertions.assertEquals(0.35, rate.getAsk());
@@ -81,7 +82,7 @@ public class JavascriptCalculatorTest {
         Double[] bids = values.get(0);
         Double[] asks = values.get(1);
 
-        RawRate rate = javascriptCalculator.calculateMeansOfRawRates(incomingRate, bids, asks);
+        RawRate rate = pythonCalculator.calculateMeansOfRawRates(incomingRate, bids, asks);
 
         Assertions.assertEquals(0.1, rate.getBid());
         Assertions.assertEquals(0.1, rate.getAsk());
@@ -97,7 +98,7 @@ public class JavascriptCalculatorTest {
         Double[] bids = values.get(0);
         Double[] asks = values.get(1);
 
-        Double usdmid = javascriptCalculator.calculateUSDMID(bids, asks);
+        Double usdmid = pythonCalculator.calculateUSDMID(bids, asks);
 
         Assertions.assertEquals(35.499375, usdmid);
     }
@@ -112,7 +113,7 @@ public class JavascriptCalculatorTest {
         Double[] bids = values.get(0);
         Double[] asks = values.get(1);
 
-        CalculatedRate calcRate = javascriptCalculator.calculateForUSD_TRY(bids, asks);
+        CalculatedRate calcRate = pythonCalculator.calculateForUSD_TRY(bids, asks);
 
         Assertions.assertEquals(1.0335, calcRate.getBid());
         Assertions.assertEquals(1.039, calcRate.getAsk());
@@ -130,7 +131,7 @@ public class JavascriptCalculatorTest {
 
         Double usdmid = 34.85;
 
-        CalculatedRate calcRate = javascriptCalculator.calculateForType("EUR_USD", usdmid, bids, asks);
+        CalculatedRate calcRate = pythonCalculator.calculateForType("EUR_USD", usdmid, bids, asks);
 
         Assertions.assertEquals(36.017475, calcRate.getBid());
         Assertions.assertEquals(36.20915, calcRate.getAsk());

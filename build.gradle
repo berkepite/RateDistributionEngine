@@ -23,14 +23,15 @@ dependencies {
         exclude group: 'ch.qos.logback', module: 'logback-classic'
         exclude group: 'ch.qos.logback', module: 'logback-core'
     }
-    // JAVASCRIPT
+    // JAVASCRIPT & PYTHON
     implementation("org.graalvm.polyglot:polyglot:24.1.2")
     implementation("org.graalvm.polyglot:js:24.1.2")
+    implementation("org.graalvm.polyglot:python:24.1.2")
+    //
 
     implementation 'org.springframework.boot:spring-boot-starter-log4j2'
     implementation('org.springframework.boot:spring-boot-starter-data-redis')
     implementation 'org.springframework.kafka:spring-kafka'
-    implementation 'org.postgresql:postgresql:42.7.2'
     implementation 'com.fasterxml.jackson.core:jackson-databind:2.18.2'
     implementation 'org.springframework.boot:spring-boot-starter-aop:3.4.2'
     implementation 'com.fasterxml.jackson.datatype:jackson-datatype-jsr310:2.18.2'

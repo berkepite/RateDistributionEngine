@@ -15,13 +15,13 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 
-public class JavascriptCalculator implements IRateCalculator {
-    private final RateFactory rateFactory;
+public class PythonCalculator implements IRateCalculator {
     private final String sourcePath;
-    private static final Logger LOGGER = LogManager.getLogger(JavascriptCalculator.class);
+    private final RateFactory rateFactory;
+    private static final Logger LOGGER = LogManager.getLogger(PythonCalculator.class);
     private Source source;
 
-    public JavascriptCalculator(String sourcePath, RateFactory rateFactory) {
+    public PythonCalculator(String sourcePath, RateFactory rateFactory) {
         this.sourcePath = sourcePath;
         this.rateFactory = rateFactory;
         init();
@@ -30,15 +30,11 @@ public class JavascriptCalculator implements IRateCalculator {
     public void init() {
         ClassPathResource resource = new ClassPathResource(sourcePath);
         try {
-            source = Source.newBuilder("js", resource.getFile()).mimeType("application/javascript+module").build();
+            source = Source.newBuilder("python", resource.getFile()).build();
         } catch (IOException e) {
             LOGGER.error(e);
             throw new RuntimeException(e);
         }
-    }
-
-    public String getSourcePath() {
-        return sourcePath;
     }
 
     @Override
@@ -47,13 +43,13 @@ public class JavascriptCalculator implements IRateCalculator {
             return incomingRate;
         }
 
-        try (Context context = Context.newBuilder("js")
+        try (Context context = Context.newBuilder("python")
                 .allowAllAccess(true)
-                .option("js.esm-eval-returns-exports", "true")
                 .build()) {
             Value module = context.eval(source);
 
-            Value calculateMean = module.getMember("calculateMeansOfRawRates");
+            Value calculateMean = module.getMember("calculate_means_of_raw_rates");
+
             Value result = calculateMean.execute(bids, asks);
 
             return rateFactory.createRawRate(incomingRate.getType(),
@@ -69,13 +65,12 @@ public class JavascriptCalculator implements IRateCalculator {
         if (bids.length == 0 || asks.length == 0) {
             return null;
         }
-        try (Context context = Context.newBuilder("js")
+        try (Context context = Context.newBuilder("python")
                 .allowAllAccess(true)
-                .option("js.esm-eval-returns-exports", "true")
                 .build()) {
             Value module = context.eval(source);
 
-            Value calculateForType = module.getMember("calculateForType");
+            Value calculateForType = module.getMember("calculate_for_type");
             Value result = calculateForType.execute(usdmid, bids, asks);
 
             return rateFactory.createCalcRate(type,
@@ -90,13 +85,12 @@ public class JavascriptCalculator implements IRateCalculator {
         if (bids.length == 0 || asks.length == 0) {
             return null;
         }
-        try (Context context = Context.newBuilder("js")
+        try (Context context = Context.newBuilder("python")
                 .allowAllAccess(true)
-                .option("js.esm-eval-returns-exports", "true")
                 .build()) {
             Value module = context.eval(source);
 
-            Value calculateForUSD_TRY = module.getMember("calculateForUSD_TRY");
+            Value calculateForUSD_TRY = module.getMember("calculate_for_usd_try");
             Value result = calculateForUSD_TRY.execute(bids, asks);
 
             return rateFactory.createCalcRate("USD_TRY",
@@ -108,12 +102,11 @@ public class JavascriptCalculator implements IRateCalculator {
 
     @Override
     public boolean hasAtLeastOnePercentDiff(Double bid1, Double ask1, Double bid2, Double ask2) {
-        try (Context context = Context.newBuilder("js")
+        try (Context context = Context.newBuilder("python")
                 .allowAllAccess(true)
-                .option("js.esm-eval-returns-exports", "true")
                 .build()) {
             Value module = context.eval(source);
-            Value hasAtLeastOnePercentDiff = module.getMember("hasAtLeastOnePercentDiff");
+            Value hasAtLeastOnePercentDiff = module.getMember("has_at_least_one_percent_diff");
 
             Value result = hasAtLeastOnePercentDiff.execute(bid1, ask1, bid2, ask2);
 
@@ -126,12 +119,11 @@ public class JavascriptCalculator implements IRateCalculator {
         if (bids.length == 0 || asks.length == 0) {
             return null;
         }
-        try (Context context = Context.newBuilder("js")
+        try (Context context = Context.newBuilder("python")
                 .allowAllAccess(true)
-                .option("js.esm-eval-returns-exports", "true")
                 .build()) {
             Value module = context.eval(source);
-            Value calculateUSDMID = module.getMember("calculateUSDMID");
+            Value calculateUSDMID = module.getMember("calculate_usdmid");
 
             Value result = calculateUSDMID.execute(bids, asks);
 
@@ -141,12 +133,11 @@ public class JavascriptCalculator implements IRateCalculator {
 
     @Override
     public Double calculateMean(List<RawRate> rawRates) {
-        try (Context context = Context.newBuilder("js")
+        try (Context context = Context.newBuilder("python")
                 .allowAllAccess(true)
-                .option("js.esm-eval-returns-exports", "true")
                 .build()) {
             Value module = context.eval(source);
-            Value calculateMeans = module.getMember("calculateMeans");
+            Value calculateMeans = module.getMember("calculate_means");
 
             List<Double> bids = new ArrayList<>();
             List<Double> asks = new ArrayList<>();

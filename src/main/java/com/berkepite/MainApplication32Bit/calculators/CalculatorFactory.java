@@ -1,12 +1,18 @@
 package com.berkepite.MainApplication32Bit.calculators;
 
+import com.berkepite.MainApplication32Bit.rates.RateFactory;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.springframework.stereotype.Component;
+import org.springframework.stereotype.Service;
 
-@Component
+@Service
 public class CalculatorFactory {
-    public final Logger LOGGER = LogManager.getLogger(CalculatorFactory.class);
+    private static final Logger LOGGER = LogManager.getLogger(CalculatorFactory.class);
+    private final RateFactory rateFactory;
+
+    public CalculatorFactory(RateFactory rateFactory) {
+        this.rateFactory = rateFactory;
+    }
 
     public IRateCalculator getCalculator(String strategy, String sourcePath) {
         try {
@@ -16,7 +22,7 @@ public class CalculatorFactory {
                     return getJavascriptCalculator(sourcePath);
                 }
                 case "Python" -> {
-                    return null; // WIP
+                    return getPythonCalculator(sourcePath);
                 }
             }
         } catch (Exception e) {
@@ -28,6 +34,11 @@ public class CalculatorFactory {
 
     private JavascriptCalculator getJavascriptCalculator(String sourcePath) throws Exception {
 
-        return new JavascriptCalculator(sourcePath);
+        return new JavascriptCalculator(sourcePath, rateFactory);
+    }
+
+    private PythonCalculator getPythonCalculator(String sourcePath) throws Exception {
+
+        return new PythonCalculator(sourcePath, rateFactory);
     }
 }

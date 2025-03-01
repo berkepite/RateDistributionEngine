@@ -3,6 +3,8 @@ package com.berkepite.MainApplication32Bit.rates;
 import com.berkepite.MainApplication32Bit.cache.IRateCacheService;
 import com.berkepite.MainApplication32Bit.calculators.CalculatorFactory;
 import com.berkepite.MainApplication32Bit.calculators.IRateCalculator;
+import com.berkepite.MainApplication32Bit.producers.KafkaCalcRateProducer;
+import com.berkepite.MainApplication32Bit.producers.KafkaRawRateProducer;
 import jakarta.annotation.PostConstruct;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -20,15 +22,19 @@ public class RateService {
     private IRateCalculator rateCalculator;
     private final CalculatorFactory calculatorFactory;
     private final IRateCacheService rateCacheService;
+    private final KafkaRawRateProducer kafkaRawRateProducer;
+    private final KafkaCalcRateProducer kafkaCalcRateProducer;
 
     @Value("${app.rate-calculation-strategy}")
     private String rateCalculationStrategy;
     @Value("${app.rate-calculation-source-path}")
     private String rateCalculationSourcePath;
 
-    public RateService(IRateCacheService rateCacheService, CalculatorFactory calculatorFactory) {
+    public RateService(IRateCacheService rateCacheService, CalculatorFactory calculatorFactory, KafkaRawRateProducer kafkaRawRateProducer, KafkaCalcRateProducer kafkaCalcRateProducer) {
         this.rateCacheService = rateCacheService;
         this.calculatorFactory = calculatorFactory;
+        this.kafkaRawRateProducer = kafkaRawRateProducer;
+        this.kafkaCalcRateProducer = kafkaCalcRateProducer;
     }
 
     @PostConstruct
@@ -38,6 +44,7 @@ public class RateService {
 
     public void manageRawRate(RawRate incomingRate) {
         // write to raw database
+        kafkaRawRateProducer.sendRawRate(incomingRate);
         List<RawRate> allRawRatesForType = rateCacheService.getAllRawRatesForType(incomingRate.getType());
 
         List<Double[]> values = getBidsAndAsks(allRawRatesForType);
@@ -47,7 +54,6 @@ public class RateService {
         RawRate meanRawRate = rateCalculator.calculateMeansOfRawRates(incomingRate, bids, asks);
 
         if (!rateCalculator.hasAtLeastOnePercentDiff(meanRawRate.getBid(), meanRawRate.getAsk(), incomingRate.getBid(), incomingRate.getAsk())) {
-            LOGGER.info("does not have one p diff: {}", incomingRate.getType());
             rateCacheService.saveRawRate(incomingRate);
 
             if (incomingRate.getType().equals(RawRateEnum.USD_TRY.toString())) {
@@ -78,6 +84,7 @@ public class RateService {
             CalculatedRate calcRate = rateCalculator.calculateForUSD_TRY(bids, asks);
             rateCacheService.saveCalcRate(calcRate);
             //save to database
+            kafkaCalcRateProducer.sendCalcRate(calcRate);
         } else {
             LOGGER.debug("Bids and/or asks are empty!\nbids: {} asks: {}", bids, asks);
         }
@@ -99,6 +106,7 @@ public class RateService {
             CalculatedRate calcRate = rateCalculator.calculateForType(calcRateType, usdmid, bids, asks);
             rateCacheService.saveCalcRate(calcRate);
             //save to database
+            kafkaCalcRateProducer.sendCalcRate(calcRate);
         } else {
             LOGGER.debug("Bids and/or asks are empty or usdmid is null!\nusdmid: {} bids: {} asks: {}", usdmid, bids, asks);
         }

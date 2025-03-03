@@ -11,6 +11,8 @@ import org.graalvm.polyglot.Value;
 import org.springframework.core.io.ClassPathResource;
 
 import java.io.IOException;
+import java.io.InputStreamReader;
+import java.io.Reader;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
@@ -28,9 +30,11 @@ public class JavascriptCalculator implements IRateCalculator {
     }
 
     public void init() {
-        ClassPathResource resource = new ClassPathResource(sourcePath);
         try {
-            source = Source.newBuilder("js", resource.getFile()).mimeType("application/javascript+module").build();
+            ClassPathResource resource = new ClassPathResource(sourcePath);
+            Reader stream = new InputStreamReader(resource.getInputStream());
+
+            source = Source.newBuilder("js", stream, "jsmod.js").mimeType("application/javascript+module").build();
         } catch (IOException e) {
             LOGGER.error(e);
             throw new RuntimeException(e);

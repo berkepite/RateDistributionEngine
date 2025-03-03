@@ -12,7 +12,7 @@ import java.util.List;
 // WIP
 
 @Service
-@Profile({"dev"})
+@Profile({"debug"})
 public class RateCacheServiceSB implements IRateCacheService {
     @Override
     @Cacheable(value = "calc_rates", key = "'rates:' + #rate.type.toString()")

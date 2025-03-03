@@ -16,7 +16,7 @@ import java.util.stream.Collectors;
 
 @Service
 @Primary
-@Profile({"dev", "prod"})
+@Profile({"debug", "prod"})
 public class RateCacheServiceRedisAPI implements IRateCacheService {
     private final RedisTemplate<String, RawRate> rawRateRedisTemplate;
     private final RedisTemplate<String, CalculatedRate> calculatedRateRedisTemplate;

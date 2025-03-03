@@ -12,7 +12,6 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 
 import java.io.BufferedReader;
-import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.net.Socket;
@@ -78,7 +77,7 @@ public class CNNTCPSubscriber implements ISubscriber {
             writer.println(credentials);
 
             String response;
-            while ((response = reader.readLine()) != null && isListeningForInitialResponses) {
+            while (isListeningForInitialResponses && (response = reader.readLine()) != null) {
 
                 handleInitialResponses(response);
             }

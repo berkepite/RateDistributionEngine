@@ -1,0 +1,13 @@
+coordinator:
+  subscribers:
+    - name: Bloomberg_Rest
+      enabled: true
+      configName: bloomberg_rest-test
+      classPath: com.berkepite.MainApplication32Bit.subscribers
+      className: BloombergRestSubscriber
+    - name: CNN_TCP
+      enabled: true
+      configName: cnn_tcp-test
+      classPath: com.berkepite.MainApplication32Bit.subscribers
+      className: CNNTCPSubscriber
+  rates: { USD_TRY, EUR_USD, GBP_USD }

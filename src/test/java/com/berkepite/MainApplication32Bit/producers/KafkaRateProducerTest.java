@@ -18,6 +18,7 @@ import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.kafka.support.serializer.JsonDeserializer;
 import org.springframework.kafka.test.context.EmbeddedKafka;
 import org.springframework.kafka.test.utils.KafkaTestUtils;
+import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.context.junit.jupiter.SpringExtension;
 
@@ -35,6 +36,7 @@ import static org.assertj.core.api.Assertions.assertThat;
         "app.kafka.calc-rate-topic=calc_rates"
 })
 @EmbeddedKafka(partitions = 1, topics = {"raw_rates", "calc_rates"}, brokerProperties = {"listeners=PLAINTEXT://localhost:9092", "port=9092"})
+@ActiveProfiles("test")
 public class KafkaRateProducerTest {
 
     @Value("${app.kafka.raw-rate-topic}")

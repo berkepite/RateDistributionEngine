@@ -20,6 +20,7 @@ public class BloombergRestConfig implements ISubscriberConfig {
     private String password;
     private Integer requestInterval;
     private Integer requestRetryLimit;
+    private Integer healthRequestRetryLimit;
     private List<RawRateEnum> includeRates;
     private List<RawRateEnum> excludeRates;
 
@@ -31,12 +32,20 @@ public class BloombergRestConfig implements ISubscriberConfig {
         this.requestRetryLimit = requestRetryLimit;
     }
 
+    public void setHealthRequestRetryLimit(Integer healthRequestRetryLimit) {
+        this.healthRequestRetryLimit = healthRequestRetryLimit;
+    }
+
     public Integer getRequestInterval() {
         return requestInterval;
     }
 
     public Integer getRequestRetryLimit() {
         return requestRetryLimit;
+    }
+
+    public Integer getHealthRequestRetryLimit() {
+        return healthRequestRetryLimit;
     }
 
     @Override

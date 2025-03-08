@@ -24,6 +24,11 @@ import java.util.ArrayList;
 import java.util.Base64;
 import java.util.List;
 
+/**
+ * The BloombergRestSubscriber connects to the Bloomberg REST API to subscribe to rates
+ * and handle the communication with the server.
+ * It manages connection retries, rate subscriptions, and rate updates.
+ */
 public class BloombergRestSubscriber implements ISubscriber {
     private final BloombergRestConfig config;
     private final BloombergRateMapper rateMapper;
@@ -33,6 +38,15 @@ public class BloombergRestSubscriber implements ISubscriber {
     private final ThreadPoolTaskExecutor executorService;
     private String credentials;
 
+    /**
+     * Constructor to initialize the BloombergRestSubscriber with necessary dependencies.
+     *
+     * @param config          the configuration of the Bloomberg REST subscriber
+     * @param rateMapper      the rate mapper for mapping rate enums to endpoints
+     * @param rateFactory     the factory used for creating rate objects from the API response
+     * @param coordinator     the coordinator for notifying about connection and rate updates
+     * @param executorService the executor service to handle asynchronous tasks
+     */
     public BloombergRestSubscriber(final BloombergRestConfig config, BloombergRateMapper rateMapper, RateFactory rateFactory, Coordinator coordinator, @Qualifier("subscriberExecutor") ThreadPoolTaskExecutor executorService) {
         this.config = config;
         this.coordinator = coordinator;
@@ -41,19 +55,26 @@ public class BloombergRestSubscriber implements ISubscriber {
         this.rateFactory = rateFactory;
     }
 
+    /**
+     * Initializes the subscriber and prepares it for connection by setting up necessary shutdown hooks and credentials.
+     */
     @PostConstruct
     public void init() {
+        // Shutdown hook to cleanly shut down the executor when the application is stopped
         Runtime.getRuntime().addShutdownHook(new Thread(() -> {
             executorService.shutdown();
-
             LOGGER.info("Subscriber stopped. ({})", config.getName());
         }, "shutdown-hook-" + config.getName()));
 
+        // Create Basic Authorization credentials
         String username_password = config.getUsername() + ":" + config.getPassword();
-        credentials = "Basic " + Base64.getEncoder()
-                .encodeToString(username_password.getBytes());
+        credentials = "Basic " + Base64.getEncoder().encodeToString(username_password.getBytes());
     }
 
+    /**
+     * Attempts to connect to the Bloomberg REST API and checks the health of the connection.
+     * If successful, it notifies the coordinator.
+     */
     @Override
     public void connect() {
         HttpRequest req = createHealthRequest();
@@ -62,15 +83,17 @@ public class BloombergRestSubscriber implements ISubscriber {
         int healthRequestRetryLimit = config.getHealthRequestRetryLimit();
         int requestInterval = config.getRequestInterval();
 
+        // Try connecting until the retry limit is reached
         while (healthRequestRetryLimit > 0) {
-
             try {
                 HttpResponse<String> response = client.send(req, HttpResponse.BodyHandlers.ofString());
 
                 if (response.statusCode() == 200) {
+                    // Successful connection
                     coordinator.onConnect(this);
                     break;
                 } else {
+                    // Connection error
                     ConnectionStatus connectionStatus = ConnectionStatus.newBuilder()
                             .withHttpResponse(response, req)
                             .withMethod("connect")
@@ -81,8 +104,8 @@ public class BloombergRestSubscriber implements ISubscriber {
                     coordinator.onConnectionError(this, connectionStatus);
                     healthRequestRetryLimit--;
                 }
-
             } catch (IOException | InterruptedException e) {
+                // Handle errors during connection
                 ConnectionStatus connectionStatus = ConnectionStatus.newBuilder()
                         .withHttpRequestError(e, req)
                         .withMethod("connect")
@@ -98,6 +121,7 @@ public class BloombergRestSubscriber implements ISubscriber {
                 }
             }
 
+            // Wait before retrying
             try {
                 Thread.sleep(requestInterval);
             } catch (InterruptedException e) {
@@ -111,6 +135,12 @@ public class BloombergRestSubscriber implements ISubscriber {
         client.close();
     }
 
+    /**
+     * Subscribes to a list of rates based on the provided list of rate enums.
+     * It sends subscription requests to the Bloomberg REST API.
+     *
+     * @param rates the list of rates to subscribe to
+     */
     @Override
     public void subscribe(List<RawRateEnum> rates) {
         List<RawRateEnum> ratesToSubscribe = new ArrayList<>(rates);
@@ -124,18 +154,22 @@ public class BloombergRestSubscriber implements ISubscriber {
                 .connectTimeout(Duration.ofSeconds(10))
                 .build();
 
+        // Attempt to subscribe to each rate endpoint
         for (String endpoint : endpoints) {
             HttpRequest req = createRateRequest(endpoint);
 
             try {
                 HttpResponse<String> res = client.send(req, HttpResponse.BodyHandlers.ofString());
 
+                // Handle successful subscription
                 if (res.statusCode() == 200) {
                     coordinator.onSubscribe(this);
                     coordinator.onRateAvailable(this, rateMapper.mapEndpointToRateEnum(endpoint));
 
-                    executorService.execute(() -> subscribeToRate(endpoint, config));
+                    // Start the subscription task in a separate thread
+                    executorService.execute(() -> subscribeToRate(endpoint));
                 } else {
+                    // Handle subscription error
                     ConnectionStatus connectionStatus = ConnectionStatus.newBuilder()
                             .withHttpResponse(res, req)
                             .withMethod("subscribe")
@@ -145,9 +179,8 @@ public class BloombergRestSubscriber implements ISubscriber {
 
                     coordinator.onConnectionError(this, connectionStatus);
                 }
-
-
             } catch (IOException | InterruptedException e) {
+                // Handle subscription request errors
                 ConnectionStatus connectionStatus = ConnectionStatus.newBuilder()
                         .withHttpRequestError(e, req)
                         .withMethod("subscribe")
@@ -166,7 +199,12 @@ public class BloombergRestSubscriber implements ISubscriber {
         client.close();
     }
 
-    private void subscribeToRate(String endpoint, BloombergRestConfig config) {
+    /**
+     * Subscribes to a specific rate endpoint by sending repeated requests with retries.
+     *
+     * @param endpoint the endpoint to subscribe to
+     */
+    private void subscribeToRate(String endpoint) {
         int retryLimit = config.getRequestRetryLimit();
         int requestInterval = config.getRequestInterval();
 
@@ -176,12 +214,14 @@ public class BloombergRestSubscriber implements ISubscriber {
 
         HttpRequest req = createRateRequest(endpoint);
 
+        // Retry the subscription request until the retry limit is reached
         while (retryLimit > 0) {
             if (Thread.currentThread().isInterrupted()) {
                 LOGGER.warn("Thread is interrupted. ({})", Thread.currentThread().getName());
                 break;
             }
 
+            // Wait before retrying
             try {
                 Thread.sleep(requestInterval);
             } catch (InterruptedException e) {
@@ -193,6 +233,7 @@ public class BloombergRestSubscriber implements ISubscriber {
             try {
                 HttpResponse<String> res = client.send(req, HttpResponse.BodyHandlers.ofString());
 
+                // Process the response and update the rate
                 try {
                     RawRate rate = rateFactory.createRateFromData(SubscriberEnum.BLOOMBERG_REST, res.body());
                     coordinator.onRateUpdate(this, rate);
@@ -212,6 +253,7 @@ public class BloombergRestSubscriber implements ISubscriber {
                 }
 
             } catch (IOException | InterruptedException e) {
+                // Handle request errors during the subscription process
                 ConnectionStatus connectionStatus = ConnectionStatus.newBuilder()
                         .withHttpRequestError(e, req)
                         .withMethod("subscribeToRate")
@@ -235,12 +277,12 @@ public class BloombergRestSubscriber implements ISubscriber {
 
     @Override
     public void unSubscribe(List<RawRateEnum> rates) {
-
+        // Implementation for unsubscription
     }
 
     @Override
     public void disConnect() {
-
+        // Implementation for disconnect
     }
 
     @Override
@@ -253,6 +295,12 @@ public class BloombergRestSubscriber implements ISubscriber {
         return config;
     }
 
+    /**
+     * Creates an HTTP request to subscribe to a specific rate endpoint.
+     *
+     * @param endpoint the endpoint to send the request to
+     * @return the constructed HTTP request
+     */
     private HttpRequest createRateRequest(String endpoint) {
         return HttpRequest.newBuilder()
                 .uri(URI.create(config.getUrl() + "/api/currencies/" + endpoint))
@@ -262,6 +310,11 @@ public class BloombergRestSubscriber implements ISubscriber {
                 .build();
     }
 
+    /**
+     * Creates an HTTP health check request.
+     *
+     * @return the constructed HTTP health check request
+     */
     private HttpRequest createHealthRequest() {
         return HttpRequest.newBuilder()
                 .uri(URI.create(config.getUrl() + "/api/health"))

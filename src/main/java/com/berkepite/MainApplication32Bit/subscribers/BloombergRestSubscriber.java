@@ -94,7 +94,7 @@ public class BloombergRestSubscriber implements ISubscriber {
 
                 if (e instanceof InterruptedException) {
                     Thread.currentThread().interrupt();
-                    LOGGER.warn("Thread is interrupted. ({})", Thread.currentThread().getName(), ((InterruptedException) e).getMessage());
+                    LOGGER.warn("Thread is interrupted. ({}) {}", Thread.currentThread().getName(), e.getMessage());
                 }
             }
 
@@ -102,7 +102,7 @@ public class BloombergRestSubscriber implements ISubscriber {
                 Thread.sleep(requestInterval);
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
-                LOGGER.warn("Thread is interrupted. ({})", Thread.currentThread().getName(), e.getMessage());
+                LOGGER.warn("Thread is interrupted. ({}) {}", Thread.currentThread().getName(), e.getMessage());
                 break;
             }
         }
@@ -186,7 +186,7 @@ public class BloombergRestSubscriber implements ISubscriber {
                 Thread.sleep(requestInterval);
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
-                LOGGER.warn("Thread is interrupted. ({})", Thread.currentThread().getName(), e.getMessage());
+                LOGGER.warn("Thread is interrupted. ({}) {}", Thread.currentThread().getName(), e.getMessage());
                 break;
             }
 

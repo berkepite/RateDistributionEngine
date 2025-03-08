@@ -120,9 +120,7 @@ public class Coordinator implements CommandLineRunner, ICoordinator {
     public void onRateUpdate(ISubscriber subscriber, RawRate rate) {
         LOGGER.info("({}) rate received {}", subscriber.getConfig().getName(), rate.toString());
 
-        executorService.execute(() -> {
-            rateService.manageRawRate(rate);
-        });
+        executorService.execute(() -> rateService.manageRawRate(rate));
     }
 
     @Override

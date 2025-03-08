@@ -28,7 +28,7 @@ public class RateServiceTest {
     @Test
     public void shouldManageRawRate_USDTRY_whenRawRatesEmpty() {
         RawRate rawRate = rateFactory.createRawRate(
-                RawRateEnum.USD_TRY.toString(), "arbitrary", 1.0, 2.0, Instant.now()
+                RawRateEnum.USD_TRY.toString(), "CNN_TCP", 1.0, 2.0, Instant.now()
         );
 
         rateService.manageRawRate(rawRate);
@@ -41,10 +41,10 @@ public class RateServiceTest {
     @Test
     public void shouldManageRawRate_nonUSD_TRY_whenRawRatesEmpty() {
         RawRate rawRate1 = rateFactory.createRawRate(
-                RawRateEnum.EUR_USD.toString(), "arbitrary", 1.0, 2.0, Instant.now()
+                RawRateEnum.EUR_USD.toString(), "BLOOMBERG_REST", 1.0, 2.0, Instant.now()
         );
         RawRate rawRate2 = rateFactory.createRawRate(
-                RawRateEnum.GBP_USD.toString(), "arbitrary", 10.0, 20.0, Instant.now()
+                RawRateEnum.GBP_USD.toString(), "BLOOMBERG_REST", 10.0, 20.0, Instant.now()
         );
 
         rateService.manageRawRate(rawRate1);

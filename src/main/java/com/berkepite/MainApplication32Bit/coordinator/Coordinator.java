@@ -48,7 +48,7 @@ public class Coordinator implements CommandLineRunner, ICoordinator {
         Runtime.getRuntime().addShutdownHook(new Thread(() -> {
             executorService.shutdown();
 
-            LOGGER.warn("Executor stopped. ({})", this.getClass().getSimpleName());
+            LOGGER.info("Executor stopped. ({})", this.getClass().getSimpleName());
         }, "shutdown-hook-coordinator"));
 
     }

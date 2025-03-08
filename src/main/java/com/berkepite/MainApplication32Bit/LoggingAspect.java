@@ -7,6 +7,9 @@ import com.berkepite.MainApplication32Bit.subscribers.ISubscriberConfig;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.aspectj.lang.JoinPoint;
+import org.aspectj.lang.ProceedingJoinPoint;
+import org.aspectj.lang.Signature;
+import org.aspectj.lang.annotation.Around;
 import org.aspectj.lang.annotation.Aspect;
 import org.aspectj.lang.annotation.Before;
 import org.springframework.stereotype.Component;
@@ -30,14 +33,25 @@ public class LoggingAspect {
         ISubscriberConfig config = subscriber.getConfig();
 
         if (status instanceof ConnectionStatus connectionStatus) {
-            if (connectionStatus.getException() != null) {
-                LOGGER.warn("{} has encountered an error during connection {}", config.getName(), connectionStatus.toString());
-            }
+            LOGGER.error("{} has encountered an error during connection {}", config.getName(), connectionStatus.toString());
 
         } else if (status instanceof RateStatus rateStatus) {
-            if (rateStatus.getException() != null) {
-                LOGGER.warn("{} has encountered a problem with data {}", config.getName(), rateStatus.toString());
-            }
+            LOGGER.error("{} has encountered a problem with rate {}", config.getName(), rateStatus.toString());
         }
+    }
+
+    @Around("execution(* com.berkepite.MainApplication32Bit..*(..))") // Pointcut: Applies to all methods in the package
+    public Object measureExecutionTime(ProceedingJoinPoint joinPoint) throws Throwable {
+        long start = System.currentTimeMillis(); // Start time
+        Object result = joinPoint.proceed(); // Execute the method
+        long duration = System.currentTimeMillis() - start; // Calculate duration
+
+        Signature signature = joinPoint.getSignature();
+
+        if (duration >= 5_000) {
+            LOGGER.warn("'{}' took {} seconds to execute!", signature, duration / 1000);
+        }
+
+        return result; // Return the original method's result
     }
 }

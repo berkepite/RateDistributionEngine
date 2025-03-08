@@ -1,63 +1,123 @@
 package com.berkepite.MainApplication32Bit.status;
 
+import com.berkepite.MainApplication32Bit.subscribers.ISubscriber;
+
 import java.net.Socket;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
+import java.util.Optional;
 
 public class ConnectionStatus {
-    protected Exception exception;
-    protected HttpResponse<?> httpResponse;
-    protected HttpRequest httpRequest;
-    protected Socket socket;
-    protected String url;
+    private final Exception exception;
+    private final HttpResponse<?> httpResponse;
+    private final HttpRequest httpRequest;
+    private final Socket socket;
+    private final String url;
 
-    public ConnectionStatus(Exception e, HttpRequest req) {
-        httpRequest = req;
-        this.url = req.uri().toString();
-        this.exception = e;
+    private final String method;
+    private final String notes;
+    private final ISubscriber subscriber;
+
+    private ConnectionStatus(Builder builder) {
+        this.exception = builder.exception;
+        this.httpResponse = builder.httpResponse;
+        this.httpRequest = builder.httpRequest;
+        this.socket = builder.socket;
+        this.url = builder.url;
+
+        this.subscriber = builder.subscriber;
+        this.notes = builder.notes;
+        this.method = builder.method;
     }
 
-    public ConnectionStatus(Exception e, Socket socket, String url) {
-        this.url = url;
-        this.exception = e;
-        if (socket != null) {
-            this.socket = socket;
+    public static class Builder {
+        private Exception exception;
+        private HttpResponse<?> httpResponse;
+        private HttpRequest httpRequest;
+        private Socket socket;
+        private String url;
+
+        private String method;
+        private ISubscriber subscriber;
+        private String notes;
+
+        public Builder withException(Exception exception) {
+            this.exception = exception;
+            return this;
         }
-    }
 
-    public ConnectionStatus(Socket socket, String response) {
-        this.socket = socket;
-        this.url = socket.getInetAddress().getHostAddress() + ":" + socket.getPort();
-    }
+        public Builder withHttpResponse(HttpResponse<?> response, HttpRequest request) {
+            this.httpResponse = response;
+            this.httpRequest = request;
+            this.url = request.uri().toString();
+            return this;
+        }
 
-    public ConnectionStatus(HttpResponse<?> response, HttpRequest req) {
-        httpRequest = req;
-        httpResponse = response;
-        this.url = req.uri().toString();
+        public Builder withHttpRequestError(Exception e, HttpRequest request) {
+            this.exception = e;
+            this.httpRequest = request;
+            this.url = request.uri().toString();
+            return this;
+        }
+
+        public Builder withSocket(Socket socket, String url) {
+            this.socket = socket;
+            this.url = url;
+            return this;
+        }
+
+        public Builder withMethod(String method) {
+            this.method = method;
+            return this;
+        }
+
+        public Builder withSubscriber(ISubscriber subscriber) {
+            this.subscriber = subscriber;
+            return this;
+        }
+
+        public Builder withNotes(String notes) {
+            this.notes = notes;
+            return this;
+        }
+
+        public ConnectionStatus build() {
+            return new ConnectionStatus(this);
+        }
     }
 
     @Override
     public String toString() {
-        return "Connection [HttpRequest=" + httpRequest + "," +
-                " HttpResponse=" + httpResponse + "," +
-                " Socket=" + socket + "," +
-                " URL=" + url + "," +
-                " Exception=" + exception + "]";
+        return "ConnectionStatus {" +
+                "url='" + url + '\'' +
+                ", httpRequest=" + httpRequest +
+                ", httpResponse=" + httpResponse +
+                ", socket=" + (socket != null ? socket.getInetAddress().getHostAddress() + ":" + socket.getPort() : "null") +
+                ", method=" + method +
+                ", subscriber=" + subscriber.getConfig().getName() +
+                ", notes=" + (notes != null ? notes : "null") +
+                ", exception=" + (exception != null ? exception.getMessage() : "null") +
+                '}';
     }
 
-    public HttpResponse<?> getHttpResponse() {
-        return httpResponse;
+    public static Builder newBuilder() {
+        return new Builder();
     }
 
-    public HttpRequest getHttpRequest() {
-        return httpRequest;
+    // Getters
+    public Optional<HttpResponse<?>> getHttpResponse() {
+        return Optional.ofNullable(httpResponse);
+    }
+
+    public Optional<HttpRequest> getHttpRequest() {
+        return Optional.ofNullable(httpRequest);
     }
 
     public String getUrl() {
         return url;
     }
 
-    public Exception getException() {
-        return exception;
+    public Optional<Exception> getException() {
+        return Optional.ofNullable(exception);
     }
 }

@@ -45,14 +45,14 @@ public class CNNTCPSubscriber implements ISubscriber {
             try {
                 socket.shutdownInput();
             } catch (Exception e) {
-                LOGGER.warn("Socket is probably null : {}", e.getMessage());
+                LOGGER.info("Socket is probably null : {}", e.getMessage());
             }
             executorService.shutdown();
 
             isListeningForRates = false;
             isListeningForInitialResponses = false;
 
-            LOGGER.warn("Subscriber stopped. ({})", config.getName());
+            LOGGER.info("Subscriber stopped. ({})", config.getName());
         }, "shutdown-hook-" + config.getName()));
     }
 
@@ -83,7 +83,14 @@ public class CNNTCPSubscriber implements ISubscriber {
             }
 
         } catch (Exception e) {
-            coordinator.onConnectionError(this, new ConnectionStatus(e, socket, config.getUrl() + ":" + config.getPort()));
+            ConnectionStatus connectionStatus = ConnectionStatus.newBuilder()
+                    .withSocket(socket, config.getUrl() + ":" + config.getPort())
+                    .withException(e)
+                    .withSubscriber(this)
+                    .withMethod("connect")
+                    .build();
+
+            coordinator.onConnectionError(this, connectionStatus);
         }
     }
 
@@ -129,9 +136,16 @@ public class CNNTCPSubscriber implements ISubscriber {
             }
 
         } catch (Exception e) {
-            coordinator.onConnectionError(this, new ConnectionStatus(e, socket, config.getUrl() + ":" + config.getPort()));
+            ConnectionStatus connectionStatus = ConnectionStatus.newBuilder()
+                    .withSocket(socket, config.getUrl() + ":" + config.getPort())
+                    .withException(e)
+                    .withSubscriber(this)
+                    .withMethod("listen")
+                    .build();
+
+            coordinator.onConnectionError(this, connectionStatus);
         } finally {
-            LOGGER.info("The listener ({}) stopped listening because the server sent null or thread interrupted.", config.getName());
+            LOGGER.warn("The listener ({}) stopped listening because the server sent null or thread interrupted.", config.getName());
             executorService.shutdown();
         }
     }
@@ -142,15 +156,31 @@ public class CNNTCPSubscriber implements ISubscriber {
             rate = rateFactory.createRateFromData(SubscriberEnum.CNN_TCP, data);
             coordinator.onRateUpdate(this, rate);
         } catch (Exception e) {
-            coordinator.onRateError(this, new RateStatus(data, e));
+            RateStatus rateStatus = RateStatus.newBuilder()
+                    .withData(data)
+                    .withMethod("handleResponses")
+                    .withSubscriber(this)
+                    .withException(e)
+                    .build();
+
+            coordinator.onRateError(this, rateStatus);
         }
     }
 
     private void handleInitialResponses(String response) {
         if (response.equals("AUTH SUCCESS"))
             coordinator.onConnect(this);
-        else if (response.equals("AUTH FAILED"))
-            coordinator.onConnectionError(this, new ConnectionStatus(socket, response));
+
+        else if (response.equals("AUTH FAILED")) {
+            ConnectionStatus connectionStatus = ConnectionStatus.newBuilder()
+                    .withSocket(socket, config.getUrl() + ":" + config.getPort())
+                    .withMethod("handleInitialResponses")
+                    .withSubscriber(this)
+                    .withNotes("Auth failure")
+                    .build();
+
+            coordinator.onConnectionError(this, connectionStatus);
+        }
     }
 
 }

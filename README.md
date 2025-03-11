@@ -59,6 +59,9 @@ provides structured forex data. It also supports real-time monitoring and loggin
 ## 📜 Logging & Alerts
 
 The application logs various events:
+- Receiving rate from platforms,
+- Subscriber events (errors, shutdown processes),
+- If a function takes too long to execute
 
 ## 📡 Platform Simulation
 

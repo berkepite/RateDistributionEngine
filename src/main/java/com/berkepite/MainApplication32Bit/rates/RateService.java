@@ -71,6 +71,8 @@ public class RateService {
         Double[] bids = values.get(0);
         Double[] asks = values.get(1);
 
+        // If no bids or asks are provided then it returns incomingRate.
+        // So the if condition below returns true.
         RawRate meanRawRate = rateCalculator.calculateMeansOfRawRates(incomingRate, bids, asks);
 
         // If does not have at least %1 difference, save the raw rate and calculate appropriate rates

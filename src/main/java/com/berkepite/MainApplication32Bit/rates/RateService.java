@@ -1,6 +1,7 @@
 package com.berkepite.MainApplication32Bit.rates;
 
 import com.berkepite.MainApplication32Bit.cache.IRateCacheService;
+import com.berkepite.MainApplication32Bit.calculators.CalculatorEnum;
 import com.berkepite.MainApplication32Bit.calculators.CalculatorFactory;
 import com.berkepite.MainApplication32Bit.calculators.IRateCalculator;
 import com.berkepite.MainApplication32Bit.producers.KafkaCalcRateProducer;
@@ -29,9 +30,7 @@ public class RateService {
     private final KafkaCalcRateProducer kafkaCalcRateProducer;
 
     @Value("${app.rate-calculation-strategy}")
-    private String rateCalculationStrategy;
-    @Value("${app.rate-calculation-source-path}")
-    private String rateCalculationSourcePath;
+    private CalculatorEnum rateCalculationStrategy;
 
     /**
      * Constructor for RateService.
@@ -53,7 +52,7 @@ public class RateService {
      */
     @PostConstruct
     public void init() {
-        rateCalculator = calculatorFactory.getCalculator(rateCalculationStrategy, rateCalculationSourcePath);
+        rateCalculator = calculatorFactory.getCalculator(rateCalculationStrategy);
     }
 
     /**

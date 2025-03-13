@@ -18,20 +18,18 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class PythonCalculator implements IRateCalculator {
-    private final String sourcePath;
     private final RateFactory rateFactory;
     private static final Logger LOGGER = LogManager.getLogger(PythonCalculator.class);
     private Source source;
 
-    public PythonCalculator(String sourcePath, RateFactory rateFactory) {
-        this.sourcePath = sourcePath;
+    public PythonCalculator(RateFactory rateFactory) {
         this.rateFactory = rateFactory;
         init();
     }
 
     public void init() {
         try {
-            ClassPathResource resource = new ClassPathResource(sourcePath);
+            ClassPathResource resource = new ClassPathResource("rate_calculators/python.py");
             Reader stream = new InputStreamReader(resource.getInputStream());
 
             source = Source.newBuilder("python", stream, "pymod.py").build();

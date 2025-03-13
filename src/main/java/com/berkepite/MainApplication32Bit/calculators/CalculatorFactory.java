@@ -14,31 +14,31 @@ public class CalculatorFactory {
         this.rateFactory = rateFactory;
     }
 
-    public IRateCalculator getCalculator(String strategy, String sourcePath) {
+    public IRateCalculator getCalculator(CalculatorEnum strategy) {
         try {
 
             switch (strategy) {
-                case "Javascript" -> {
-                    return getJavascriptCalculator(sourcePath);
+                case CalculatorEnum.JAVASCRIPT -> {
+                    return getJavascriptCalculator();
                 }
-                case "Python" -> {
-                    return getPythonCalculator(sourcePath);
+                case CalculatorEnum.PYTHON -> {
+                    return getPythonCalculator();
                 }
             }
         } catch (Exception e) {
             LOGGER.error("Unexpected error occurred while creating calculator, terminating...\n {}", e.getMessage());
             throw new RuntimeException(e);
         }
-        return null; // WIP
+        return null;
     }
 
-    private JavascriptCalculator getJavascriptCalculator(String sourcePath) throws Exception {
+    private JavascriptCalculator getJavascriptCalculator() throws Exception {
 
-        return new JavascriptCalculator(sourcePath, rateFactory);
+        return new JavascriptCalculator(rateFactory);
     }
 
-    private PythonCalculator getPythonCalculator(String sourcePath) throws Exception {
+    private PythonCalculator getPythonCalculator() throws Exception {
 
-        return new PythonCalculator(sourcePath, rateFactory);
+        return new PythonCalculator(rateFactory);
     }
 }

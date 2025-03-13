@@ -19,19 +19,17 @@ import java.util.List;
 
 public class JavascriptCalculator implements IRateCalculator {
     private final RateFactory rateFactory;
-    private final String sourcePath;
     private static final Logger LOGGER = LogManager.getLogger(JavascriptCalculator.class);
     private Source source;
 
-    public JavascriptCalculator(String sourcePath, RateFactory rateFactory) {
-        this.sourcePath = sourcePath;
+    public JavascriptCalculator(RateFactory rateFactory) {
         this.rateFactory = rateFactory;
         init();
     }
 
     public void init() {
         try {
-            ClassPathResource resource = new ClassPathResource(sourcePath);
+            ClassPathResource resource = new ClassPathResource("rate_calculators/javascript.mjs");
             Reader stream = new InputStreamReader(resource.getInputStream());
 
             source = Source.newBuilder("js", stream, "jsmod.js").mimeType("application/javascript+module").build();
@@ -39,10 +37,6 @@ public class JavascriptCalculator implements IRateCalculator {
             LOGGER.error(e);
             throw new RuntimeException(e);
         }
-    }
-
-    public String getSourcePath() {
-        return sourcePath;
     }
 
     @Override

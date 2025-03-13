@@ -5,7 +5,9 @@ import com.berkepite.MainApplication32Bit.rates.RateService;
 import com.berkepite.MainApplication32Bit.status.ConnectionStatus;
 import com.berkepite.MainApplication32Bit.rates.RawRateEnum;
 import com.berkepite.MainApplication32Bit.status.RateStatus;
-import com.berkepite.MainApplication32Bit.subscribers.*;
+import com.berkepite.MainApplication32Bit.subscribers.ISubscriber;
+import com.berkepite.MainApplication32Bit.subscribers.ISubscriberConfig;
+import com.berkepite.MainApplication32Bit.subscribers.SubscriberLoader;
 import jakarta.annotation.PostConstruct;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -26,38 +28,36 @@ public class Coordinator implements CommandLineRunner, ICoordinator {
 
     private final Logger LOGGER = LogManager.getLogger(Coordinator.class);
 
-    private CoordinatorConfig coordinatorConfig;
+    private final CoordinatorConfig coordinatorConfig;
     private final RateService rateService;
     private final SubscriberLoader subscriberLoader;
-    private final CoordinatorConfigLoader coordinatorConfigLoader;
     private final ThreadPoolTaskExecutor executorService;
 
     private List<ISubscriber> subscribers;
 
     /**
      * Constructor for initializing the Coordinator with necessary services.
-     *
-     * @param rateService             the service for managing rates
-     * @param coordinatorConfigLoader the loader for coordinator configuration
-     * @param subscriberLoader        the loader for subscribers
-     * @param executorService         the thread pool executor for managing async tasks
+     * @param coordinatorConfig the configuration class for the coordinator
+     * @param rateService      the service for managing rates
+     * @param subscriberLoader the loader for subscribers
+     * @param executorService  the thread pool executor for managing async tasks
      */
     @Autowired
-    public Coordinator(RateService rateService, CoordinatorConfigLoader coordinatorConfigLoader, SubscriberLoader subscriberLoader, @Qualifier("coordinatorExecutor") ThreadPoolTaskExecutor executorService) {
-        this.coordinatorConfigLoader = coordinatorConfigLoader;
+    public Coordinator(CoordinatorConfig coordinatorConfig, RateService rateService, SubscriberLoader subscriberLoader, @Qualifier("coordinatorExecutor") ThreadPoolTaskExecutor executorService) {
+        this.coordinatorConfig = coordinatorConfig;
         this.subscriberLoader = subscriberLoader;
         this.executorService = executorService;
         this.rateService = rateService;
     }
 
     /**
-     * Initializes the coordinator by loading configuration and setting up shutdown hooks.
+     * Initializes the coordinator by setting up shutdown hooks.
+     * Initializes the subscriber list
      * This method is called after the constructor.
      */
     @PostConstruct
     private void init() {
-        coordinatorConfig = coordinatorConfigLoader.loadConfig();
-        subscribers = new ArrayList<>(3);
+        subscribers = new ArrayList<>(2);
 
         LOGGER.debug("Coordinator Initialized!");
 
@@ -86,7 +86,7 @@ public class Coordinator implements CommandLineRunner, ICoordinator {
      * Binds the subscribers to the coordinator.
      */
     private void bindSubscribers() {
-        loadSubscriberClasses(coordinatorConfig.getSubscriberBindingConfigs());
+        loadSubscriberClasses(coordinatorConfig.getSubscribers());
     }
 
     /**
@@ -94,7 +94,7 @@ public class Coordinator implements CommandLineRunner, ICoordinator {
      *
      * @param subscriberBindingConfigs list of subscriber binding configurations
      */
-    private void loadSubscriberClasses(List<SubscriberBindingConfig> subscriberBindingConfigs) {
+    private void loadSubscriberClasses(List<CoordinatorConfig.SubscriberBindingConfig> subscriberBindingConfigs) {
         subscriberBindingConfigs.forEach(subscriberBindingConfig -> {
             if (subscriberBindingConfig.isEnabled()) {
                 ISubscriber subscriber = subscriberLoader.load(subscriberBindingConfig);
@@ -131,6 +131,7 @@ public class Coordinator implements CommandLineRunner, ICoordinator {
     @Override
     public void onConnect(ISubscriber subscriber) {
         ISubscriberConfig config = subscriber.getConfig();
+        LOGGER.info("Subscriber rates: {}", coordinatorConfig.getRates());
 
         LOGGER.info("{} connected to {}, trying to subscribe...", config.getName(), config.getUrl());
         executorService.execute(() -> subscriber.subscribe(coordinatorConfig.getRates()));

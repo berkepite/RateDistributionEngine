@@ -23,7 +23,7 @@ public class JavascriptCalculatorTest {
 
     @BeforeEach
     public void setUp() {
-        javascriptCalculator = (JavascriptCalculator) calculatorFactory.getCalculator("Javascript", "rate_calculators/javascript-test.mjs");
+        javascriptCalculator = (JavascriptCalculator) calculatorFactory.getCalculator(CalculatorEnum.JAVASCRIPT);
     }
 
     @Test

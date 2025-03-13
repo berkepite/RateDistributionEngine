@@ -23,7 +23,7 @@ public class PythonCalculatorTest {
 
     @BeforeEach
     public void setUp() {
-        pythonCalculator = (PythonCalculator) calculatorFactory.getCalculator("Python", "rate_calculators/python-test.py");
+        pythonCalculator = (PythonCalculator) calculatorFactory.getCalculator(CalculatorEnum.PYTHON);
     }
 
     @Test

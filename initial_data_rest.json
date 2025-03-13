@@ -1,0 +1,19 @@
+{
+  "initialCurrencies": [
+    {
+      "name": "USDTRY",
+      "bid": 35.6895,
+      "ask": 36.6945
+    },
+    {
+      "name": "EURUSD",
+      "bid": 1.0474,
+      "ask": 1.0364
+    },
+    {
+      "name": "GBPUSD",
+      "bid": 1.2490,
+      "ask": 1.1899
+    }
+  ]
+}

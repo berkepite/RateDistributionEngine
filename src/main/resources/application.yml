@@ -1,0 +1,32 @@
+spring:
+  application:
+    name: MainApplication32Bit
+  profiles:
+    active: ${SPRING_PROFILES_ACTIVE:debug}
+  data:
+    redis:
+      host: ${SPRING_DATA_REDIS_HOST}
+      port: ${SPRING_DATA_REDIS_PORT}
+  cache:
+    type: ${SPRING_CACHE_TYPE}
+  kafka:
+    bootstrap-servers: ${SPRING_KAFKA_BOOTSTRAP_SERVERS}
+
+app:
+  coordinator:
+    subscribers:
+      - name: Bloomberg_Rest
+        enabled: ${BLOOMBERG_REST_ENABLED:true}
+        configName: bloomberg_rest
+        classPath: com.berkepite.MainApplication32Bit.subscribers
+        className: BloombergRestSubscriber
+      - name: CNN_TCP
+        enabled: ${CNN_REST_ENABLED:true}
+        configName: cnn_tcp
+        classPath: com.berkepite.MainApplication32Bit.subscribers
+        className: CNNTCPSubscriber
+    rates: [ USD_TRY, EUR_USD, GBP_USD ]
+  rate-calculation-strategy: ${APP_RATE_CALCULATION_STRATEGY}
+  kafka:
+    raw-rate-topic: raw_rates
+    calc-rate-topic: calc_rates

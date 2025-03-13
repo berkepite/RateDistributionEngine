@@ -85,8 +85,9 @@ public class BloombergRestSubscriber implements ISubscriber {
 
         // Try connecting until the retry limit is reached
         while (healthRequestRetryLimit > 0) {
+            HttpResponse<String> response = null;
             try {
-                HttpResponse<String> response = client.send(req, HttpResponse.BodyHandlers.ofString());
+                response = client.send(req, HttpResponse.BodyHandlers.ofString());
 
                 if (response.statusCode() == 200) {
                     // Successful connection
@@ -108,6 +109,7 @@ public class BloombergRestSubscriber implements ISubscriber {
                 // Handle errors during connection
                 ConnectionStatus connectionStatus = ConnectionStatus.newBuilder()
                         .withHttpRequestError(e, req)
+                        .withHttpResponse(response, req)
                         .withMethod("connect")
                         .withSubscriber(this)
                         .build();

@@ -1,5 +1,6 @@
 package com.berkepite.MainApplication32Bit.subscribers;
 
+import com.berkepite.MainApplication32Bit.coordinator.CoordinatorConfig;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.springframework.beans.factory.config.BeanDefinition;
@@ -34,7 +35,7 @@ public class SubscriberLoader {
      * @param bindingConfig the configuration object that contains the class path and class name
      * @return the loaded subscriber instance, or null if the loading fails
      */
-    public ISubscriber load(SubscriberBindingConfig bindingConfig) {
+    public ISubscriber load(CoordinatorConfig.SubscriberBindingConfig bindingConfig) {
         ISubscriber subscriber = null;
 
         try {

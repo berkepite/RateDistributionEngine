@@ -9,7 +9,7 @@ import java.util.List;
 
 @Configuration
 @ConfigurationProperties(prefix = "bloombergrest")
-@PropertySource(value = "classpath:subscriber_configurations/bloomberg_rest-${spring.profiles.active}.properties")
+@PropertySource(value = "classpath:subscriber_configurations/bloomberg_rest.properties")
 public class BloombergRestConfig implements ISubscriberConfig {
     private String name;
     private String className;

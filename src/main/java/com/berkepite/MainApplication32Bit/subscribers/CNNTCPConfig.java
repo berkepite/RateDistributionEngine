@@ -9,7 +9,7 @@ import java.util.List;
 
 @Configuration
 @ConfigurationProperties(prefix = "cnntcp")
-@PropertySource(value = "classpath:subscriber_configurations/cnn_tcp-${spring.profiles.active}.properties")
+@PropertySource(value = "classpath:subscriber_configurations/cnn_tcp.properties")
 public class CNNTCPConfig implements ISubscriberConfig {
     private String name;
     private String className;

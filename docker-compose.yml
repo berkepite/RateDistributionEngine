@@ -8,10 +8,14 @@ services:
     volumes:
       - logs_volume:/app/logs
     depends_on:
-      - rest-platform
-      - tcp-platform
-      - kafka
-      - redis
+      rest-platform:
+        condition: service_started
+      tcp-platform:
+        condition: service_started
+      redis:
+        condition: service_started
+      kafka:
+        condition: service_healthy
     environment:
       SPRING_PROFILES_ACTIVE: debug
       SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:9092
@@ -72,6 +76,12 @@ services:
     container_name: kafka
     networks:
       - network
+    healthcheck:
+      test: [ "CMD", "sh", "-c", "nc -z localhost 9092" ]
+      interval: 10s
+      retries: 5
+      timeout: 10s
+      start_period: 10s
     environment:
       # Cluster ID (unique identifier for Kafka cluster)
       CLUSTER_ID: qlWgb1R5R4GHgldQpgTcTQ
@@ -122,8 +132,10 @@ services:
     networks:
       - network
     depends_on:
-      - opensearch
-      - kafka
+      opensearch:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
     environment:
       OPENSEARCH_USERNAME: admin
       OPENSEARCH_PASSWORD: Aloha.32bit
@@ -136,11 +148,46 @@ services:
     networks:
       - network
     depends_on:
-      - postgres
-      - kafka
+      postgres:
+        condition: service_started
+      kafka:
+        condition: service_healthy
     environment:
       POSTGRES_USER: debug_user
       POSTGRES_PASSWORD: 1234
+
+  opensearch:
+    image: opensearchproject/opensearch:latest
+    container_name: opensearch
+    networks:
+      - network
+    healthcheck:
+      test: [ "CMD", "curl", "-X", "GET", "https://opensearch:9200", "-ku", "admin:Aloha.32bit" ]
+      interval: 10s
+      timeout: 10s
+      retries: 5
+      start_period: 20s
+    environment:
+      discovery.type: single-node
+      OPENSEARCH_JAVA_OPTS: "-Xms512m -Xmx512m"
+      bootstrap.memory_lock: true
+      OPENSEARCH_INITIAL_ADMIN_PASSWORD: "Aloha.32bit"
+
+  opensearch-dashboards:
+    image: opensearchproject/opensearch-dashboards:latest
+    container_name: opensearch-dashboards
+    ports:
+      - "5601:5601" # OpenSearch Dashboards web arayüzü
+    networks:
+      - network
+    depends_on:
+      opensearch:
+        condition: service_healthy
+    environment:
+      - OPENSEARCH_HOSTS=["https://opensearch:9200"]
+      - SERVER_HOST=0.0.0.0
+      - OPENSEARCH_USERNAME=admin
+      - OPENSEARCH_PASSWORD=Aloha.32bit
 
   filebeat:
     image: docker.elastic.co/beats/filebeat-oss:7.12.1
@@ -163,35 +210,10 @@ services:
     volumes:
       - ./logstash.conf:/usr/share/logstash/pipeline/logstash.conf
     depends_on:
-      - opensearch
+      opensearch:
+        condition: service_healthy
     environment:
       LS_JAVA_OPTS: "-Xms256m -Xmx256m"
-
-  opensearch:
-    image: opensearchproject/opensearch:latest
-    container_name: opensearch
-    networks:
-      - network
-    environment:
-      discovery.type: single-node
-      OPENSEARCH_JAVA_OPTS: "-Xms512m -Xmx512m"
-      bootstrap.memory_lock: true
-      OPENSEARCH_INITIAL_ADMIN_PASSWORD: "Aloha.32bit"
-
-  opensearch-dashboards:
-    image: opensearchproject/opensearch-dashboards:latest
-    container_name: opensearch-dashboards
-    ports:
-      - "5601:5601" # OpenSearch Dashboards web arayüzü
-    networks:
-      - network
-    depends_on:
-      - opensearch
-    environment:
-      - OPENSEARCH_HOSTS=["https://opensearch:9200"]
-      - SERVER_HOST=0.0.0.0
-      - OPENSEARCH_USERNAME=admin
-      - OPENSEARCH_PASSWORD=Aloha.32bit
 
 networks:
   network:

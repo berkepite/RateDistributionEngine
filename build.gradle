@@ -1,47 +1,13 @@
 plugins {
-    id 'java'
-    id 'org.springframework.boot' version '3.4.2'
-    id 'io.spring.dependency-management' version '1.1.7'
+    id("org.springframework.boot") version "3.4.2" apply false
+    id("io.spring.dependency-management") version "1.1.7" apply false
+    id("java")
 }
 
-group = 'com.berkepite'
-version = '0.0.1-SNAPSHOT'
+allprojects {
+    group = "com.berkepite"
 
-java {
-    toolchain {
-        languageVersion = JavaLanguageVersion.of(23)
+    repositories {
+        mavenCentral()
     }
-}
-
-repositories {
-    mavenCentral()
-}
-
-dependencies {
-    configurations.configureEach {
-        exclude group: 'org.springframework.boot', module: 'spring-boot-starter-logging'
-        exclude group: 'ch.qos.logback', module: 'logback-classic'
-        exclude group: 'ch.qos.logback', module: 'logback-core'
-    }
-    // JAVASCRIPT & PYTHON
-    implementation("org.graalvm.polyglot:polyglot:24.1.2")
-    implementation("org.graalvm.polyglot:js:24.1.2")
-    implementation("org.graalvm.polyglot:python:24.1.2")
-    //
-
-    implementation 'org.springframework.boot:spring-boot-starter-log4j2'
-    implementation('org.springframework.boot:spring-boot-starter-data-redis')
-    implementation 'org.springframework.kafka:spring-kafka'
-    implementation 'com.fasterxml.jackson.core:jackson-databind:2.18.2'
-    implementation 'org.springframework.boot:spring-boot-starter-aop:3.4.2'
-    implementation 'com.fasterxml.jackson.datatype:jackson-datatype-jsr310:2.18.2'
-
-    testImplementation 'org.assertj:assertj-core:3.27.3'
-    testImplementation('org.springframework.boot:spring-boot-starter-test')
-    testImplementation 'org.springframework.kafka:spring-kafka-test'
-    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
-}
-
-tasks.named('test') {
-    useJUnitPlatform()
 }

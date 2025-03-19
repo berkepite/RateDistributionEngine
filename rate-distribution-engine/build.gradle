@@ -1,0 +1,55 @@
+plugins {
+    id 'java'
+    id 'org.springframework.boot'
+}
+
+group = 'com.berkepite'
+version = '0.0.1'
+
+java {
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(23)
+    }
+}
+
+bootJar {
+    from {
+        project(":common").sourceSets.main.output
+    }
+}
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    configurations.configureEach {
+        exclude group: 'org.springframework.boot', module: 'spring-boot-starter-logging'
+        exclude group: 'ch.qos.logback', module: 'logback-classic'
+        exclude group: 'ch.qos.logback', module: 'logback-core'
+    }
+    // JAVASCRIPT & PYTHON
+    implementation("org.graalvm.polyglot:polyglot:24.1.2")
+    implementation("org.graalvm.polyglot:js:24.1.2")
+    implementation("org.graalvm.polyglot:python:24.1.2")
+    //
+
+    // common
+    implementation project(":common")
+
+    implementation 'org.springframework.boot:spring-boot-starter-log4j2:3.4.2'
+    implementation('org.springframework.boot:spring-boot-starter-data-redis:3.4.2')
+    implementation 'org.springframework.kafka:spring-kafka:3.3.4'
+    implementation 'com.fasterxml.jackson.core:jackson-databind:2.18.2'
+    implementation 'org.springframework.boot:spring-boot-starter-aop:3.4.2'
+    implementation 'com.fasterxml.jackson.datatype:jackson-datatype-jsr310:2.18.2'
+
+    testImplementation 'org.assertj:assertj-core:3.27.3'
+    testImplementation('org.springframework.boot:spring-boot-starter-test:3.4.3')
+    testImplementation 'org.springframework.kafka:spring-kafka-test:3.3.3'
+    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+}
+
+tasks.named('test') {
+    useJUnitPlatform()
+}

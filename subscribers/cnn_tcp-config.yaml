@@ -1,0 +1,11 @@
+name: cnn_tcp
+classPath: com.berkepite.MainApplication32Bit.subscribers
+className: CNNTCPSubscriber
+url: tcp-platform
+port: 8080
+username: client
+password: 2345
+includeRates:
+excludeRates:
+requestInterval: 2000
+requestRetryLimit: 5

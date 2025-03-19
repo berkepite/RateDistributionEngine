@@ -1,0 +1,33 @@
+plugins {
+    id("java")
+    id 'com.github.johnrengelman.shadow' version '7.0.0'
+}
+
+group = "com.berkepite"
+version = "0.0.1"
+
+java {
+    toolchain {
+        languageVersion.set(JavaLanguageVersion.of(23))
+    }
+}
+
+shadowJar {
+    manifest {
+        attributes 'Main-Class': 'com.berkepite.RateDistributionEngine.RestSubscriberTest.MainTest'
+    }
+}
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    implementation(project(":bloomberg_rest-subscriber"))
+    implementation(project(":common"))
+
+    implementation 'org.yaml:snakeyaml:2.4'
+    implementation 'jakarta.annotation:jakarta.annotation-api:2.1.1'
+    implementation 'org.apache.logging.log4j:log4j-core:2.24.3'
+
+}

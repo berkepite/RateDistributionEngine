@@ -19,14 +19,14 @@ app:
         enabled: ${BLOOMBERG_REST_ENABLED:true}
         configName: bloomberg_rest-config.yaml
         jarName: bloomberg_rest-subscriber-0.0.1.jar
-        classPath: com.berkepite.RateDistributionEngine.BloombergRestSubscriber
-        className: BloombergRestSubscriber
+        classPath: com.berkepite.RateDistributionEngine.BloombergRest.BloombergRestSubscriber
+        configClassPath: com.berkepite.RateDistributionEngine.BloombergRest.BloombergRestConfig
       - name: CNN_TCP
         enabled: ${CNN_REST_ENABLED:true}
         configName: cnn_tcp-config.yaml
         jarName: cnn_tcp-subscriber-0.0.1.jar
-        classPath: com.berkepite.RateDistributionEngine.CNNTCPSubscriber
-        className: CNNTCPSubscriber
+        classPath: com.berkepite.RateDistributionEngine.CNNTCP.CNNTCPSubscriber
+        configClassPath: com.berkepite.RateDistributionEngine.CNNTCP.CNNTCPConfig
     rates: [ USD_TRY, EUR_USD, GBP_USD ]
   rate-calculation-strategy: ${APP_RATE_CALCULATION_STRATEGY}
   kafka:

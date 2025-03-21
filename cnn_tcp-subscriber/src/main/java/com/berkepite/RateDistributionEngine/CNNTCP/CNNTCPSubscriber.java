@@ -1,4 +1,4 @@
-package com.berkepite.RateDistributionEngine.CNNTCPSubscriber;
+package com.berkepite.RateDistributionEngine.CNNTCP;
 
 import com.berkepite.RateDistributionEngine.common.ISubscriber;
 import com.berkepite.RateDistributionEngine.common.ISubscriberConfig;
@@ -8,42 +8,45 @@ import com.berkepite.RateDistributionEngine.common.status.ConnectionStatus;
 import com.berkepite.RateDistributionEngine.common.status.RateStatus;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 
 import java.io.BufferedReader;
+import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.net.Socket;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.ScheduledThreadPoolExecutor;
 
 /**
  * CNNTCPSubscriber is a subscriber that connects to the CNN TCP service to subscribe to rate updates.
  * It listens for incoming rate data and handles connection errors and subscription management.
  */
 public class CNNTCPSubscriber implements ISubscriber {
-    private CNNTCPConfig config;
-    private final CNNTCPConfigLoader configLoader;
+    private final CNNTCPConfig config;
     private final CNNRateMapper rateMapper;
     private final ICoordinator coordinator;
     private final Logger LOGGER = LogManager.getLogger(CNNTCPSubscriber.class);
-    private final ThreadPoolTaskExecutor executorService;
-    private Socket socket;
-    private PrintWriter writer;
-    private BufferedReader reader;
+    private final ExecutorService executorService;
+    Socket socket;
+    PrintWriter writer;
+    BufferedReader reader;
     private volatile boolean isListeningForInitialResponses = true;
     private volatile boolean isListeningForRates = true;
 
-    public CNNTCPSubscriber(ICoordinator coordinator, ThreadPoolTaskExecutor executorService) {
-        this.configLoader = new CNNTCPConfigLoader();
+    public CNNTCPSubscriber(ICoordinator coordinator, ISubscriberConfig config) throws IOException {
         this.rateMapper = new CNNRateMapper();
-        this.executorService = executorService;
+        this.config = (CNNTCPConfig) config;
+        this.executorService = new ScheduledThreadPoolExecutor(10);
         this.coordinator = coordinator;
         init();
     }
 
-    public void init() {
-        this.config = configLoader.load();
+    public void init() throws IOException {
+        this.socket = new Socket(config.getUrl(), config.getPort());
+        this.writer = new PrintWriter(socket.getOutputStream(), true);
+        this.reader = new BufferedReader(new InputStreamReader(socket.getInputStream()));
 
         Runtime.getRuntime().addShutdownHook(new Thread(() -> {
             try {
@@ -75,16 +78,12 @@ public class CNNTCPSubscriber implements ISubscriber {
     @Override
     public void connect() {
         try {
-            this.socket = new Socket(config.getUrl(), config.getPort());
-            this.writer = new PrintWriter(socket.getOutputStream(), true);
-            this.reader = new BufferedReader(new InputStreamReader(socket.getInputStream()));
-
             String credentials = config.getUsername() + ":" + config.getPassword();
-            writer.println(credentials);  // Send credentials for authentication
+            getWriter().println(credentials);  // Send credentials for authentication
 
             // Listen for the server's initial response
             String response;
-            while (isListeningForInitialResponses && (response = reader.readLine()) != null) {
+            while (isListeningForInitialResponses && (response = getReader().readLine()) != null) {
                 handleInitialResponses(response); // Handle the response from the server
             }
 
@@ -124,7 +123,7 @@ public class CNNTCPSubscriber implements ISubscriber {
         executorService.execute(this::listen);  // Start a listener for incoming rates
 
         for (String endpoint : endpoints) {
-            writer.println("sub|" + endpoint);  // Send subscription request to the server
+            getWriter().println("sub|" + endpoint);  // Send subscription request to the server
         }
     }
 
@@ -133,8 +132,32 @@ public class CNNTCPSubscriber implements ISubscriber {
         List<String> endpoints = rateMapper.mapRateEnumToEndpoints(rates);
 
         for (String endpoint : endpoints) {
-            writer.println("unsub|" + endpoint);  // Send unsubscription request to the server
+            getWriter().println("unsub|" + endpoint);  // Send unsubscription request to the server
         }
+    }
+
+    public Socket getSocket() {
+        return socket;
+    }
+
+    public PrintWriter getWriter() {
+        return writer;
+    }
+
+    public BufferedReader getReader() {
+        return reader;
+    }
+
+    public void setSocket(Socket socket) {
+        this.socket = socket;
+    }
+
+    public void setWriter(PrintWriter writer) {
+        this.writer = writer;
+    }
+
+    public void setReader(BufferedReader reader) {
+        this.reader = reader;
     }
 
     /**
@@ -144,7 +167,7 @@ public class CNNTCPSubscriber implements ISubscriber {
     private void listen() {
         try {
             String response;
-            while (isListeningForRates && (response = reader.readLine()) != null) {
+            while (isListeningForRates && (response = getReader().readLine()) != null) {
                 final String data = response;
                 if (!data.isEmpty()) {
                     executorService.execute(() -> handleResponses(data));  // Process the incoming data

@@ -1,4 +1,4 @@
-package com.berkepite.RateDistributionEngine.BloombergRestSubscriber;
+package com.berkepite.RateDistributionEngine.BloombergRest;
 
 import com.berkepite.RateDistributionEngine.common.ISubscriberConfig;
 import com.berkepite.RateDistributionEngine.common.ISubscriber;
@@ -8,7 +8,6 @@ import com.berkepite.RateDistributionEngine.common.status.ConnectionStatus;
 import com.berkepite.RateDistributionEngine.common.status.RateStatus;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 
 import java.io.IOException;
 import java.net.URI;
@@ -19,6 +18,8 @@ import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Base64;
 import java.util.List;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.ScheduledThreadPoolExecutor;
 
 /**
  * The BloombergRestSubscriber connects to the Bloomberg REST API to subscribe to rates
@@ -26,19 +27,18 @@ import java.util.List;
  * It manages connection retries, rate subscriptions, and rate updates.
  */
 public class BloombergRestSubscriber implements ISubscriber {
-    private BloombergRestConfig config;
-    private final BloombergRestConfigLoader configLoader;
+    private final BloombergRestConfig config;
     private final BloombergRateMapper rateMapper;
     private final ICoordinator coordinator;
+    private final ExecutorService executorService;
     private final Logger LOGGER = LogManager.getLogger(BloombergRestSubscriber.class);
-    private final ThreadPoolTaskExecutor executorService;
     private String credentials;
 
-    public BloombergRestSubscriber(ICoordinator coordinator, ThreadPoolTaskExecutor executorService) {
-        this.configLoader = new BloombergRestConfigLoader();
+    public BloombergRestSubscriber(ICoordinator coordinator, ISubscriberConfig config) {
         this.rateMapper = new BloombergRateMapper();
+        this.config = (BloombergRestConfig) config;
         this.coordinator = coordinator;
-        this.executorService = executorService;
+        this.executorService = new ScheduledThreadPoolExecutor(10);
         init();
     }
 
@@ -46,8 +46,6 @@ public class BloombergRestSubscriber implements ISubscriber {
      * Initializes the subscriber and prepares it for connection by setting up necessary shutdown hooks and credentials.
      */
     private void init() {
-        config = configLoader.load();
-
         // Shutdown hook to cleanly shut down the executor when the application is stopped
         Runtime.getRuntime().addShutdownHook(new Thread(() -> {
             executorService.shutdown();

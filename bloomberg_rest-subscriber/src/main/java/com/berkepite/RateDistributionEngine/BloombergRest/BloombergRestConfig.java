@@ -1,4 +1,4 @@
-package com.berkepite.RateDistributionEngine.BloombergRestSubscriber;
+package com.berkepite.RateDistributionEngine.BloombergRest;
 
 import com.berkepite.RateDistributionEngine.common.ISubscriberConfig;
 

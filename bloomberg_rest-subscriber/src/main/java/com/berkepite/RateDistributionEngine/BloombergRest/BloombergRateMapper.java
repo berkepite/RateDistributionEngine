@@ -1,4 +1,4 @@
-package com.berkepite.RateDistributionEngine.BloombergRestSubscriber;
+package com.berkepite.RateDistributionEngine.BloombergRest;
 
 import com.berkepite.RateDistributionEngine.common.rates.RawRate;
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -24,7 +24,7 @@ public class BloombergRateMapper {
         ObjectMapper objectMapper = new ObjectMapper();
         JsonNode json = objectMapper.readTree(data);
 
-        rate.setType(json.get("type").asText());
+        rate.setType(json.get("name").asText());
         rate.setAsk(json.get("ask").asDouble());
         rate.setBid(json.get("bid").asDouble());
         Instant truncatedTimestamp = Instant.parse(json.get("timestamp").asText());

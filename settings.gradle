@@ -2,7 +2,6 @@ rootProject.name = 'MainApplication32Bit'
 
 include("rate-distribution-engine")
 include("bloomberg_rest-subscriber")
-include("rest-subscriber-test")
 include("common")
-include 'cnn_tcp-subscriber'
+include("cnn_tcp-subscriber")
 

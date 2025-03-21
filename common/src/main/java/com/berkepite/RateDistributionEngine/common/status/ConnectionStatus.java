@@ -117,6 +117,22 @@ public class ConnectionStatus {
         return url;
     }
 
+    public ISubscriber getSubscriber() {
+        return subscriber;
+    }
+
+    public String getNotes() {
+        return notes;
+    }
+
+    public String getMethod() {
+        return method;
+    }
+
+    public Socket getSocket() {
+        return socket;
+    }
+
     public Optional<Exception> getException() {
         return Optional.ofNullable(exception);
     }

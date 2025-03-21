@@ -1,7 +1,6 @@
-package com.berkepite.RateDistributionEngine.CNNTCPSubscriber;
+package com.berkepite.RateDistributionEngine.CNNTCP;
 
 import com.berkepite.RateDistributionEngine.common.rates.RawRate;
-import org.springframework.stereotype.Component;
 
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
@@ -9,12 +8,11 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
-@Component
 public class CNNRateMapper {
 
     public RawRate createRawRate(String data) throws Exception {
         RawRate rate = new RawRate();
-        
+
         List<String> fields = Arrays.stream(data.split("\\|")).toList();
 
         List<String> nameField = Arrays.stream(fields.getFirst().split("=")).toList();

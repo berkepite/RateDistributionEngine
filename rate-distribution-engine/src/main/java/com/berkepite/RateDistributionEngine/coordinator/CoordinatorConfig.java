@@ -34,10 +34,14 @@ public class CoordinatorConfig {
         private String jarName;
         private String configName;
         private String classPath;
-        private String className;
+        private String configClassPath;
 
-        public String getClassName() {
-            return className;
+        public String getConfigClassPath() {
+            return configClassPath;
+        }
+
+        public void setConfigClassPath(String configClassPath) {
+            this.configClassPath = configClassPath;
         }
 
         public String getClassPath() {
@@ -68,10 +72,6 @@ public class CoordinatorConfig {
             this.enabled = enabled;
         }
 
-        public void setClassName(String className) {
-            this.className = className;
-        }
-
         public void setConfigName(String configName) {
             this.configName = configName;
         }
@@ -86,7 +86,14 @@ public class CoordinatorConfig {
 
         @Override
         public String toString() {
-            return "Subscriber{name='" + name + "', enabled=" + enabled + ", configName='" + configName + "'}";
+            return "SubscriberBindingConfig{" +
+                    "name='" + name + '\'' +
+                    ", enabled=" + enabled +
+                    ", jarName='" + jarName + '\'' +
+                    ", configName='" + configName + '\'' +
+                    ", classPath='" + classPath + '\'' +
+                    ", configClassPath='" + configClassPath + '\'' +
+                    '}';
         }
     }
 }

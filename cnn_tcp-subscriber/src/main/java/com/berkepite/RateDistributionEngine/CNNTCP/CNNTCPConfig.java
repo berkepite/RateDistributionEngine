@@ -1,4 +1,4 @@
-package com.berkepite.RateDistributionEngine.CNNTCPSubscriber;
+package com.berkepite.RateDistributionEngine.CNNTCP;
 
 import com.berkepite.RateDistributionEngine.common.ISubscriberConfig;
 

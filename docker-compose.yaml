@@ -8,6 +8,7 @@ services:
     volumes:
       - engine_logs_volume:/app/logs
       - ./subscribers:/app/subscribers
+      - ./application-config.yaml:/app/application.yaml
     depends_on:
       rest-platform:
         condition: service_started
@@ -19,8 +20,8 @@ services:
       APP_RATE_CALCULATION_STRATEGY: JAVASCRIPT
       SPRING_DATA_REDIS_HOST: redis
       SPRING_DATA_REDIS_PORT: 6379
-      CNN_TCP_ENABLED: true
-      BLOOMBERG_REST_ENABLED: true
+      TCP_SUBSCRIBER_ENABLED: true
+      REST_SUBSCRIBER_ENABLED: true
 
   tcp-platform:
     image: luieitalian/tcp-platform

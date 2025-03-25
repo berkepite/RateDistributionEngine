@@ -1,0 +1,12 @@
+name: rest_subscriber_test
+classPath: com.berkepite.RateDistributionEngine.RestSubscriber
+className: RestSubscriber
+url: http://localhost:1000
+port: 1000
+username: client
+password: 1234
+includeRates:
+excludeRates:
+requestInterval: 2000
+requestRetryLimit: 5
+healthRequestRetryLimit: 5

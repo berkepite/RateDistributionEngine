@@ -1,3 +1,5 @@
+subscribers/
+rate-distribution-engine/logs/*
 *.env
 HELP.md
 .gradle

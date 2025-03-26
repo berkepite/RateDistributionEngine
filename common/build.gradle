@@ -1,0 +1,16 @@
+plugins {
+    id("java")
+}
+
+group = "com.berkepite"
+version = "0.0.1"
+
+java {
+    toolchain {
+        languageVersion.set(JavaLanguageVersion.of(23))
+    }
+}
+
+repositories {
+    mavenCentral()
+}

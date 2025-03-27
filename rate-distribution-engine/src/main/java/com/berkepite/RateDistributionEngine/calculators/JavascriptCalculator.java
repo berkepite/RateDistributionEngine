@@ -1,6 +1,7 @@
 package com.berkepite.RateDistributionEngine.calculators;
 
 import com.berkepite.RateDistributionEngine.common.rates.CalculatedRate;
+import com.berkepite.RateDistributionEngine.rates.RateConverter;
 import com.berkepite.RateDistributionEngine.rates.RateFactory;
 import com.berkepite.RateDistributionEngine.common.rates.RawRate;
 import org.apache.logging.log4j.LogManager;
@@ -14,25 +15,26 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.Reader;
 import java.time.Instant;
-import java.util.ArrayList;
-import java.util.List;
 
 public class JavascriptCalculator implements IRateCalculator {
     private final RateFactory rateFactory;
+    private final RateConverter rateConverter;
+    private final CalculatorLoader calculatorLoader;
     private static final Logger LOGGER = LogManager.getLogger(JavascriptCalculator.class);
     private Source source;
 
-    public JavascriptCalculator(RateFactory rateFactory) {
+    public JavascriptCalculator(RateFactory rateFactory, RateConverter rateConverter, CalculatorLoader calculatorLoader) {
         this.rateFactory = rateFactory;
+        this.calculatorLoader = calculatorLoader;
+        this.rateConverter = rateConverter;
         init();
     }
 
     public void init() {
         try {
-            ClassPathResource resource = new ClassPathResource("rate_calculators/javascript.mjs");
-            Reader stream = new InputStreamReader(resource.getInputStream());
+            Reader calculatorSource = calculatorLoader.load("rate_calculators/JAVASCRIPT_CALCULATOR.mjs");
 
-            source = Source.newBuilder("js", stream, "jsmod.js").mimeType("application/javascript+module").build();
+            source = Source.newBuilder("js", calculatorSource, "jsmod.js").mimeType("application/javascript+module").build();
         } catch (IOException e) {
             LOGGER.error(e);
             throw new RuntimeException(e);
@@ -40,18 +42,14 @@ public class JavascriptCalculator implements IRateCalculator {
     }
 
     @Override
-    public RawRate calculateMeansOfRawRates(RawRate incomingRate, Double[] bids, Double[] asks) {
-        if (bids.length == 0) {
-            return incomingRate;
-        }
-
+    public RawRate calculateMeanRate(RawRate incomingRate, Double[] bids, Double[] asks) {
         try (Context context = Context.newBuilder("js")
                 .allowAllAccess(true)
                 .option("js.esm-eval-returns-exports", "true")
                 .build()) {
             Value module = context.eval(source);
 
-            Value calculateMean = module.getMember("calculateMeansOfRawRates");
+            Value calculateMean = module.getMember("calculateMeanRate");
             Value result = calculateMean.execute(bids, asks);
 
             return rateFactory.createRawRate(incomingRate.getType(),
@@ -63,20 +61,19 @@ public class JavascriptCalculator implements IRateCalculator {
     }
 
     @Override
-    public CalculatedRate calculateForType(String type, Double usdmid, Double[] bids, Double[] asks) {
-        if (bids.length == 0 || asks.length == 0) {
-            return null;
-        }
+    public CalculatedRate calculateForRawRateType(String type, Double usdmid, Double[] bids, Double[] asks) {
         try (Context context = Context.newBuilder("js")
                 .allowAllAccess(true)
                 .option("js.esm-eval-returns-exports", "true")
                 .build()) {
             Value module = context.eval(source);
 
-            Value calculateForType = module.getMember("calculateForType");
-            Value result = calculateForType.execute(usdmid, bids, asks);
+            Value m_calculateForRawRateType = module.getMember("calculateForRawRateType");
+            Value result = m_calculateForRawRateType.execute(usdmid, bids, asks);
 
-            return rateFactory.createCalcRate(type,
+            String calcRateType = rateConverter.convertFromRawToCalc(type);
+
+            return rateFactory.createCalcRate(calcRateType,
                     result.getArrayElement(0).asDouble(),
                     result.getArrayElement(1).asDouble(),
                     Instant.now());
@@ -85,19 +82,18 @@ public class JavascriptCalculator implements IRateCalculator {
 
     @Override
     public CalculatedRate calculateForUSD_TRY(Double[] bids, Double[] asks) {
-        if (bids.length == 0 || asks.length == 0) {
-            return null;
-        }
         try (Context context = Context.newBuilder("js")
                 .allowAllAccess(true)
                 .option("js.esm-eval-returns-exports", "true")
                 .build()) {
             Value module = context.eval(source);
 
-            Value calculateForUSD_TRY = module.getMember("calculateForUSD_TRY");
-            Value result = calculateForUSD_TRY.execute(bids, asks);
+            Value m_calculateForUSD_TRY = module.getMember("calculateForUSD_TRY");
+            Value result = m_calculateForUSD_TRY.execute(bids, asks);
 
-            return rateFactory.createCalcRate("USD_TRY",
+            String calcRateType = rateConverter.convertFromRawToCalc("USD_TRY");
+
+            return rateFactory.createCalcRate(calcRateType,
                     result.getArrayElement(0).asDouble(),
                     result.getArrayElement(1).asDouble(),
                     Instant.now());
@@ -105,7 +101,7 @@ public class JavascriptCalculator implements IRateCalculator {
     }
 
     @Override
-    public boolean hasAtLeastOnePercentDiff(Double bid1, Double ask1, Double bid2, Double ask2) {
+    public boolean hasAtLeastOnePercentDiff(RawRate incomingRate, RawRate meanRate) {
         try (Context context = Context.newBuilder("js")
                 .allowAllAccess(true)
                 .option("js.esm-eval-returns-exports", "true")
@@ -113,7 +109,8 @@ public class JavascriptCalculator implements IRateCalculator {
             Value module = context.eval(source);
             Value hasAtLeastOnePercentDiff = module.getMember("hasAtLeastOnePercentDiff");
 
-            Value result = hasAtLeastOnePercentDiff.execute(bid1, ask1, bid2, ask2);
+            Value result = hasAtLeastOnePercentDiff.execute(
+                    incomingRate.getBid(), incomingRate.getAsk(), meanRate.getBid(), meanRate.getAsk());
 
             return result.asBoolean();
         }
@@ -121,9 +118,6 @@ public class JavascriptCalculator implements IRateCalculator {
 
     @Override
     public Double calculateUSDMID(Double[] bids, Double[] asks) {
-        if (bids.length == 0 || asks.length == 0) {
-            return null;
-        }
         try (Context context = Context.newBuilder("js")
                 .allowAllAccess(true)
                 .option("js.esm-eval-returns-exports", "true")
@@ -132,28 +126,6 @@ public class JavascriptCalculator implements IRateCalculator {
             Value calculateUSDMID = module.getMember("calculateUSDMID");
 
             Value result = calculateUSDMID.execute(bids, asks);
-
-            return result.asDouble();
-        }
-    }
-
-    @Override
-    public Double calculateMean(List<RawRate> rawRates) {
-        try (Context context = Context.newBuilder("js")
-                .allowAllAccess(true)
-                .option("js.esm-eval-returns-exports", "true")
-                .build()) {
-            Value module = context.eval(source);
-            Value calculateMeans = module.getMember("calculateMeans");
-
-            List<Double> bids = new ArrayList<>();
-            List<Double> asks = new ArrayList<>();
-            rawRates.forEach(rate -> {
-                bids.add(rate.getBid());
-                asks.add(rate.getAsk());
-            });
-
-            Value result = calculateMeans.execute(bids.toArray(new Double[0]), asks.toArray(new Double[0]));
 
             return result.asDouble();
         }

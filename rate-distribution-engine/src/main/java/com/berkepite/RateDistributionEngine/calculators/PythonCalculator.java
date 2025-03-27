@@ -1,6 +1,7 @@
 package com.berkepite.RateDistributionEngine.calculators;
 
 import com.berkepite.RateDistributionEngine.common.rates.CalculatedRate;
+import com.berkepite.RateDistributionEngine.rates.RateConverter;
 import com.berkepite.RateDistributionEngine.rates.RateFactory;
 import com.berkepite.RateDistributionEngine.common.rates.RawRate;
 import org.apache.logging.log4j.LogManager;
@@ -14,25 +15,26 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.Reader;
 import java.time.Instant;
-import java.util.ArrayList;
-import java.util.List;
 
 public class PythonCalculator implements IRateCalculator {
     private final RateFactory rateFactory;
+    private final RateConverter rateConverter;
+    private final CalculatorLoader calculatorLoader;
     private static final Logger LOGGER = LogManager.getLogger(PythonCalculator.class);
     private Source source;
 
-    public PythonCalculator(RateFactory rateFactory) {
+    public PythonCalculator(RateFactory rateFactory, RateConverter rateConverter, CalculatorLoader calculatorLoader) {
         this.rateFactory = rateFactory;
+        this.calculatorLoader = calculatorLoader;
+        this.rateConverter = rateConverter;
         init();
     }
 
     public void init() {
         try {
-            ClassPathResource resource = new ClassPathResource("rate_calculators/python.py");
-            Reader stream = new InputStreamReader(resource.getInputStream());
+            Reader calculatorSource = calculatorLoader.load("rate_calculators/PYTHON_CALCULATOR.py");
 
-            source = Source.newBuilder("python", stream, "pymod.py").build();
+            source = Source.newBuilder("python", calculatorSource, "pymod.py").build();
         } catch (IOException e) {
             LOGGER.error(e);
             throw new RuntimeException(e);
@@ -40,19 +42,14 @@ public class PythonCalculator implements IRateCalculator {
     }
 
     @Override
-    public RawRate calculateMeansOfRawRates(RawRate incomingRate, Double[] bids, Double[] asks) {
-        if (bids.length == 0) {
-            return incomingRate;
-        }
-
+    public RawRate calculateMeanRate(RawRate incomingRate, Double[] bids, Double[] asks) {
         try (Context context = Context.newBuilder("python")
                 .allowAllAccess(true)
                 .build()) {
             Value module = context.eval(source);
 
-            Value calculateMean = module.getMember("calculate_means_of_raw_rates");
-
-            Value result = calculateMean.execute(bids, asks);
+            Value m_calculateMeanRate = module.getMember("calculate_mean_rate");
+            Value result = m_calculateMeanRate.execute(bids, asks);
 
             return rateFactory.createRawRate(incomingRate.getType(),
                     incomingRate.getProvider(),
@@ -63,16 +60,13 @@ public class PythonCalculator implements IRateCalculator {
     }
 
     @Override
-    public CalculatedRate calculateForType(String type, Double usdmid, Double[] bids, Double[] asks) {
-        if (bids.length == 0 || asks.length == 0) {
-            return null;
-        }
+    public CalculatedRate calculateForRawRateType(String type, Double usdmid, Double[] bids, Double[] asks) {
         try (Context context = Context.newBuilder("python")
                 .allowAllAccess(true)
                 .build()) {
             Value module = context.eval(source);
 
-            Value calculateForType = module.getMember("calculate_for_type");
+            Value calculateForType = module.getMember("calculate_for_raw_rate_type");
             Value result = calculateForType.execute(usdmid, bids, asks);
 
             return rateFactory.createCalcRate(type,
@@ -84,33 +78,34 @@ public class PythonCalculator implements IRateCalculator {
 
     @Override
     public CalculatedRate calculateForUSD_TRY(Double[] bids, Double[] asks) {
-        if (bids.length == 0 || asks.length == 0) {
-            return null;
-        }
         try (Context context = Context.newBuilder("python")
                 .allowAllAccess(true)
                 .build()) {
             Value module = context.eval(source);
 
-            Value calculateForUSD_TRY = module.getMember("calculate_for_usd_try");
-            Value result = calculateForUSD_TRY.execute(bids, asks);
+            Value m_calculateForUSD_TRY = module.getMember("calculate_for_USD_TRY");
+            Value result = m_calculateForUSD_TRY.execute(bids, asks);
 
-            return rateFactory.createCalcRate("USD_TRY",
+            String calcRateType = rateConverter.convertFromRawToCalc("USD_TRY");
+
+            return rateFactory.createCalcRate(calcRateType,
                     result.getArrayElement(0).asDouble(),
                     result.getArrayElement(1).asDouble(),
                     Instant.now());
         }
     }
 
+
     @Override
-    public boolean hasAtLeastOnePercentDiff(Double bid1, Double ask1, Double bid2, Double ask2) {
+    public boolean hasAtLeastOnePercentDiff(RawRate incomingRate, RawRate meanRate) {
         try (Context context = Context.newBuilder("python")
                 .allowAllAccess(true)
                 .build()) {
             Value module = context.eval(source);
-            Value hasAtLeastOnePercentDiff = module.getMember("has_at_least_one_percent_diff");
+            Value m_hasAtLeastOnePercentDiff = module.getMember("has_at_least_one_percent_diff");
 
-            Value result = hasAtLeastOnePercentDiff.execute(bid1, ask1, bid2, ask2);
+            Value result = m_hasAtLeastOnePercentDiff.execute(
+                    incomingRate.getBid(), incomingRate.getAsk(), meanRate.getBid(), meanRate.getAsk());
 
             return result.asBoolean();
         }
@@ -118,9 +113,6 @@ public class PythonCalculator implements IRateCalculator {
 
     @Override
     public Double calculateUSDMID(Double[] bids, Double[] asks) {
-        if (bids.length == 0 || asks.length == 0) {
-            return null;
-        }
         try (Context context = Context.newBuilder("python")
                 .allowAllAccess(true)
                 .build()) {
@@ -128,27 +120,6 @@ public class PythonCalculator implements IRateCalculator {
             Value calculateUSDMID = module.getMember("calculate_usdmid");
 
             Value result = calculateUSDMID.execute(bids, asks);
-
-            return result.asDouble();
-        }
-    }
-
-    @Override
-    public Double calculateMean(List<RawRate> rawRates) {
-        try (Context context = Context.newBuilder("python")
-                .allowAllAccess(true)
-                .build()) {
-            Value module = context.eval(source);
-            Value calculateMeans = module.getMember("calculate_means");
-
-            List<Double> bids = new ArrayList<>();
-            List<Double> asks = new ArrayList<>();
-            rawRates.forEach(rate -> {
-                bids.add(rate.getBid());
-                asks.add(rate.getAsk());
-            });
-
-            Value result = calculateMeans.execute(bids.toArray(new Double[0]), asks.toArray(new Double[0]));
 
             return result.asDouble();
         }

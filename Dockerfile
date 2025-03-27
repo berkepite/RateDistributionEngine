@@ -7,8 +7,6 @@ ENV LANGUAGES="js,python"
 # Set up the working directory
 WORKDIR /app
 
-# Copy the vendor folder containing dependencies (decimal.js and others)
-COPY ./vendor vendor
 COPY ./rate-distribution-engine/build/libs/rate-distribution-engine-0.0.1.jar RateDistributionEngine.jar
 
 # Run the Java program

@@ -1,6 +1,6 @@
-import {Decimal} from 'vendor/decimal.js/decimal.mjs';
+import {Decimal} from 'rate-distribution-engine/vendor/decimal.js/decimal.mjs';
 
-export function calculateMeansOfRawRates(bids, asks) {
+export function calculateMeanRate(bids, asks) {
     const [bid_mean, ask_mean] = calculateMeans(bids, asks);
 
     return [bid_mean.toNumber(), ask_mean.toNumber()];
@@ -28,7 +28,7 @@ export function calculateUSDMID(bids, asks) {
     return usdmid.toNumber();
 }
 
-export function calculateForType(usdmid, bids, asks) {
+export function calculateForRawRateType(usdmid, bids, asks) {
     const [bid_mean, ask_mean] = calculateMeans(bids, asks);
 
     const usdmid_dec = new Decimal(usdmid.toString());
@@ -38,17 +38,11 @@ export function calculateForType(usdmid, bids, asks) {
 
 export function calculateForUSD_TRY(bids, asks) {
     const [bid_mean, ask_mean] = calculateMeans(bids, asks);
-    return [bid_mean.toNumber(), ask_mean.toNumber()];
-}
-
-function calculateMeans(bids, asks) {
-    const bid_mean = calculateMean(bids);
-    const ask_mean = calculateMean(asks);
 
     return [bid_mean, ask_mean];
 }
 
-export function calculateMean(numbers) {
+function calculateMean(numbers) {
     let sum = new Decimal(0);
 
     for (const num of numbers) {
@@ -56,4 +50,11 @@ export function calculateMean(numbers) {
     }
 
     return sum.dividedBy(numbers.length);
+}
+
+function calculateMeans(bids, asks) {
+    const bid_mean = calculateMean(bids);
+    const ask_mean = calculateMean(asks);
+
+    return [bid_mean, ask_mean];
 }

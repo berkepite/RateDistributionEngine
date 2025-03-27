@@ -1,32 +1,34 @@
-package com.berkepite.MainApplication32Bit.calculators;
+package com.berkepite.RateDistributionEngine.calculators;
 
-import com.berkepite.RateDistributionEngine.calculators.CalculatorEnum;
-import com.berkepite.RateDistributionEngine.calculators.CalculatorFactory;
-import com.berkepite.RateDistributionEngine.calculators.PythonCalculator;
 import com.berkepite.RateDistributionEngine.common.rates.CalculatedRate;
 import com.berkepite.RateDistributionEngine.common.rates.RawRate;
+import com.berkepite.RateDistributionEngine.rates.RateConverter;
+import com.berkepite.RateDistributionEngine.rates.RateFactory;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.test.context.ActiveProfiles;
 
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
-@SpringBootTest
+@ExtendWith(MockitoExtension.class)
 @ActiveProfiles("test")
-public class PythonCalculatorTest {
-    @Autowired
-    private CalculatorFactory calculatorFactory;
+public class JavascriptCalculatorTest {
+    private JavascriptCalculator javascriptCalculator;
 
-    private PythonCalculator pythonCalculator;
+    @Mock
+    private RateConverter rateConverter;
 
     @BeforeEach
     public void setUp() {
-        pythonCalculator = (PythonCalculator) calculatorFactory.getCalculator(CalculatorEnum.PYTHON);
+        RateFactory rateFactory = new RateFactory();
+        CalculatorLoader calculatorLoader = new CalculatorLoader();
+        javascriptCalculator = new JavascriptCalculator(rateFactory, rateConverter, calculatorLoader);
     }
 
     @Test
@@ -34,13 +36,13 @@ public class PythonCalculatorTest {
         RawRate rate1 = createRateWithBidAndAsk(1.005, 2.1);
         RawRate rate2 = createRateWithBidAndAsk(1.01, 2);
 
-        Boolean result = pythonCalculator.hasAtLeastOnePercentDiff(rate1.getBid(), rate1.getAsk(), rate2.getBid(), rate2.getAsk());
+        Boolean result = javascriptCalculator.hasAtLeastOnePercentDiff(rate1, rate2);
 
         Assertions.assertEquals(true, result);
     }
 
     @Test
-    public void shouldCalculateMean_OfRawRates_return5BidAnd4Ask() throws Exception {
+    public void shouldCalculateMean_Rate_OfRawRates_return5BidAnd4Ask() throws Exception {
         RawRate incomingRate = createRateWithBidAndAsk(2, 2);
         List<RawRate> otherPlatformRates = new ArrayList<>();
         otherPlatformRates.add(createRateWithBidAndAsk(8, 6));
@@ -50,14 +52,14 @@ public class PythonCalculatorTest {
         Double[] bids = values.get(0);
         Double[] asks = values.get(1);
 
-        RawRate rate = pythonCalculator.calculateMeansOfRawRates(incomingRate, bids, asks);
+        RawRate rate = javascriptCalculator.calculateMeanRate(incomingRate, bids, asks);
 
         Assertions.assertEquals(5, rate.getBid());
         Assertions.assertEquals(4, rate.getAsk());
     }
 
     @Test
-    public void shouldCalculateMean_OfRawRates_return0_15BidAnd3_5Ask() throws Exception {
+    public void shouldCalculateMean_Rate_OfRawRates_return0_15BidAnd3_5Ask() throws Exception {
         RawRate incomingRate = createRateWithBidAndAsk(0.5, 0.5);
         List<RawRate> otherPlatformRates = new ArrayList<>();
         otherPlatformRates.add(createRateWithBidAndAsk(0.2, 0.4));
@@ -67,25 +69,10 @@ public class PythonCalculatorTest {
         Double[] bids = values.get(0);
         Double[] asks = values.get(1);
 
-        RawRate rate = pythonCalculator.calculateMeansOfRawRates(incomingRate, bids, asks);
+        RawRate rate = javascriptCalculator.calculateMeanRate(incomingRate, bids, asks);
 
         Assertions.assertEquals(0.15, rate.getBid());
         Assertions.assertEquals(0.35, rate.getAsk());
-    }
-
-    @Test
-    public void shouldCalculateMean_OfRawRates_returnIncomingRate() throws Exception {
-        RawRate incomingRate = createRateWithBidAndAsk(0.1, 0.1);
-        List<RawRate> otherPlatformRates = new ArrayList<>();
-
-        List<Double[]> values = getBidsAndAsks(otherPlatformRates);
-        Double[] bids = values.get(0);
-        Double[] asks = values.get(1);
-
-        RawRate rate = pythonCalculator.calculateMeansOfRawRates(incomingRate, bids, asks);
-
-        Assertions.assertEquals(0.1, rate.getBid());
-        Assertions.assertEquals(0.1, rate.getAsk());
     }
 
     @Test
@@ -98,7 +85,7 @@ public class PythonCalculatorTest {
         Double[] bids = values.get(0);
         Double[] asks = values.get(1);
 
-        Double usdmid = pythonCalculator.calculateUSDMID(bids, asks);
+        Double usdmid = javascriptCalculator.calculateUSDMID(bids, asks);
 
         Assertions.assertEquals(35.499375, usdmid);
     }
@@ -113,7 +100,7 @@ public class PythonCalculatorTest {
         Double[] bids = values.get(0);
         Double[] asks = values.get(1);
 
-        CalculatedRate calcRate = pythonCalculator.calculateForUSD_TRY(bids, asks);
+        CalculatedRate calcRate = javascriptCalculator.calculateForUSD_TRY(bids, asks);
 
         Assertions.assertEquals(1.0335, calcRate.getBid());
         Assertions.assertEquals(1.039, calcRate.getAsk());
@@ -131,7 +118,7 @@ public class PythonCalculatorTest {
 
         Double usdmid = 34.85;
 
-        CalculatedRate calcRate = pythonCalculator.calculateForType("EUR_USD", usdmid, bids, asks);
+        CalculatedRate calcRate = javascriptCalculator.calculateForRawRateType("EUR_USD", usdmid, bids, asks);
 
         Assertions.assertEquals(36.017475, calcRate.getBid());
         Assertions.assertEquals(36.20915, calcRate.getAsk());

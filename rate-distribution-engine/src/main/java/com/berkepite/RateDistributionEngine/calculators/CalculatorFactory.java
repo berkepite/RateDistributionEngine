@@ -1,17 +1,24 @@
 package com.berkepite.RateDistributionEngine.calculators;
 
+import com.berkepite.RateDistributionEngine.rates.RateConverter;
 import com.berkepite.RateDistributionEngine.rates.RateFactory;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 @Service
 public class CalculatorFactory {
     private static final Logger LOGGER = LogManager.getLogger(CalculatorFactory.class);
     private final RateFactory rateFactory;
+    private final RateConverter rateConverter;
+    private final CalculatorLoader calculatorLoader;
 
-    public CalculatorFactory(RateFactory rateFactory) {
+    @Autowired
+    public CalculatorFactory(RateFactory rateFactory, RateConverter rateConverter, CalculatorLoader calculatorLoader) {
         this.rateFactory = rateFactory;
+        this.rateConverter = rateConverter;
+        this.calculatorLoader = calculatorLoader;
     }
 
     public IRateCalculator getCalculator(CalculatorEnum strategy) {
@@ -34,11 +41,11 @@ public class CalculatorFactory {
 
     private JavascriptCalculator getJavascriptCalculator() throws Exception {
 
-        return new JavascriptCalculator(rateFactory);
+        return new JavascriptCalculator(rateFactory, rateConverter, calculatorLoader);
     }
 
     private PythonCalculator getPythonCalculator() throws Exception {
 
-        return new PythonCalculator(rateFactory);
+        return new PythonCalculator(rateFactory, rateConverter, calculatorLoader);
     }
 }

@@ -5,7 +5,7 @@ getcontext().prec = 20
 
 
 @polyglot.export_value
-def calculate_means_of_raw_rates(bids, asks):
+def calculate_mean_rate(bids, asks):
     bid_mean, ask_mean = calculate_means(bids, asks)
     return float(bid_mean), float(ask_mean)
 
@@ -32,19 +32,18 @@ def calculate_usdmid(bids, asks):
 
 
 @polyglot.export_value
-def calculate_for_type(usdmid, bids, asks):
+def calculate_for_raw_rate_type(usdmid, bids, asks):
     bid_mean, ask_mean = calculate_means(bids, asks)
     usdmid_dec = Decimal(str(usdmid))
     return float(bid_mean * usdmid_dec), float(ask_mean * usdmid_dec)
 
 
 @polyglot.export_value
-def calculate_for_usd_try(bids, asks):
+def calculate_for_USD_TRY(bids, asks):
     bid_mean, ask_mean = calculate_means(bids, asks)
     return float(bid_mean), float(ask_mean)
 
 
-@polyglot.export_value
 def calculate_means(bids, asks):
     bid_mean = calculate_mean(bids)
     ask_mean = calculate_mean(asks)

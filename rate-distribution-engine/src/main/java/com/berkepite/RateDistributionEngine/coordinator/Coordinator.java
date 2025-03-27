@@ -1,7 +1,7 @@
 package com.berkepite.RateDistributionEngine.coordinator;
 
 import com.berkepite.RateDistributionEngine.common.rates.RawRate;
-import com.berkepite.RateDistributionEngine.rates.RateService;
+import com.berkepite.RateDistributionEngine.rates.RateManager;
 import com.berkepite.RateDistributionEngine.common.status.ConnectionStatus;
 import com.berkepite.RateDistributionEngine.common.status.RateStatus;
 import com.berkepite.RateDistributionEngine.common.ISubscriber;
@@ -39,12 +39,12 @@ public class Coordinator implements CommandLineRunner, ICoordinator {
      * Constructor for initializing the Coordinator with necessary services.
      *
      * @param coordinatorConfig the configuration class for the coordinator
-     * @param rateService       the service for managing rates
+     * @param rateManager       the service for managing rates
      * @param subscriberLoader  the loader for subscribers
      * @param executorService   the thread pool executor for managing async tasks
      */
     @Autowired
-    public Coordinator(CoordinatorConfig coordinatorConfig, RateService rateService, SubscriberLoader subscriberLoader, @Qualifier("coordinatorExecutor") ThreadPoolTaskExecutor executorService) {
+    public Coordinator(CoordinatorConfig coordinatorConfig, RateManager rateManager, SubscriberLoader subscriberLoader, @Qualifier("coordinatorExecutor") ThreadPoolTaskExecutor executorService) {
         this.coordinatorConfig = coordinatorConfig;
         this.subscriberLoader = subscriberLoader;
         this.executorService = executorService;

@@ -8,12 +8,13 @@ services:
     volumes:
       - engine_logs_volume:/app/logs
       - ./subscribers:/app/subscribers
+      - ./rate_calculators:/app/rate_calculators
       - ./application-config.yaml:/app/application.yaml
     depends_on:
       rest-platform:
         condition: service_started
-      tcp-platform:
-        condition: service_started
+    #      tcp-platform:
+    #        condition: service_started
     environment:
       SPRING_PROFILES_ACTIVE: debug
       SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:9092
@@ -23,33 +24,33 @@ services:
       TCP_SUBSCRIBER_ENABLED: true
       REST_SUBSCRIBER_ENABLED: true
 
-  tcp-platform:
-    image: luieitalian/tcp-platform
-    container_name: tcp-platform
-    volumes:
-      - ./initial_data_tcp.json:/app/initial_data.json:ro
-    networks:
-      - network
-    environment:
-      TCP_SERVER_USER: client
-      TCP_SERVER_PASSWORD: 2345
-      SPRING_PROFILES_ACTIVE: debug
-      # Every 10 updates, apply a high fluctuation.
-      FLUCTUATION_HIGH_RATE: 10
-      # Strength of the bid fluctuation.
-      FLUCTUATION_HIGH_BID_MULTIPLIER: 10
-      # Strength of the spread fluctuation.
-      FLUCTUATION_HIGH_SPREAD_MULTIPLIER: 6
-      # Normal bid fluctuation.
-      FLUCTUATION_NORMAL_BID_MULTIPLIER: 0.01
-      # Normal spread fluctuation.
-      FLUCTUATION_NORMAL_SPREAD_MULTIPLIER: 0.005
-      # Interval of updates in terms of milliseconds.
-      TCP_SIMULATOR_UPDATE_INTERVAL: 2000
-      # Total streams, after 20 streams, the server shuts down.
-      TCP_SERVER_TOTAL_STREAMS: 100
-      # Interval of streams in terms of milliseconds.
-      TCP_SERVER_STREAM_INTERVAL: 2100
+  #  tcp-platform:
+  #    image: luieitalian/tcp-platform
+  #    container_name: tcp-platform
+  #    volumes:
+  #      - ./initial_data_tcp.json:/app/initial_data.json:ro
+  #    networks:
+  #      - network
+  #    environment:
+  #      TCP_SERVER_USER: client
+  #      TCP_SERVER_PASSWORD: 2345
+  #      SPRING_PROFILES_ACTIVE: debug
+  #      # Every 10 updates, apply a high fluctuation.
+  #      FLUCTUATION_HIGH_RATE: 10
+  #      # Strength of the bid fluctuation.
+  #      FLUCTUATION_HIGH_BID_MULTIPLIER: 10
+  #      # Strength of the spread fluctuation.
+  #      FLUCTUATION_HIGH_SPREAD_MULTIPLIER: 6
+  #      # Normal bid fluctuation.
+  #      FLUCTUATION_NORMAL_BID_MULTIPLIER: 0.01
+  #      # Normal spread fluctuation.
+  #      FLUCTUATION_NORMAL_SPREAD_MULTIPLIER: 0.005
+  #      # Interval of updates in terms of milliseconds.
+  #      TCP_SIMULATOR_UPDATE_INTERVAL: 2000
+  #      # Total streams, after 20 streams, the server shuts down.
+  #      TCP_SERVER_TOTAL_STREAMS: 100
+  #      # Interval of streams in terms of milliseconds.
+  #      TCP_SERVER_STREAM_INTERVAL: 2100
 
   rest-platform:
     image: luieitalian/rest-platform

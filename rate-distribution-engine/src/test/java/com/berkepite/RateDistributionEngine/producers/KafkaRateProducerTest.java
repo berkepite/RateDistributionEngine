@@ -1,4 +1,4 @@
-package com.berkepite.MainApplication32Bit.producers;
+package com.berkepite.RateDistributionEngine.producers;
 
 import com.berkepite.RateDistributionEngine.rates.RateFactory;
 import com.berkepite.RateDistributionEngine.common.rates.RawRate;

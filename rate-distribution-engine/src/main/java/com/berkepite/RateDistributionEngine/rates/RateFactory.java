@@ -10,10 +10,6 @@ import java.time.Instant;
 @Component
 public class RateFactory {
 
-    public RawRate createRateFromData(String type, String data) throws Exception {
-        return null;
-    }
-
     public RawRate createRawRate(String type, String provider, Double bid, Double ask, Instant timestamp) {
         RawRate rawRate = new RawRate();
         rawRate.setType(type);

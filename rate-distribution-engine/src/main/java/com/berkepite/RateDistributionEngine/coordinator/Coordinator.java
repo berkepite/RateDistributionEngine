@@ -3,7 +3,6 @@ package com.berkepite.RateDistributionEngine.coordinator;
 import com.berkepite.RateDistributionEngine.common.rates.RawRate;
 import com.berkepite.RateDistributionEngine.rates.RateManager;
 import com.berkepite.RateDistributionEngine.common.status.ConnectionStatus;
-import com.berkepite.RateDistributionEngine.common.status.RateStatus;
 import com.berkepite.RateDistributionEngine.common.ISubscriber;
 import com.berkepite.RateDistributionEngine.common.ICoordinator;
 import com.berkepite.RateDistributionEngine.common.ISubscriberConfig;
@@ -61,7 +60,25 @@ public class Coordinator implements CommandLineRunner, ICoordinator {
         subscribers = new ArrayList<>(2);
         loadSubscriberClasses(coordinatorConfig.getSubscribers());
 
-        LOGGER.info("Subscriber classes loaded!: {}", subscribers);
+        if (!subscribers.isEmpty()) {
+            LOGGER.info("Subscriber classes loaded!: {}", subscribers.toString());
+        } else {
+            LOGGER.error("0 subscriber classes loaded! Stopping...");
+            return;
+        }
+        LOGGER.info("Coordinator Initialized!");
+
+        Iterator<ISubscriber> iterator = subscribers.iterator();
+        while (iterator.hasNext()) {
+            ISubscriber subscriber = iterator.next();
+            try {
+                subscriber.init();
+            } catch (Exception e) {
+                LOGGER.error("Failed to init subscriber class! {} Cause: {}", subscriber.getConfig().getClassName(), e);
+                LOGGER.warn("Removing {} from subscribers!", subscriber.getConfig().getClassName());
+                iterator.remove();
+            }
+        }
 
         Runtime.getRuntime().addShutdownHook(new Thread(() -> {
             executorService.shutdown();
@@ -69,7 +86,6 @@ public class Coordinator implements CommandLineRunner, ICoordinator {
             LOGGER.info("Executor stopped. ({})", this.getClass().getSimpleName());
         }, "shutdown-hook-coordinator"));
 
-        LOGGER.debug("Coordinator Initialized!");
     }
 
     /**
@@ -80,7 +96,13 @@ public class Coordinator implements CommandLineRunner, ICoordinator {
     @Override
     public void run(String... args) {
         for (ISubscriber subscriber : subscribers) {
-            executorService.execute(subscriber::connect);
+            executorService.execute(() -> {
+                try {
+                    subscriber.connect();
+                } catch (Exception e) {
+                    LOGGER.error("Failed to connect to platform!", e);
+                }
+            });
         }
     }
 
@@ -98,24 +120,8 @@ public class Coordinator implements CommandLineRunner, ICoordinator {
                 }
             }
         });
-    }
 
-    /**
-     * Returns the list of subscribers.
-     *
-     * @return the list of subscribers
-     */
-    public List<ISubscriber> getSubscribers() {
-        return subscribers;
-    }
 
-    /**
-     * Returns the coordinator configuration.
-     *
-     * @return the coordinator configuration
-     */
-    public CoordinatorConfig getCoordinatorConfig() {
-        return coordinatorConfig;
     }
 
     /**
@@ -129,7 +135,13 @@ public class Coordinator implements CommandLineRunner, ICoordinator {
         LOGGER.info("Subscriber rates: {}", coordinatorConfig.getRates());
 
         LOGGER.info("{} connected to {}, trying to subscribe...", config.getName(), config.getUrl());
-        executorService.execute(() -> subscriber.subscribe(coordinatorConfig.getRates()));
+        executorService.execute(() -> {
+            try {
+                subscriber.subscribe(coordinatorConfig.getRates());
+            } catch (Exception e) {
+                LOGGER.error("Failed to subscribe to rates!", e);
+            }
+        });
     }
 
     /**
@@ -189,18 +201,6 @@ public class Coordinator implements CommandLineRunner, ICoordinator {
     }
 
     /**
-     * Handles the event when a rate error occurs for a subscriber.
-     *
-     * @param subscriber the subscriber experiencing the error
-     * @param status     the rate error status
-     */
-    @Override
-    @CoordinatorEventStatus
-    public void onRateError(ISubscriber subscriber, RateStatus status) {
-        // No action required in this implementation
-    }
-
-    /**
      * Handles the event when a connection error occurs for a subscriber.
      *
      * @param subscriber the subscriber experiencing the connection error
@@ -210,5 +210,23 @@ public class Coordinator implements CommandLineRunner, ICoordinator {
     @CoordinatorEventStatus
     public void onConnectionError(ISubscriber subscriber, ConnectionStatus status) {
         // No action required in this implementation
+    }
+
+    /**
+     * Returns the list of subscribers.
+     *
+     * @return the list of subscribers
+     */
+    public List<ISubscriber> getSubscribers() {
+        return subscribers;
+    }
+
+    /**
+     * Returns the coordinator configuration.
+     *
+     * @return the coordinator configuration
+     */
+    public CoordinatorConfig getCoordinatorConfig() {
+        return coordinatorConfig;
     }
 }

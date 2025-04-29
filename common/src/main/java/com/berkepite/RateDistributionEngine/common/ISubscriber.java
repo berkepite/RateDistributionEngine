@@ -8,11 +8,13 @@ public interface ISubscriber {
 
     ISubscriberConfig getConfig();
 
-    void connect();
+    void init() throws Exception;
+
+    void connect() throws Exception;
 
     void disConnect();
 
-    void subscribe(List<String> rates);
+    void subscribe(List<String> rates) throws Exception;
 
     void unSubscribe(List<String> rates);
 

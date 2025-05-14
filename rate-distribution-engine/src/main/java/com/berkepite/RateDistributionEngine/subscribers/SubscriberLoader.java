@@ -13,6 +13,7 @@ import org.apache.logging.log4j.Logger;
 import org.springframework.stereotype.Component;
 
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.net.URL;
 import java.net.URLClassLoader;
 
@@ -66,6 +67,8 @@ public class SubscriberLoader {
             return SubscriberConfigLoader.load(bindingConfig.getConfigName(), loadedConfigClass);
         } catch (ClassNotFoundException e) {
             throw new SubscriberClassNotFoundException("Subscriber config class does not exist: %s".formatted(e), e.getCause());
+        } catch (FileNotFoundException e) {
+            throw new SubscriberLoadingException("Subscriber config class can't be found!: %s".formatted(e), e.getCause());
         } catch (Exception e) {
             throw new SubscriberLoadingException("Failed to load subscriber class: %s".formatted(e), e.getCause());
         }

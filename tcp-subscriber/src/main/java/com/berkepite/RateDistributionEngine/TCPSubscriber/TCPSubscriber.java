@@ -1,5 +1,6 @@
 package com.berkepite.RateDistributionEngine.TCPSubscriber;
 
+import com.berkepite.RateDistributionEngine.common.exception.RateMapperException;
 import com.berkepite.RateDistributionEngine.common.ISubscriber;
 import com.berkepite.RateDistributionEngine.common.ISubscriberConfig;
 import com.berkepite.RateDistributionEngine.common.ICoordinator;
@@ -7,8 +8,6 @@ import com.berkepite.RateDistributionEngine.common.exception.subscriber.Subscrib
 import com.berkepite.RateDistributionEngine.common.exception.subscriber.SubscriberConnectionException;
 import com.berkepite.RateDistributionEngine.common.exception.subscriber.SubscriberException;
 import com.berkepite.RateDistributionEngine.common.rates.RawRate;
-import com.berkepite.RateDistributionEngine.common.status.ConnectionStatus;
-import com.berkepite.RateDistributionEngine.common.status.RateStatus;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -86,11 +85,11 @@ public class TCPSubscriber implements ISubscriber {
     @Override
     public void connect() throws Exception {
         String credentials = config.getUsername() + ":" + config.getPassword();
-        getWriter().println(credentials);  // Send credentials for authentication
+        writer.println(credentials);  // Send credentials for authentication
 
         // Listen for the server's initial response
         String response;
-        while (isListeningForInitialResponses && (response = getReader().readLine()) != null) {
+        while (isListeningForInitialResponses && (response = reader.readLine()) != null) {
             handleInitialResponses(response); // Handle the response from the server
         }
     }
@@ -106,9 +105,7 @@ public class TCPSubscriber implements ISubscriber {
     }
 
     @Override
-    public void subscribe(List<String> rates) throws Exception {
-        isListeningForInitialResponses = false;  // Stop listening for initial responses after subscription
-
+    public void subscribe(List<String> rates) {
         List<String> ratesToSubscribe = new ArrayList<>(rates);
         ratesToSubscribe.addAll(config.getIncludeRates());
         ratesToSubscribe.removeAll(config.getExcludeRates());
@@ -119,7 +116,7 @@ public class TCPSubscriber implements ISubscriber {
         executorService.execute(this::listen);
 
         for (String endpoint : endpoints) {
-            getWriter().println("sub|" + endpoint);  // Send subscription request to the server
+            writer.println("sub|" + endpoint);  // Send subscription request to the server
         }
     }
 
@@ -128,7 +125,7 @@ public class TCPSubscriber implements ISubscriber {
         List<String> endpoints = rateMapper.mapRateEnumToEndpoints(rates);
 
         for (String endpoint : endpoints) {
-            getWriter().println("unsub|" + endpoint);  // Send unsubscription request to the server
+            writer.println("unsub|" + endpoint);  // Send unsubscription request to the server
         }
     }
 
@@ -139,13 +136,15 @@ public class TCPSubscriber implements ISubscriber {
     private void listen() {
         try {
             String response;
-            while (isListeningForRates && (response = getReader().readLine()) != null) {
+            while (isListeningForRates && (response = reader.readLine()) != null) {
                 final String data = response;
                 if (!data.isEmpty()) {
                     executorService.execute(() -> handleResponses(data));  // Process the incoming data
                 }
             }
 
+        } catch (IOException e) {
+            LOGGER.error("An I/O error occurred.", e); // TODO Maybe TRY AGAIN IF ERROR OCCURS
         } catch (Exception e) {
             LOGGER.error("An unexpected error occurred.", e);
         } finally {
@@ -163,9 +162,11 @@ public class TCPSubscriber implements ISubscriber {
         try {
             RawRate rate = rateMapper.createRawRate(data);
             coordinator.onRateUpdate(this, rate);
+        } catch (RateMapperException e) {
+            LOGGER.error(e);
         } catch (Exception e) {
             LOGGER.error("An unexpected error occurred.", e);
-        } // Kaldıgım yer
+        }
     }
 
     /**
@@ -177,9 +178,10 @@ public class TCPSubscriber implements ISubscriber {
         LOGGER.warn("Received the following initial responses: {}", response);
 
         if (response.equals("AUTH SUCCESS")) {
+            isListeningForInitialResponses = false;  // Stop listening for initial responses after subscription
             coordinator.onConnect(this);  // Notify the coordinator if authentication is successful
         } else if (response.equals("AUTH FAILED")) {
-            throw new SubscriberBadCredentialsException("Response is AUTH FAILED, Check for bad credentials!");
+            throw new SubscriberBadCredentialsException("Response is AUTH FAILED, check for bad credentials!");
         }
     }
 

@@ -14,7 +14,7 @@ public interface ISubscriber {
 
     void disConnect();
 
-    void subscribe(List<String> rates) throws Exception;
+    void subscribe(List<String> rates);
 
     void unSubscribe(List<String> rates);
 

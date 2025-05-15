@@ -30,8 +30,6 @@ public class TCPSubscriberTest {
         TCPSubscriber subscriber = new TCPSubscriber(mockCoordinator, mockConfig);
 
         Socket mockSocket = mock(Socket.class);
-        OutputStream mockOut = new ByteArrayOutputStream();
-        InputStream mockIn = new ByteArrayInputStream("".getBytes());
 
         // Replace the socket after creation (setSocket)
         subscriber.setSocket(mockSocket);
@@ -110,6 +108,4 @@ public class TCPSubscriberTest {
         verify(writer).println("sub|EURUSD");
         verify(writer).println("sub|USDTRY");
     }
-
-
 }

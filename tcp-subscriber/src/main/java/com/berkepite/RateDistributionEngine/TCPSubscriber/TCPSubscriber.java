@@ -8,6 +8,7 @@ import com.berkepite.RateDistributionEngine.common.exception.subscriber.Subscrib
 import com.berkepite.RateDistributionEngine.common.exception.subscriber.SubscriberConnectionException;
 import com.berkepite.RateDistributionEngine.common.exception.subscriber.SubscriberException;
 import com.berkepite.RateDistributionEngine.common.rates.RawRate;
+import com.berkepite.RateDistributionEngine.common.status.ConnectionStatus;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -134,23 +135,55 @@ public class TCPSubscriber implements ISubscriber {
      * Reads data from the server and handles the responses.
      */
     private void listen() {
-        try {
-            String response;
-            while (isListeningForRates && (response = reader.readLine()) != null) {
-                final String data = response;
-                if (!data.isEmpty()) {
-                    executorService.execute(() -> handleResponses(data));  // Process the incoming data
+        int retryLimit = config.getRequestRetryLimit();
+        int intervalMillis = config.getRequestInterval();
+
+        while (retryLimit >= 0) {
+            try {
+                String response;
+                while (isListeningForRates) {
+                    if ((response = reader.readLine()) != null) {
+                        final String data = response;
+                        if (!data.isEmpty()) {
+                            executorService.execute(() -> handleResponses(data));  // Process the incoming data
+                        }
+                    } else {
+                        throw new SubscriberConnectionException("Server sent null.");
+                    }
                 }
+
+            } catch (IOException e) {
+                LOGGER.warn("An I/O error occurred. Remaining retries: {}", retryLimit, e);
+                retryLimit--;
+            } catch (SubscriberConnectionException e) {
+                LOGGER.warn("{} Remaining retries: {}", e.getMessage(), retryLimit);
+                retryLimit--;
+            } catch (Exception e) {
+                LOGGER.error("An unexpected error occurred. Remaining retries: {}", retryLimit, e);
+                retryLimit--;
             }
 
-        } catch (IOException e) {
-            LOGGER.error("An I/O error occurred.", e); // TODO Maybe TRY AGAIN IF ERROR OCCURS
-        } catch (Exception e) {
-            LOGGER.error("An unexpected error occurred.", e);
-        } finally {
-            LOGGER.warn("The listener ({}) stopped listening because the server sent null or thread interrupted.", config.getName());
-            executorService.shutdown();  // Shutdown the executor when done listening
+            try {
+                Thread.sleep(intervalMillis);
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                LOGGER.warn("Thread interrupted during retry cooldown: {}", e.getMessage());
+            }
+
+            if (retryLimit < 0) {
+                LOGGER.warn("The listener ({}) stopped listening because retry limit exceeded.", config.getName());
+                executorService.shutdown();  // Shutdown the executor when done listening
+
+                ConnectionStatus status = ConnectionStatus.newBuilder()
+                        .withSubscriber(this)
+                        .withSocket(socket, config.getUrl() + ":" + config.getPort())
+                        .withMethod("listen")
+                        .build();
+
+                coordinator.onConnectionError(this, status);
+            }
         }
+
     }
 
     /**
@@ -163,7 +196,7 @@ public class TCPSubscriber implements ISubscriber {
             RawRate rate = rateMapper.createRawRate(data);
             coordinator.onRateUpdate(this, rate);
         } catch (RateMapperException e) {
-            LOGGER.error(e);
+            LOGGER.warn(e);
         } catch (Exception e) {
             LOGGER.error("An unexpected error occurred.", e);
         }
@@ -175,7 +208,7 @@ public class TCPSubscriber implements ISubscriber {
      * @param response the response received from the server
      */
     private void handleInitialResponses(String response) throws SubscriberConnectionException {
-        LOGGER.warn("Received the following initial responses: {}", response);
+        LOGGER.info("Received the following initial responses: {}", response);
 
         if (response.equals("AUTH SUCCESS")) {
             isListeningForInitialResponses = false;  // Stop listening for initial responses after subscription

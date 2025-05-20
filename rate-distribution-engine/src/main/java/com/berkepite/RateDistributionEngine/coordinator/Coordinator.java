@@ -209,7 +209,7 @@ public class Coordinator implements CommandLineRunner, ICoordinator {
     @Override
     @CoordinatorEventStatus
     public void onConnectionError(ISubscriber subscriber, ConnectionStatus status) {
-        // No action required in this implementation
+        LOGGER.info("({}) connection error {}", subscriber.getConfig().getName(), status.toString());
     }
 
     /**

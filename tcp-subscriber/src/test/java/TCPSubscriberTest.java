@@ -16,7 +16,6 @@ import static org.mockito.Mockito.*;
 @ExtendWith(MockitoExtension.class)
 public class TCPSubscriberTest {
 
-    // A test subclass that allows us to inject our mocks.
     @Test
     void init_shouldEstablishConnection() throws Exception {
         // Arrange

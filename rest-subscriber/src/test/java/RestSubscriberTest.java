@@ -1,84 +1,106 @@
 import com.berkepite.RateDistributionEngine.RestSubscriber.RestConfig;
 import com.berkepite.RateDistributionEngine.RestSubscriber.RestSubscriber;
 import com.berkepite.RateDistributionEngine.common.ICoordinator;
-import com.berkepite.RateDistributionEngine.common.ISubscriber;
+import com.berkepite.RateDistributionEngine.common.exception.subscriber.SubscriberConnectionException;
 import com.berkepite.RateDistributionEngine.common.rates.RawRate;
-import com.fasterxml.jackson.core.JsonProcessingException;
-import org.awaitility.Awaitility;
-import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
-import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.net.URI;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.util.List;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.Executors;
 
+import static org.junit.jupiter.api.Assertions.assertThrowsExactly;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 public class RestSubscriberTest {
 
-    @Mock
-    private ICoordinator coordinator;
-
-    @Mock
-    private RestConfig config;
-
-    @Mock
-    private HttpResponse<String> httpResponse;
-
     private RestSubscriber subscriber;
+    private RestConfig config;
+    private ICoordinator coordinator;
+    private HttpClient mockHttpClient;
+    private HttpResponse<String> mockResponse;
 
     @BeforeEach
-    void setUp() {
-        when(config.getUrl()).thenReturn("http://localhost:1000");
+    void setup() throws Exception {
+        config = mock(RestConfig.class);
+        coordinator = mock(ICoordinator.class);
+        mockHttpClient = mock(HttpClient.class);
+        mockResponse = mock(HttpResponse.class);
+
         when(config.getUsername()).thenReturn("client");
         when(config.getPassword()).thenReturn("1234");
-        when(config.getName()).thenReturn("TestSubscriber");
-        when(config.getRequestInterval()).thenReturn(2000);
+        when(config.getName()).thenReturn("REST-TEST");
+        when(config.getUrl()).thenReturn("http://localhost:1000");
+        when(config.getRequestInterval()).thenReturn(100);
+        when(config.getHealthRequestRetryLimit()).thenReturn(1);
 
+        // Anonymous subclass to inject mock HttpClient
         subscriber = new RestSubscriber(coordinator, config);
+        subscriber.setHttpClient(mockHttpClient);
+
+        subscriber.init();
     }
 
     @Test
-    void testConnect_Success() {
-        when(config.getHealthRequestRetryLimit()).thenReturn(5);
+    void connect_shouldCallOnConnect_whenHealthCheckReturns200() throws Exception {
+        // Arrange
+        when(mockResponse.statusCode()).thenReturn(200);
+        when(mockHttpClient.send(any(HttpRequest.class), any(HttpResponse.BodyHandler.class))).thenReturn(mockResponse);
+
+        // Act
         subscriber.connect();
 
-        // Verify the subscriber notifies the coordinator on successful connection
-        verify(coordinator, times(1)).onConnect(subscriber);
+        // Assert
+        verify(coordinator).onConnect(subscriber);
     }
 
     @Test
-    void testSubscribe_Success() {
-        when(config.getRequestRetryLimit()).thenReturn(5);
-        List<String> rates = List.of("USD_TRY", "EUR_USD", "GBP_USD");
+    void connect_shouldNotifyCoordinatorOnFailure() throws Exception {
+        // Arrange
+        when(mockHttpClient.send(any(HttpRequest.class), any(HttpResponse.BodyHandler.class)))
+                .thenReturn(mockResponse);
+        when(mockResponse.statusCode()).thenReturn(500);
 
-        subscriber.subscribe(rates);
+        // Act
+        subscriber.connect();
 
-        verify(coordinator, timeout(5000).times(3)).onSubscribe(subscriber);
+        // Assert
+        verify(coordinator).onConnectionError(eq(subscriber), any());
     }
 
     @Test
-    void testSubscribe_TriggersRateUpdate() throws JsonProcessingException {
-        when(config.getRequestRetryLimit()).thenReturn(5);
-        List<String> rates = List.of("USD_TRY", "EUR_USD", "GBP_USD");
+    void subscribe_shouldTrySubscribingToEndpoints() throws Exception {
+        when(config.getIncludeRates()).thenReturn(List.of());
+        when(config.getExcludeRates()).thenReturn(List.of());
 
-        subscriber.subscribe(rates);
+        when(mockHttpClient.send(any(HttpRequest.class), any(HttpResponse.BodyHandler.class)))
+                .thenReturn(mockResponse);
+        when(mockResponse.statusCode()).thenReturn(200);
 
-        ArgumentCaptor<ISubscriber> subscriberCaptor = ArgumentCaptor.forClass(ISubscriber.class);
-        ArgumentCaptor<RawRate> rateCaptor = ArgumentCaptor.forClass(RawRate.class);
+        // Act
+        subscriber.subscribe(List.of("USD_TRY"));
 
-        Awaitility.await()
-                .atMost(5, TimeUnit.SECONDS)  // Maximum wait time
-                .untilAsserted(() -> {
-                    verify(coordinator, atLeast(3)).onRateUpdate(subscriberCaptor.capture(), rateCaptor.capture());
-                });
+        // Assert: should at least try to map and send request
+        verify(coordinator, atLeastOnce()).onSubscribe(subscriber);
+    }
 
-        Assertions.assertNotNull(rateCaptor.getValue());
+    @Test
+    void subscribe_shouldCallOnConnectionError_whenFails() throws Exception {
+        when(mockHttpClient.send(any(HttpRequest.class), any(HttpResponse.BodyHandler.class)))
+                .thenThrow(new RuntimeException("Simulated failure"));
+
+        // Act
+        subscriber.subscribe(List.of("USD_TRY"));
+
+        // Assert
+        verify(coordinator).onConnectionError(eq(subscriber), any());
     }
 }

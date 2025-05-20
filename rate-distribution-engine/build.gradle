@@ -28,6 +28,7 @@ dependencies {
         exclude group: 'ch.qos.logback', module: 'logback-classic'
         exclude group: 'ch.qos.logback', module: 'logback-core'
     }
+
     // JAVASCRIPT & PYTHON
     implementation("org.graalvm.polyglot:polyglot:24.1.2")
     implementation("org.graalvm.polyglot:js:24.1.2")

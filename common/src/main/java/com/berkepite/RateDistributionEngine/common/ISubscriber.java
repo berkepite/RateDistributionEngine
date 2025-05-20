@@ -8,7 +8,9 @@ public interface ISubscriber {
 
     ISubscriberConfig getConfig();
 
-    void connect();
+    void init() throws Exception;
+
+    void connect() throws Exception;
 
     void disConnect();
 

@@ -1,5 +1,6 @@
 package com.berkepite.RateDistributionEngine.TCPSubscriber;
 
+import com.berkepite.RateDistributionEngine.common.exception.RateMapperException;
 import com.berkepite.RateDistributionEngine.common.rates.RawRate;
 
 import java.time.Instant;
@@ -9,8 +10,7 @@ import java.util.Arrays;
 import java.util.List;
 
 public class RateMapper {
-
-    public RawRate createRawRate(String data) throws Exception {
+    public RawRate createRawRate(String data) throws RateMapperException {
         RawRate rate = new RawRate();
 
         List<String> fields = Arrays.stream(data.split("\\|")).toList();
@@ -20,14 +20,18 @@ public class RateMapper {
         List<String> askField = Arrays.stream(fields.get(2).split("=")).toList();
         List<String> timestampField = Arrays.stream(fields.get(3).split("=")).toList();
 
-        String type = mapEndpointToRateEnum(nameField.get(1));
+        try {
+            String type = mapEndpointToRateEnum(nameField.get(1));
 
-        rate.setType(type);
-        rate.setAsk(Double.parseDouble(askField.get(1)));
-        rate.setBid(Double.parseDouble(bidField.get(1)));
-        Instant truncatedTimestamp = Instant.parse(timestampField.get(1)).truncatedTo(ChronoUnit.SECONDS);
-        rate.setTimestamp(truncatedTimestamp);
-        rate.setProvider("TCP_PROVIDER");
+            rate.setType(type);
+            rate.setAsk(Double.parseDouble(askField.get(1)));
+            rate.setBid(Double.parseDouble(bidField.get(1)));
+            Instant truncatedTimestamp = Instant.parse(timestampField.get(1)).truncatedTo(ChronoUnit.SECONDS);
+            rate.setTimestamp(truncatedTimestamp);
+            rate.setProvider("TCP_PROVIDER");
+        } catch (Exception e) {
+            throw new RateMapperException("Could not parse Raw Rate data: %s".formatted(data), e.getCause());
+        }
         return rate;
     }
 
@@ -45,7 +49,7 @@ public class RateMapper {
         return endpoints;
     }
 
-    public String mapEndpointToRateEnum(String rateStr) {
+    public String mapEndpointToRateEnum(String rateStr) throws Exception {
         String rate;
         rate = rateStr.substring(0, 3) + "_" + rateStr.substring(3);
 

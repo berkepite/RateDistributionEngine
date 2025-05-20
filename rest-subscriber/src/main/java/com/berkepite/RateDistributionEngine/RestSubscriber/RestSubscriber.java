@@ -3,13 +3,13 @@ package com.berkepite.RateDistributionEngine.RestSubscriber;
 import com.berkepite.RateDistributionEngine.common.ISubscriberConfig;
 import com.berkepite.RateDistributionEngine.common.ISubscriber;
 import com.berkepite.RateDistributionEngine.common.ICoordinator;
+import com.berkepite.RateDistributionEngine.common.ThrowingRunnable;
+import com.berkepite.RateDistributionEngine.common.exception.subscriber.SubscriberConnectionException;
 import com.berkepite.RateDistributionEngine.common.rates.RawRate;
 import com.berkepite.RateDistributionEngine.common.status.ConnectionStatus;
-import com.berkepite.RateDistributionEngine.common.status.RateStatus;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import java.io.IOException;
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
@@ -32,20 +32,21 @@ public class RestSubscriber implements ISubscriber {
     private final ICoordinator coordinator;
     private final ExecutorService executorService;
     private final Logger LOGGER = LogManager.getLogger(RestSubscriber.class);
+    private HttpClient httpClient;
     private String credentials;
 
     public RestSubscriber(ICoordinator coordinator, ISubscriberConfig config) {
-        this.rateMapper = new RateMapper();
         this.config = (RestConfig) config;
         this.coordinator = coordinator;
+        this.rateMapper = new RateMapper();
+        this.httpClient = HttpClient.newBuilder().build();
         this.executorService = new ScheduledThreadPoolExecutor(10);
-        init();
     }
 
     /**
      * Initializes the subscriber and prepares it for connection by setting up necessary shutdown hooks and credentials.
      */
-    private void init() {
+    public void init() throws Exception {
         // Shutdown hook to cleanly shut down the executor when the application is stopped
         Runtime.getRuntime().addShutdownHook(new Thread(() -> {
             executorService.shutdown();
@@ -62,65 +63,37 @@ public class RestSubscriber implements ISubscriber {
      * If successful, it notifies the coordinator.
      */
     @Override
-    public void connect() {
-        HttpRequest req = createHealthRequest();
-        HttpClient client = HttpClient.newHttpClient();
+    public void connect() throws Exception {
+        try {
+            tryConnect();
+        } catch (Exception e) {
+            ConnectionStatus status = ConnectionStatus.newBuilder()
+                    .withSubscriber(this)
+                    .withException(e)
+                    .withMethod("RestSubscriber.tryConnect")
+                    .withNotes("Health check failed for the platform!")
+                    .build();
 
-        int healthRequestRetryLimit = config.getHealthRequestRetryLimit();
-        int requestInterval = config.getRequestInterval();
+            LOGGER.info("Subscriber stopped health check. ({}) ", config.getName());
 
-        // Try connecting until the retry limit is reached
-        while (healthRequestRetryLimit > 0) {
-            HttpResponse<String> response = null;
-            try {
-                response = client.send(req, HttpResponse.BodyHandlers.ofString());
+            httpClient.close();
 
-                if (response.statusCode() == 200) {
-                    // Successful connection
-                    coordinator.onConnect(this);
-                    break;
-                } else {
-                    // Connection error
-                    ConnectionStatus connectionStatus = ConnectionStatus.newBuilder()
-                            .withHttpResponse(response, req)
-                            .withMethod("connect")
-                            .withSubscriber(this)
-                            .withNotes("Response status code was different than 200")
-                            .build();
-
-                    coordinator.onConnectionError(this, connectionStatus);
-                    healthRequestRetryLimit--;
-                }
-            } catch (IOException | InterruptedException e) {
-                // Handle errors during connection
-                ConnectionStatus connectionStatus = ConnectionStatus.newBuilder()
-                        .withHttpRequestError(e, req)
-                        .withHttpResponse(response, req)
-                        .withMethod("connect")
-                        .withSubscriber(this)
-                        .build();
-
-                coordinator.onConnectionError(this, connectionStatus);
-                healthRequestRetryLimit--;
-
-                if (e instanceof InterruptedException) {
-                    Thread.currentThread().interrupt();
-                    LOGGER.warn("Thread is interrupted. ({}) {}", Thread.currentThread().getName(), e.getMessage());
-                }
-            }
-
-            // Wait before retrying
-            try {
-                Thread.sleep(requestInterval);
-            } catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
-                LOGGER.warn("Thread is interrupted. ({}) {}", Thread.currentThread().getName(), e.getMessage());
-                break;
-            }
+            coordinator.onConnectionError(this, status);
         }
+    }
 
-        LOGGER.info("Subscriber stopped health check. ({}) ", config.getName());
-        client.close();
+    private void tryConnect() throws SubscriberConnectionException {
+        HttpRequest healthRequest = createHealthRequest();
+
+        executeWithRetry("Health Check", config.getHealthRequestRetryLimit(), config.getRequestInterval(), () -> {
+            HttpResponse<String> response = httpClient.send(healthRequest, HttpResponse.BodyHandlers.ofString());
+
+            if (response.statusCode() == 200) {
+                coordinator.onConnect(this);
+            } else {
+                throw new SubscriberConnectionException("Health Check failed (response code: %d)".formatted(response.statusCode()));
+            }
+        });
     }
 
     /**
@@ -138,53 +111,50 @@ public class RestSubscriber implements ISubscriber {
         LOGGER.info("{} subscribing to {} ", config.getName(), ratesToSubscribe);
         List<String> endpoints = rateMapper.mapRateEnumToEndpoints(ratesToSubscribe);
 
-        HttpClient client = HttpClient.newBuilder()
-                .connectTimeout(Duration.ofSeconds(10))
-                .build();
-
-        // Attempt to subscribe to each rate endpoint
-        for (String endpoint : endpoints) {
-            HttpRequest req = createRateRequest(endpoint);
-
-            try {
-                HttpResponse<String> res = client.send(req, HttpResponse.BodyHandlers.ofString());
-
-                // Handle successful subscription
-                if (res.statusCode() == 200) {
-                    coordinator.onSubscribe(this);
-                    coordinator.onRateAvailable(this, rateMapper.mapEndpointToRateEnum(endpoint));
-
-                    // Start the subscription task in a separate thread
-                    executorService.execute(() -> subscribeToRate(endpoint));
-                } else {
-                    // Handle subscription error
-                    ConnectionStatus connectionStatus = ConnectionStatus.newBuilder()
-                            .withHttpResponse(res, req)
-                            .withMethod("subscribe")
-                            .withSubscriber(this)
-                            .withNotes("Response status code was different than 200")
-                            .build();
-
-                    coordinator.onConnectionError(this, connectionStatus);
-                }
-            } catch (IOException | InterruptedException e) {
-                // Handle subscription request errors
-                ConnectionStatus connectionStatus = ConnectionStatus.newBuilder()
-                        .withHttpRequestError(e, req)
-                        .withMethod("subscribe")
-                        .withSubscriber(this)
-                        .build();
-
-                coordinator.onConnectionError(this, connectionStatus);
-
-                if (e instanceof InterruptedException) {
-                    Thread.currentThread().interrupt();
-                    LOGGER.warn("Thread is interrupted. ({})", Thread.currentThread().getName(), e);
-                }
+        try {
+            for (String endpoint : endpoints) {
+                trySubscribeToRate(endpoint);
             }
+        } catch (SubscriberConnectionException e) {
+            ConnectionStatus status = ConnectionStatus.newBuilder()
+                    .withSubscriber(this)
+                    .withException(e)
+                    .withMethod("RestSubscriber.trySubscribeToRate")
+                    .withNotes("Subscribing to rate failed for the platform!")
+                    .build();
+
+            coordinator.onConnectionError(this, status);
         }
+
         LOGGER.info("Subscriber stopped trying to subscribe to rates. ({}) ", config.getName());
-        client.close();
+    }
+
+    private void trySubscribeToRate(String endpoint) throws SubscriberConnectionException {
+        // Attempt to subscribe to each rate endpoint
+        HttpRequest req = createRateRequest(endpoint);
+
+        executeWithRetry("Subscribing to rate: %s".formatted(endpoint), config.getHealthRequestRetryLimit(), config.getRequestInterval(), () -> {
+            HttpResponse<String> response = httpClient.send(req, HttpResponse.BodyHandlers.ofString());
+
+            if (response.statusCode() == 200) {
+                coordinator.onSubscribe(this);
+                coordinator.onRateAvailable(this, rateMapper.mapEndpointToRateEnum(endpoint));
+
+                // Start the subscription task in a separate thread
+                executorService.execute(() -> {
+                    try {
+                        subscribeToRate(endpoint);
+                    } catch (SubscriberConnectionException e) {
+                        LOGGER.warn("Shutting down subscriber thread ({}) for rate {} ", Thread.currentThread().getName(), endpoint);
+                    }
+                });
+
+            } else {
+                throw new SubscriberConnectionException("Subscribing to rate: %s failed (response code: %d)".formatted(endpoint, response.statusCode()));
+            }
+        });
+
+
     }
 
     /**
@@ -192,75 +162,33 @@ public class RestSubscriber implements ISubscriber {
      *
      * @param endpoint the endpoint to subscribe to
      */
-    private void subscribeToRate(String endpoint) {
-        int retryLimit = config.getRequestRetryLimit();
-        int requestInterval = config.getRequestInterval();
-
-        HttpClient client = HttpClient.newBuilder()
-                .connectTimeout(Duration.ofSeconds(10))
-                .build();
-
+    private void subscribeToRate(String endpoint) throws SubscriberConnectionException {
         HttpRequest req = createRateRequest(endpoint);
 
-        // Retry the subscription request until the retry limit is reached
-        while (retryLimit > 0) {
+        executeWithRetry("Request for rate: %s".formatted(endpoint), config.getRequestRetryLimit(), config.getRequestInterval(), () -> {
             if (Thread.currentThread().isInterrupted()) {
                 LOGGER.warn("Thread is interrupted. ({})", Thread.currentThread().getName());
-                break;
+                throw new SubscriberConnectionException("Subscribing thread interrupted for rate: %s ".formatted(endpoint));
             }
 
-            // Wait before retrying
-            try {
-                Thread.sleep(requestInterval);
-            } catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
-                LOGGER.warn("Thread is interrupted. ({}) {}", Thread.currentThread().getName(), e.getMessage());
-                break;
-            }
+            while (true) {
+                HttpResponse<String> response = httpClient.send(req, HttpResponse.BodyHandlers.ofString());
 
-            try {
-                HttpResponse<String> res = client.send(req, HttpResponse.BodyHandlers.ofString());
-
-                // Process the response and update the rate
-                try {
-                    RawRate rate = rateMapper.createRawRate(res.body());
+                if (response.statusCode() == 200) {
+                    RawRate rate = rateMapper.createRawRate(response.body());
                     coordinator.onRateUpdate(this, rate);
-
-                } catch (Exception e) {
-                    RateStatus rateStatus = RateStatus.newBuilder()
-                            .withData(res.body())
-                            .withMethod("subscribeToRate")
-                            .withSubscriber(this)
-                            .withException(e)
-                            .withEndpoint(endpoint)
-                            .build();
-
-                    coordinator.onRateError(this, rateStatus);
-
-                    retryLimit--;
+                } else {
+                    throw new SubscriberConnectionException("Request for rate: %s failed (response code: %d)".formatted(endpoint, response.statusCode()));
                 }
 
-            } catch (IOException | InterruptedException e) {
-                // Handle request errors during the subscription process
-                ConnectionStatus connectionStatus = ConnectionStatus.newBuilder()
-                        .withHttpRequestError(e, req)
-                        .withMethod("subscribeToRate")
-                        .withSubscriber(this)
-                        .build();
-
-                coordinator.onConnectionError(this, connectionStatus);
-
-                if (e instanceof InterruptedException) {
+                try {
+                    Thread.sleep(config.getRequestInterval());
+                } catch (InterruptedException ex) {
                     Thread.currentThread().interrupt();
-                    LOGGER.warn("Thread is interrupted. ({})", Thread.currentThread().getName());
-                    break;
+                    LOGGER.warn("Thread interrupted during retry cooldown: {}", ex.getMessage());
                 }
-
-                retryLimit--;
             }
-        }
-        LOGGER.info("Shutting down subscriber task. ({})", Thread.currentThread().getName());
-        client.close();
+        });
     }
 
     @Override
@@ -281,6 +209,10 @@ public class RestSubscriber implements ISubscriber {
     @Override
     public ISubscriberConfig getConfig() {
         return config;
+    }
+
+    public void setHttpClient(HttpClient httpClient) {
+        this.httpClient = httpClient;
     }
 
     /**
@@ -310,4 +242,45 @@ public class RestSubscriber implements ISubscriber {
                 .GET()
                 .build();
     }
+
+    private Throwable getRootCause(Throwable throwable) {
+        Throwable cause = throwable;
+        while (cause.getCause() != null) {
+            cause = cause.getCause();
+        }
+        return cause;
+    }
+
+    private void executeWithRetry(String operationDesc,
+                                  int retryLimit,
+                                  int intervalMillis,
+                                  ThrowingRunnable operation) throws SubscriberConnectionException {
+        while (retryLimit >= 0) {
+            try {
+                operation.run();
+                return; // Success, exit retry loop
+            } catch (Exception e) {
+                Throwable rootCause = getRootCause(e);
+
+                if (retryLimit == 0) {
+                    throw new SubscriberConnectionException(
+                            "%s failed.".formatted(operationDesc), rootCause
+                    );
+                }
+
+                LOGGER.warn("{} failed. Remaining retries: {}. Root cause: {}: {}",
+                        operationDesc, retryLimit, rootCause.getClass().getSimpleName(), rootCause.getMessage());
+                retryLimit--;
+
+                try {
+                    Thread.sleep(intervalMillis);
+                } catch (InterruptedException ex) {
+                    Thread.currentThread().interrupt();
+                    LOGGER.warn("Thread interrupted during retry cooldown: {}", ex.getMessage());
+                    return;
+                }
+            }
+        }
+    }
+
 }

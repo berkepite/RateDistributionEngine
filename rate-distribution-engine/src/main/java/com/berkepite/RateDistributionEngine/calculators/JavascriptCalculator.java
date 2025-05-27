@@ -1,6 +1,7 @@
 package com.berkepite.RateDistributionEngine.calculators;
 
 import com.berkepite.RateDistributionEngine.common.rates.CalculatedRate;
+import com.berkepite.RateDistributionEngine.common.rates.MeanRate;
 import com.berkepite.RateDistributionEngine.rates.RateConverter;
 import com.berkepite.RateDistributionEngine.rates.RateFactory;
 import com.berkepite.RateDistributionEngine.common.rates.RawRate;
@@ -9,10 +10,8 @@ import org.apache.logging.log4j.Logger;
 import org.graalvm.polyglot.Context;
 import org.graalvm.polyglot.Source;
 import org.graalvm.polyglot.Value;
-import org.springframework.core.io.ClassPathResource;
 
 import java.io.IOException;
-import java.io.InputStreamReader;
 import java.io.Reader;
 import java.time.Instant;
 
@@ -27,12 +26,11 @@ public class JavascriptCalculator implements IRateCalculator {
         this.rateFactory = rateFactory;
         this.calculatorLoader = calculatorLoader;
         this.rateConverter = rateConverter;
-        init();
     }
 
-    public void init() {
+    public void init(String calculatorPath) {
         try {
-            Reader calculatorSource = calculatorLoader.load("rate_calculators/JAVASCRIPT_CALCULATOR.mjs");
+            Reader calculatorSource = calculatorLoader.load(calculatorPath);
 
             source = Source.newBuilder("js", calculatorSource, "jsmod.js").mimeType("application/javascript+module").build();
         } catch (IOException e) {
@@ -42,7 +40,7 @@ public class JavascriptCalculator implements IRateCalculator {
     }
 
     @Override
-    public RawRate calculateMeanRate(RawRate incomingRate, Double[] bids, Double[] asks) {
+    public MeanRate calculateMeanRate(Double[] bids, Double[] asks) {
         try (Context context = Context.newBuilder("js")
                 .allowAllAccess(true)
                 .option("js.esm-eval-returns-exports", "true")
@@ -52,11 +50,9 @@ public class JavascriptCalculator implements IRateCalculator {
             Value calculateMean = module.getMember("calculateMeanRate");
             Value result = calculateMean.execute(bids, asks);
 
-            return rateFactory.createRawRate(incomingRate.getType(),
-                    incomingRate.getProvider(),
+            return rateFactory.createMeanRate(
                     result.getArrayElement(0).asDouble(),
-                    result.getArrayElement(1).asDouble(),
-                    incomingRate.getTimestamp());
+                    result.getArrayElement(1).asDouble());
         }
     }
 
@@ -101,7 +97,7 @@ public class JavascriptCalculator implements IRateCalculator {
     }
 
     @Override
-    public boolean hasAtLeastOnePercentDiff(RawRate incomingRate, RawRate meanRate) {
+    public boolean hasAtLeastOnePercentDiff(RawRate incomingRate, MeanRate meanRate) {
         try (Context context = Context.newBuilder("js")
                 .allowAllAccess(true)
                 .option("js.esm-eval-returns-exports", "true")
@@ -110,7 +106,7 @@ public class JavascriptCalculator implements IRateCalculator {
             Value hasAtLeastOnePercentDiff = module.getMember("hasAtLeastOnePercentDiff");
 
             Value result = hasAtLeastOnePercentDiff.execute(
-                    incomingRate.getBid(), incomingRate.getAsk(), meanRate.getBid(), meanRate.getAsk());
+                    incomingRate.getBid(), incomingRate.getAsk(), meanRate.getMeanBid(), meanRate.getMeanAsk());
 
             return result.asBoolean();
         }

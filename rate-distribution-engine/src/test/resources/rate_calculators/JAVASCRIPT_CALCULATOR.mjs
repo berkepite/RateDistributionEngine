@@ -1,4 +1,4 @@
-import {Decimal} from 'vendor/decimal.js/decimal.mjs';
+import {Decimal} from './vendor/decimal.js/decimal.mjs';
 
 export function calculateMeanRate(bids, asks) {
     const [bid_mean, ask_mean] = calculateMeans(bids, asks);

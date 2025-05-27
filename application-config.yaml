@@ -14,7 +14,7 @@ spring:
 
 app:
   coordinator:
-    subscribers:
+    subscriber-bindings:
       - name: "RestSubscriber"
         enabled: ${REST_SUBSCRIBER_ENABLED:true}
         configName: "rest-config.yaml"
@@ -27,7 +27,7 @@ app:
         jarName: "tcp-subscriber-0.0.1.jar"
         classPath: "com.berkepite.RateDistributionEngine.TCPSubscriber.TCPSubscriber"
         configClassPath: "com.berkepite.RateDistributionEngine.TCPSubscriber.TCPConfig"
-    rates: [ "USD_TRY", "EUR_USD", "GBP_USD" ]
+    rates: "USD_TRY,EUR_USD,GBP_USD"
   rate-calculation-strategy: ${APP_RATE_CALCULATION_STRATEGY}
   kafka:
     raw-rate-topic: "raw_rates"

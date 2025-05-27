@@ -22,17 +22,20 @@ import java.util.List;
  * Service responsible for managing raw and calculated rates, including rate calculation, caching and database saving.
  */
 @Service
-public class RateManager {
+public class RateManager implements IRateManager {
     private final Logger LOGGER = LogManager.getLogger(RateManager.class);
 
     private IRateCalculator rateCalculator;
     private final CalculatorFactory calculatorFactory;
     private final IRateCacheService rateCacheService;
-    private final KafkaRawRateProducer kafkaRawRateProducer;
-    private final KafkaCalcRateProducer kafkaCalcRateProducer;
+    //private final KafkaRawRateProducer kafkaRawRateProducer;
+    //private final KafkaCalcRateProducer kafkaCalcRateProducer;
 
     @Value("${app.rate-calculation-strategy}")
     private CalculatorEnum rateCalculationStrategy;
+
+    @Value("#{'${app.coordinator.rates}'.split(',')}")
+    private List<String> rawRateTypesExcludingUSD_TRY;
 
     /**
      * Constructor for RateService.
@@ -45,8 +48,8 @@ public class RateManager {
     public RateManager(IRateCacheService rateCacheService, CalculatorFactory calculatorFactory, KafkaRawRateProducer kafkaRawRateProducer, KafkaCalcRateProducer kafkaCalcRateProducer) {
         this.rateCacheService = rateCacheService;
         this.calculatorFactory = calculatorFactory;
-        this.kafkaRawRateProducer = kafkaRawRateProducer;
-        this.kafkaCalcRateProducer = kafkaCalcRateProducer;
+        // this.kafkaRawRateProducer = kafkaRawRateProducer;
+        // this.kafkaCalcRateProducer = kafkaCalcRateProducer;
     }
 
     /**
@@ -55,6 +58,8 @@ public class RateManager {
     @PostConstruct
     public void init() {
         rateCalculator = calculatorFactory.getCalculator(rateCalculationStrategy);
+
+        rawRateTypesExcludingUSD_TRY.remove("USD_TRY");
     }
 
     /**
@@ -63,42 +68,40 @@ public class RateManager {
      *
      * @param incomingRate The incoming raw rate to manage.
      */
-    public void manageRawRate(RawRate incomingRate) {
+    public void manageIncomingRawRate(RawRate incomingRate) {
         // write to raw database
-        kafkaRawRateProducer.sendRawRate(incomingRate);
-        List<RawRate> allRawRatesForType = rateCacheService.getAllRawRatesForType(incomingRate.getType());
+        //kafkaRawRateProducer.sendRawRate(incomingRate);
 
-        List<Double[]> values = getBidsAndAsks(allRawRatesForType);
-        Double[] bids = values.get(0);
-        Double[] asks = values.get(1);
-
-        // If no bids or asks are provided then it returns incomingRate.
-        // So the if condition below returns true.
-        if (bids == null || asks == null) {
-            // TODO alert
-            return;
-        }
-        RawRate meanRate = rateCalculator.calculateMeanRate(incomingRate, bids, asks);
-        // intermediate rate class maybe?
-
-        // If does not have at least %1 difference, save the raw rate and calculate appropriate rates
-        if (!rateCalculator.hasAtLeastOnePercentDiff(incomingRate, meanRate)) {
+        if (rateCacheService.getRawRate(incomingRate) == null) {
             rateCacheService.saveRawRate(incomingRate);
+        } else {
+            var allRawRatesForType = rateCacheService.getAllRawRatesForType(incomingRate.getType());
 
-//            if (incomingRate.getType().equals("USD_TRY")) {
-//                calculateAndSaveUSDMID();
-//                calculateAndSaveForUSD_TRY();
-//
-//                Arrays.stream(RawRateEnum.values())
-//                        .filter(val -> val != "USD_TRY")
-//                        .forEach(
-//                                val -> calculateAndSaveForType(val.toString())
-//                        );
-//
-//            } else {
-//                calculateAndSaveForType(incomingRate.getType());
-//            }
+            if (allRawRatesForType.isEmpty()) {
+                LOGGER.error("No rates found in cache for type: {}.", incomingRate.getType());
+                return;
+            }
+
+            var values = getBidsAndAsks(allRawRatesForType);
+            var bids = values.get(0);
+            var asks = values.get(1);
+
+            var meanRate = rateCalculator.calculateMeanRate(bids, asks);
+            if (!rateCalculator.hasAtLeastOnePercentDiff(incomingRate, meanRate)) {
+                rateCacheService.saveRawRate(incomingRate);
+            } else return;
         }
+
+        if (incomingRate.getType().equals("USD_TRY")) {
+            calculateAndSaveUSDMID(incomingRate);
+            calculateAndSaveForUSD_TRY(incomingRate);
+
+            rawRateTypesExcludingUSD_TRY.forEach(this::calculateAndSaveForType);
+
+        } else {
+            calculateAndSaveForType(incomingRate.getType());
+        }
+
     }
 
     /**
@@ -106,44 +109,73 @@ public class RateManager {
      *
      * @param type The raw rate type to calculate and save.
      */
-    private void calculateAndSaveForType(String type) {
+    private synchronized void calculateAndSaveForType(String type) {
         Double usdmid = rateCacheService.getUSDMID();
-        List<RawRate> allRawRates = rateCacheService.getAllRawRatesForType(type);
-
-        List<Double[]> values = getBidsAndAsks(allRawRates);
-        Double[] bids = values.get(0);
-        Double[] asks = values.get(1);
-
-
-        // Check if usdmid, bids, and asks are valid before calculating
-        if (usdmid != null && asks.length != 0 && bids.length != 0) {
-            CalculatedRate calcRate = rateCalculator.calculateForRawRateType(type, usdmid, bids, asks);
-            rateCacheService.saveCalcRate(calcRate);
-            // Save to Kafka
-            kafkaCalcRateProducer.sendCalcRate(calcRate);
-        } else {
-            LOGGER.debug("Bids and/or asks are empty or usdmid is null!\nusdmid: {} bids: {} asks: {}", usdmid, bids, asks);
-        }
-    }
-
-    /**
-     * Calculates and saves the USD mid rate based on the USD/TRY rates.
-     */
-    private void calculateAndSaveUSDMID() {
-        List<RawRate> rawRatesOfTypeUSD_TRY = rateCacheService.getAllRawRatesForType("USD_TRY");
-        List<Double[]> bidsAndAsks = getBidsAndAsks(rawRatesOfTypeUSD_TRY);
-
-        if (bidsAndAsks == null) {
-            LOGGER.warn("There is no USD_TRY values in cache for calculating USDMID! Aborting...");
+        if (usdmid == null) {
+            LOGGER.warn("No usdmid found in cache while calculating for type: {}. Aborting...", type);
             return;
         }
 
-        Double[] bids = bidsAndAsks.get(0);
-        Double[] asks = bidsAndAsks.get(1);
+        List<RawRate> allRawRates = rateCacheService.getAllRawRatesForType(type);
 
-        Double usdmid = rateCalculator.calculateUSDMID(bids, asks);
-        rateCacheService.saveUSDMID(usdmid);
+        if (allRawRates.isEmpty()) {
+            LOGGER.error("No raw rates found in cache while calculating for type {}. Aborting...", type);
+            return;
+        }
+
+        var values = getBidsAndAsks(allRawRates);
+        var bids = values.get(0);
+        var asks = values.get(1);
+
+        CalculatedRate calcRate = rateCalculator.calculateForRawRateType(type, usdmid, bids, asks);
+
+        rateCacheService.saveCalcRate(calcRate);
+        //kafkaCalcRateProducer.sendCalcRate(calcRate);
     }
+
+    private synchronized void calculateAndSaveForUSD_TRY(RawRate incomingRate) {
+        var allRawRatesForUSD_TRY = rateCacheService.getAllRawRatesForType(incomingRate.getType());
+
+        if (allRawRatesForUSD_TRY.isEmpty()) {
+            LOGGER.error("No rates found in cache for type: {}. While calculating for USD_TRY", incomingRate.getType());
+            return;
+        }
+
+        var values = getBidsAndAsks(allRawRatesForUSD_TRY);
+        var bids = values.get(0);
+        var asks = values.get(1);
+
+        CalculatedRate calculatedRate = rateCalculator.calculateForUSD_TRY(bids, asks);
+
+        rateCacheService.saveCalcRate(calculatedRate);
+        // kafkaCalcRateProducer.sendCalcRate(calculatedRate);
+    }
+
+
+    private synchronized void calculateAndSaveUSDMID(RawRate incomingRate) {
+        if (rateCacheService.getUSDMID() == null) {
+            Double usdmid = rateCalculator.calculateUSDMID(new Double[]{incomingRate.getBid()}, new Double[]{incomingRate.getAsk()});
+            LOGGER.info("Calculated new USDMID from scratch: {}", usdmid);
+
+            rateCacheService.saveUSDMID(usdmid);
+        } else {
+            List<RawRate> allUSDTRY = rateCacheService.getAllRawRatesForType("USD_TRY");
+
+            if (allUSDTRY.isEmpty()) {
+                LOGGER.error("No raw rates found in cache for USD_TRY while calculating usdmid.");
+                return;
+            }
+
+            var values = getBidsAndAsks(allUSDTRY);
+            var bids = values.get(0);
+            var asks = values.get(1);
+
+            Double calculated_usdmid = rateCalculator.calculateUSDMID(bids, asks);
+            LOGGER.info("Calculated new USDMID: {}", calculated_usdmid);
+            rateCacheService.saveUSDMID(calculated_usdmid);
+        }
+    }
+
 
     /**
      * Retrieves the bids and asks from a list of raw rates.

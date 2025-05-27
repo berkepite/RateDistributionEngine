@@ -10,7 +10,7 @@ public class RateConverter {
         } else {
             String significantHalf = rawRateType.substring(0, 4);
 
-            return significantHalf.concat("_TRY");
+            return significantHalf.concat("TRY");
         }
     }
 }

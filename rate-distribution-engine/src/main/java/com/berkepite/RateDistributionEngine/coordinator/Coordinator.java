@@ -1,11 +1,9 @@
 package com.berkepite.RateDistributionEngine.coordinator;
 
+import com.berkepite.RateDistributionEngine.common.*;
 import com.berkepite.RateDistributionEngine.common.rates.RawRate;
-import com.berkepite.RateDistributionEngine.rates.RateManager;
+import com.berkepite.RateDistributionEngine.rates.IRateManager;
 import com.berkepite.RateDistributionEngine.common.status.ConnectionStatus;
-import com.berkepite.RateDistributionEngine.common.ISubscriber;
-import com.berkepite.RateDistributionEngine.common.ICoordinator;
-import com.berkepite.RateDistributionEngine.common.ISubscriberConfig;
 import com.berkepite.RateDistributionEngine.subscribers.SubscriberLoader;
 import jakarta.annotation.PostConstruct;
 import org.apache.logging.log4j.LogManager;
@@ -24,11 +22,10 @@ import java.util.*;
  */
 @Component
 public class Coordinator implements CommandLineRunner, ICoordinator {
-
     private final Logger LOGGER = LogManager.getLogger(Coordinator.class);
 
     private final CoordinatorConfig coordinatorConfig;
-    //private final RateService rateService;
+    private final IRateManager rateManager;
     private final SubscriberLoader subscriberLoader;
     private final ThreadPoolTaskExecutor executorService;
 
@@ -43,11 +40,11 @@ public class Coordinator implements CommandLineRunner, ICoordinator {
      * @param executorService   the thread pool executor for managing async tasks
      */
     @Autowired
-    public Coordinator(CoordinatorConfig coordinatorConfig, RateManager rateManager, SubscriberLoader subscriberLoader, @Qualifier("coordinatorExecutor") ThreadPoolTaskExecutor executorService) {
+    public Coordinator(CoordinatorConfig coordinatorConfig, IRateManager rateManager, SubscriberLoader subscriberLoader, @Qualifier("coordinatorExecutor") ThreadPoolTaskExecutor executorService) {
         this.coordinatorConfig = coordinatorConfig;
         this.subscriberLoader = subscriberLoader;
         this.executorService = executorService;
-        //this.rateService = rateService;
+        this.rateManager = rateManager;
     }
 
     /**
@@ -58,7 +55,7 @@ public class Coordinator implements CommandLineRunner, ICoordinator {
     @PostConstruct
     private void init() {
         subscribers = new ArrayList<>(2);
-        loadSubscriberClasses(coordinatorConfig.getSubscribers());
+        loadSubscriberClasses(coordinatorConfig.getSubscriberBindings());
 
         if (!subscribers.isEmpty()) {
             LOGGER.info("Subscriber classes loaded!: {}", subscribers.toString());
@@ -111,7 +108,7 @@ public class Coordinator implements CommandLineRunner, ICoordinator {
      *
      * @param subscriberBindingConfigs list of subscriber binding configurations
      */
-    private void loadSubscriberClasses(List<CoordinatorConfig.SubscriberBindingConfig> subscriberBindingConfigs) {
+    private void loadSubscriberClasses(List<SubscriberBindingConfig> subscriberBindingConfigs) {
         subscriberBindingConfigs.forEach(subscriberBindingConfig -> {
             if (subscriberBindingConfig.isEnabled()) {
                 ISubscriber subscriber = subscriberLoader.load(subscriberBindingConfig, this);
@@ -197,7 +194,7 @@ public class Coordinator implements CommandLineRunner, ICoordinator {
     public void onRateUpdate(ISubscriber subscriber, RawRate rate) {
         LOGGER.info("({}) rate received {}", subscriber.getConfig().getName(), rate.toString());
 
-        //executorService.execute(() -> rateService.manageRawRate(rate));
+        executorService.execute(() -> rateManager.manageIncomingRawRate(rate));
     }
 
     /**
@@ -207,7 +204,6 @@ public class Coordinator implements CommandLineRunner, ICoordinator {
      * @param status     the connection error status
      */
     @Override
-    @CoordinatorEventStatus
     public void onConnectionError(ISubscriber subscriber, ConnectionStatus status) {
         LOGGER.info("({}) connection error {}", subscriber.getConfig().getName(), status.toString());
     }
@@ -226,7 +222,7 @@ public class Coordinator implements CommandLineRunner, ICoordinator {
      *
      * @return the coordinator configuration
      */
-    public CoordinatorConfig getCoordinatorConfig() {
+    public CoordinatorConfig getConfig() {
         return coordinatorConfig;
     }
 }

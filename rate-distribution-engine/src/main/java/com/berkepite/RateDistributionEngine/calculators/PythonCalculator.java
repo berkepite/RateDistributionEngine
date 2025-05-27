@@ -1,6 +1,7 @@
 package com.berkepite.RateDistributionEngine.calculators;
 
 import com.berkepite.RateDistributionEngine.common.rates.CalculatedRate;
+import com.berkepite.RateDistributionEngine.common.rates.MeanRate;
 import com.berkepite.RateDistributionEngine.rates.RateConverter;
 import com.berkepite.RateDistributionEngine.rates.RateFactory;
 import com.berkepite.RateDistributionEngine.common.rates.RawRate;
@@ -9,10 +10,8 @@ import org.apache.logging.log4j.Logger;
 import org.graalvm.polyglot.Context;
 import org.graalvm.polyglot.Source;
 import org.graalvm.polyglot.Value;
-import org.springframework.core.io.ClassPathResource;
 
 import java.io.IOException;
-import java.io.InputStreamReader;
 import java.io.Reader;
 import java.time.Instant;
 
@@ -42,7 +41,7 @@ public class PythonCalculator implements IRateCalculator {
     }
 
     @Override
-    public RawRate calculateMeanRate(RawRate incomingRate, Double[] bids, Double[] asks) {
+    public MeanRate calculateMeanRate(Double[] bids, Double[] asks) {
         try (Context context = Context.newBuilder("python")
                 .allowAllAccess(true)
                 .build()) {
@@ -51,11 +50,10 @@ public class PythonCalculator implements IRateCalculator {
             Value m_calculateMeanRate = module.getMember("calculate_mean_rate");
             Value result = m_calculateMeanRate.execute(bids, asks);
 
-            return rateFactory.createRawRate(incomingRate.getType(),
-                    incomingRate.getProvider(),
+            return rateFactory.createMeanRate(
                     result.getArrayElement(0).asDouble(),
-                    result.getArrayElement(1).asDouble(),
-                    incomingRate.getTimestamp());
+                    result.getArrayElement(1).asDouble()
+            );
         }
     }
 
@@ -97,7 +95,7 @@ public class PythonCalculator implements IRateCalculator {
 
 
     @Override
-    public boolean hasAtLeastOnePercentDiff(RawRate incomingRate, RawRate meanRate) {
+    public boolean hasAtLeastOnePercentDiff(RawRate incomingRate, MeanRate meanRate) {
         try (Context context = Context.newBuilder("python")
                 .allowAllAccess(true)
                 .build()) {
@@ -105,7 +103,7 @@ public class PythonCalculator implements IRateCalculator {
             Value m_hasAtLeastOnePercentDiff = module.getMember("has_at_least_one_percent_diff");
 
             Value result = m_hasAtLeastOnePercentDiff.execute(
-                    incomingRate.getBid(), incomingRate.getAsk(), meanRate.getBid(), meanRate.getAsk());
+                    incomingRate.getBid(), incomingRate.getAsk(), meanRate.getMeanBid(), meanRate.getMeanAsk());
 
             return result.asBoolean();
         }

@@ -29,6 +29,7 @@ app:
         configClassPath: "com.berkepite.RateDistributionEngine.TCPSubscriber.TCPConfig"
     rates: "USD_TRY,EUR_USD,GBP_USD"
   rate-calculation-strategy: ${APP_RATE_CALCULATION_STRATEGY}
+  rate-calculator-path: ${APP_RATE_CALCULATOR_PATH}
   kafka:
     raw-rate-topic: "raw_rates"
     calc-rate-topic: "calc_rates"

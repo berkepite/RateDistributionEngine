@@ -21,15 +21,15 @@ public class CalculatorFactory {
         this.calculatorLoader = calculatorLoader;
     }
 
-    public IRateCalculator getCalculator(CalculatorEnum strategy) {
+    public IRateCalculator getCalculator(CalculatorEnum strategy, String path) {
         try {
 
             switch (strategy) {
                 case CalculatorEnum.JAVASCRIPT -> {
-                    return getJavascriptCalculator();
+                    return getJavascriptCalculator(path);
                 }
                 case CalculatorEnum.PYTHON -> {
-                    return getPythonCalculator();
+                    return getPythonCalculator(path);
                 }
             }
         } catch (Exception e) {
@@ -39,13 +39,17 @@ public class CalculatorFactory {
         return null;
     }
 
-    private JavascriptCalculator getJavascriptCalculator() throws Exception {
+    private JavascriptCalculator getJavascriptCalculator(String path) throws Exception {
+        var c = new JavascriptCalculator(rateFactory, rateConverter, calculatorLoader);
+        c.init(path);
 
-        return new JavascriptCalculator(rateFactory, rateConverter, calculatorLoader);
+        return c;
     }
 
-    private PythonCalculator getPythonCalculator() throws Exception {
+    private PythonCalculator getPythonCalculator(String path) throws Exception {
+        var c = new PythonCalculator(rateFactory, rateConverter, calculatorLoader);
+        c.init(path);
 
-        return new PythonCalculator(rateFactory, rateConverter, calculatorLoader);
+        return c;
     }
 }

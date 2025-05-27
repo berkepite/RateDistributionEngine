@@ -34,6 +34,9 @@ public class RateManager implements IRateManager {
     @Value("${app.rate-calculation-strategy}")
     private CalculatorEnum rateCalculationStrategy;
 
+    @Value("${app.rate-calculator-path}")
+    private String rateCalculatorPath;
+
     @Value("#{'${app.coordinator.rates}'.split(',')}")
     private List<String> rawRateTypesExcludingUSD_TRY;
 
@@ -57,7 +60,7 @@ public class RateManager implements IRateManager {
      */
     @PostConstruct
     public void init() {
-        rateCalculator = calculatorFactory.getCalculator(rateCalculationStrategy);
+        rateCalculator = calculatorFactory.getCalculator(rateCalculationStrategy, rateCalculatorPath);
 
         rawRateTypesExcludingUSD_TRY.remove("USD_TRY");
     }

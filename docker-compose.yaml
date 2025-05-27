@@ -9,7 +9,7 @@ services:
       - engine_logs_volume:/app/logs
       - ./subscribers:/app/subscribers
       - ./rate_calculators:/app/rate_calculators
-      - ./application-config.yaml:/app/application.yaml
+      - ./application-config.yaml:/app/application-config.yaml:ro
     depends_on:
       rest-platform:
         condition: service_started
@@ -18,11 +18,12 @@ services:
     environment:
       SPRING_PROFILES_ACTIVE: debug
       SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:9092
-      APP_RATE_CALCULATION_STRATEGY: JAVASCRIPT
+      APP_RATE_CALCULATION_STRATEGY: PYTHON
+      APP_RATE_CALCULATOR_PATH: "/app/rate_calculators/py-calc.py"
       SPRING_DATA_REDIS_HOST: redis
       SPRING_DATA_REDIS_PORT: 6379
-      TCP_SUBSCRIBER_ENABLED: false
-      REST_SUBSCRIBER_ENABLED: false
+      TCP_SUBSCRIBER_ENABLED: true
+      REST_SUBSCRIBER_ENABLED: true
 
   tcp-platform:
     image: luieitalian/tcp-platform-standalone
@@ -59,6 +60,24 @@ services:
       SIMULATOR_INTENSITY: med
     ports:
       - "1000:8080"
+
+  redis:
+    image: redis:latest
+    container_name: redis
+    networks:
+      - network
+    ports:
+      - "6379:6379"
+#
+#  postgres:
+#    image: postgres:latest
+#    container_name: postgres
+#    networks:
+#      - network
+#    environment:
+#      POSTGRES_USER: debug_user
+#      POSTGRES_PASSWORD: 1234
+#      POSTGRES_DB: backend
 
 networks:
   network:

@@ -26,12 +26,12 @@ public class PythonCalculator implements IRateCalculator {
         this.rateFactory = rateFactory;
         this.calculatorLoader = calculatorLoader;
         this.rateConverter = rateConverter;
-        init();
     }
 
-    public void init() {
+    @Override
+    public void init(String calculatorPath) {
         try {
-            Reader calculatorSource = calculatorLoader.load("rate_calculators/PYTHON_CALCULATOR.py");
+            Reader calculatorSource = calculatorLoader.load(calculatorPath);
 
             source = Source.newBuilder("python", calculatorSource, "pymod.py").build();
         } catch (IOException e) {

@@ -14,4 +14,6 @@ public interface IRateCalculator {
     boolean hasAtLeastOnePercentDiff(RawRate incomingRate, MeanRate meanRate);
 
     Double calculateUSDMID(Double[] bids, Double[] asks);
+
+    void init(String calculatorPath);
 }

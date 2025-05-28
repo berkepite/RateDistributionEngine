@@ -1,12 +1,13 @@
 package com.berkepite.RateDistributionEngine.calculators;
 
+import com.berkepite.RateDistributionEngine.common.calculators.ICalculatorLoader;
 import org.springframework.stereotype.Component;
 
 import java.io.*;
 
 @Component
-public class CalculatorLoader {
-    public Reader load(String path) {
+public class CalculatorLoader implements ICalculatorLoader {
+    public Reader load(String path) throws RuntimeException {
         File calculatorFile = new File(path);
 
         if (!calculatorFile.exists()) {

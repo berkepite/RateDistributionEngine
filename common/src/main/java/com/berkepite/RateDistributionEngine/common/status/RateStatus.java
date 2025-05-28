@@ -1,6 +1,6 @@
 package com.berkepite.RateDistributionEngine.common.status;
 
-import com.berkepite.RateDistributionEngine.common.ISubscriber;
+import com.berkepite.RateDistributionEngine.common.subscribers.ISubscriber;
 
 import java.util.Optional;
 

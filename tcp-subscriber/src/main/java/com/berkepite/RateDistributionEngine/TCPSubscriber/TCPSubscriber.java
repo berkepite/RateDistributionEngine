@@ -1,9 +1,9 @@
 package com.berkepite.RateDistributionEngine.TCPSubscriber;
 
 import com.berkepite.RateDistributionEngine.common.exception.RateMapperException;
-import com.berkepite.RateDistributionEngine.common.ISubscriber;
-import com.berkepite.RateDistributionEngine.common.ISubscriberConfig;
-import com.berkepite.RateDistributionEngine.common.ICoordinator;
+import com.berkepite.RateDistributionEngine.common.subscribers.ISubscriber;
+import com.berkepite.RateDistributionEngine.common.subscribers.ISubscriberConfig;
+import com.berkepite.RateDistributionEngine.common.coordinator.ICoordinator;
 import com.berkepite.RateDistributionEngine.common.exception.subscriber.SubscriberBadCredentialsException;
 import com.berkepite.RateDistributionEngine.common.exception.subscriber.SubscriberConnectionException;
 import com.berkepite.RateDistributionEngine.common.exception.subscriber.SubscriberException;

@@ -1,4 +1,4 @@
-package com.berkepite.RateDistributionEngine.calculators;
+package com.berkepite.RateDistributionEngine.common.calculators;
 
 import com.berkepite.RateDistributionEngine.common.rates.CalculatedRate;
 import com.berkepite.RateDistributionEngine.common.rates.MeanRate;

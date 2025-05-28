@@ -1,6 +1,8 @@
 package com.berkepite.RateDistributionEngine.coordinator;
 
-public class SubscriberBindingConfig {
+import com.berkepite.RateDistributionEngine.common.coordinator.ISubscriberBindingConfig;
+
+public class SubscriberBindingConfig implements ISubscriberBindingConfig {
     private String name;
     private boolean enabled;
     private String jarName;

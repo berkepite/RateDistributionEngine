@@ -1,6 +1,7 @@
 package com.berkepite.RateDistributionEngine.rates;
 
 import com.berkepite.RateDistributionEngine.common.rates.CalculatedRate;
+import com.berkepite.RateDistributionEngine.common.rates.IRateFactory;
 import com.berkepite.RateDistributionEngine.common.rates.MeanRate;
 import com.berkepite.RateDistributionEngine.common.rates.RawRate;
 import org.springframework.stereotype.Component;
@@ -8,7 +9,7 @@ import org.springframework.stereotype.Component;
 import java.time.Instant;
 
 @Component
-public class RateFactory {
+public class RateFactory implements IRateFactory {
 
     public MeanRate createMeanRate(Double meanBid, Double meanAsk) {
         MeanRate meanRate = new MeanRate();

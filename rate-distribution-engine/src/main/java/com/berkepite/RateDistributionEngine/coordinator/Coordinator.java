@@ -1,11 +1,15 @@
 package com.berkepite.RateDistributionEngine.coordinator;
 
-import com.berkepite.RateDistributionEngine.common.*;
+import com.berkepite.RateDistributionEngine.common.coordinator.ICoordinator;
+import com.berkepite.RateDistributionEngine.common.coordinator.ICoordinatorConfig;
+import com.berkepite.RateDistributionEngine.common.coordinator.ISubscriberBindingConfig;
 import com.berkepite.RateDistributionEngine.common.rates.RawRate;
-import com.berkepite.RateDistributionEngine.rates.IRateManager;
+import com.berkepite.RateDistributionEngine.common.rates.IRateManager;
 import com.berkepite.RateDistributionEngine.common.status.ConnectionStatus;
-import com.berkepite.RateDistributionEngine.rates.RatesLoader;
-import com.berkepite.RateDistributionEngine.subscribers.SubscriberLoader;
+import com.berkepite.RateDistributionEngine.common.rates.IRatesLoader;
+import com.berkepite.RateDistributionEngine.common.subscribers.ISubscriber;
+import com.berkepite.RateDistributionEngine.common.subscribers.ISubscriberConfig;
+import com.berkepite.RateDistributionEngine.common.subscribers.ISubscriberLoader;
 import jakarta.annotation.PostConstruct;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -25,11 +29,11 @@ import java.util.*;
 public class Coordinator implements CommandLineRunner, ICoordinator {
     private final Logger LOGGER = LogManager.getLogger(Coordinator.class);
 
-    private final CoordinatorConfig coordinatorConfig;
+    private final ICoordinatorConfig coordinatorConfig;
     private final IRateManager rateManager;
-    private final SubscriberLoader subscriberLoader;
+    private final ISubscriberLoader subscriberLoader;
     private final ThreadPoolTaskExecutor executorService;
-    private final RatesLoader ratesLoader;
+    private final IRatesLoader ratesLoader;
 
     private List<ISubscriber> subscribers;
 
@@ -42,7 +46,7 @@ public class Coordinator implements CommandLineRunner, ICoordinator {
      * @param executorService   the thread pool executor for managing async tasks
      */
     @Autowired
-    public Coordinator(RatesLoader ratesLoader, CoordinatorConfig coordinatorConfig, IRateManager rateManager, SubscriberLoader subscriberLoader, @Qualifier("coordinatorExecutor") ThreadPoolTaskExecutor executorService) {
+    public Coordinator(IRatesLoader ratesLoader, ICoordinatorConfig coordinatorConfig, IRateManager rateManager, ISubscriberLoader subscriberLoader, @Qualifier("coordinatorExecutor") ThreadPoolTaskExecutor executorService) {
         this.coordinatorConfig = coordinatorConfig;
         this.subscriberLoader = subscriberLoader;
         this.executorService = executorService;
@@ -111,7 +115,7 @@ public class Coordinator implements CommandLineRunner, ICoordinator {
      *
      * @param subscriberBindingConfigs list of subscriber binding configurations
      */
-    private void loadSubscriberClasses(List<SubscriberBindingConfig> subscriberBindingConfigs) {
+    private void loadSubscriberClasses(List<ISubscriberBindingConfig> subscriberBindingConfigs) {
         subscriberBindingConfigs.forEach(subscriberBindingConfig -> {
             if (subscriberBindingConfig.isEnabled()) {
                 ISubscriber subscriber = subscriberLoader.load(subscriberBindingConfig, this);
@@ -216,6 +220,7 @@ public class Coordinator implements CommandLineRunner, ICoordinator {
      *
      * @return the list of subscribers
      */
+    @Override
     public List<ISubscriber> getSubscribers() {
         return subscribers;
     }
@@ -225,7 +230,8 @@ public class Coordinator implements CommandLineRunner, ICoordinator {
      *
      * @return the coordinator configuration
      */
-    public CoordinatorConfig getConfig() {
+    @Override
+    public ICoordinatorConfig getConfig() {
         return coordinatorConfig;
     }
 }

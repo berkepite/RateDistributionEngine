@@ -1,10 +1,12 @@
 package com.berkepite.RateDistributionEngine.rates;
 
 import com.berkepite.RateDistributionEngine.cache.IRateCacheService;
-import com.berkepite.RateDistributionEngine.calculators.CalculatorEnum;
+import com.berkepite.RateDistributionEngine.common.calculators.CalculatorEnum;
 import com.berkepite.RateDistributionEngine.calculators.CalculatorFactory;
-import com.berkepite.RateDistributionEngine.calculators.IRateCalculator;
+import com.berkepite.RateDistributionEngine.common.calculators.IRateCalculator;
 import com.berkepite.RateDistributionEngine.common.rates.CalculatedRate;
+import com.berkepite.RateDistributionEngine.common.rates.IRateManager;
+import com.berkepite.RateDistributionEngine.common.rates.IRatesLoader;
 import com.berkepite.RateDistributionEngine.common.rates.RawRate;
 import com.berkepite.RateDistributionEngine.producers.KafkaCalcRateProducer;
 import com.berkepite.RateDistributionEngine.producers.KafkaRawRateProducer;
@@ -25,7 +27,7 @@ import java.util.List;
 public class RateManager implements IRateManager {
     private final Logger LOGGER = LogManager.getLogger(RateManager.class);
 
-    private final RatesLoader ratesLoader;
+    private final IRatesLoader ratesLoader;
     private IRateCalculator rateCalculator;
     private final CalculatorFactory calculatorFactory;
     private final IRateCacheService rateCacheService;
@@ -48,7 +50,7 @@ public class RateManager implements IRateManager {
      * @param kafkaRawRateProducer  Producer for raw rates to Kafka.
      * @param kafkaCalcRateProducer Producer for calculated rates to Kafka.
      */
-    public RateManager(RatesLoader ratesLoader, IRateCacheService rateCacheService, CalculatorFactory calculatorFactory, KafkaRawRateProducer kafkaRawRateProducer, KafkaCalcRateProducer kafkaCalcRateProducer) {
+    public RateManager(IRatesLoader ratesLoader, IRateCacheService rateCacheService, CalculatorFactory calculatorFactory, KafkaRawRateProducer kafkaRawRateProducer, KafkaCalcRateProducer kafkaCalcRateProducer) {
         this.rateCacheService = rateCacheService;
         this.calculatorFactory = calculatorFactory;
         this.ratesLoader = ratesLoader;

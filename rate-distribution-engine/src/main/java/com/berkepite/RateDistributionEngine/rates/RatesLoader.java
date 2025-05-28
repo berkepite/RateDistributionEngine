@@ -1,12 +1,12 @@
 package com.berkepite.RateDistributionEngine.rates;
 
+import com.berkepite.RateDistributionEngine.common.rates.IRatesLoader;
 import jakarta.annotation.PostConstruct;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
-import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -15,7 +15,7 @@ import java.util.Arrays;
 import java.util.List;
 
 @Service
-public class RatesLoader {
+public class RatesLoader implements IRatesLoader {
     Logger LOGGER = LogManager.getLogger(RatesLoader.class);
 
     @Value("${app.coordinator.rates}")
@@ -23,7 +23,7 @@ public class RatesLoader {
 
     private List<String> ratesList;
 
-    RatesLoader() {
+    public RatesLoader() {
         ratesList = new ArrayList<>();
     }
 
@@ -32,11 +32,12 @@ public class RatesLoader {
         loadRates();
     }
 
+    @Override
     public List<String> getRatesList() {
         return new ArrayList<>(ratesList);
     }
 
-    public void loadRates() {
+    private void loadRates() {
         if (rates == null) {
             throw new RuntimeException("No 'rates' entry found in application config (app.coordinator.rates)!");
         }

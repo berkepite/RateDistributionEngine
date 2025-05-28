@@ -1,29 +1,34 @@
 package com.berkepite.RateDistributionEngine.calculators;
 
-import com.berkepite.RateDistributionEngine.rates.RateConverter;
-import com.berkepite.RateDistributionEngine.rates.RateFactory;
+import com.berkepite.RateDistributionEngine.common.calculators.CalculatorEnum;
+import com.berkepite.RateDistributionEngine.common.calculators.ICalculatorFactory;
+import com.berkepite.RateDistributionEngine.common.calculators.ICalculatorLoader;
+import com.berkepite.RateDistributionEngine.common.calculators.IRateCalculator;
+import com.berkepite.RateDistributionEngine.common.rates.IRateConverter;
+import com.berkepite.RateDistributionEngine.common.rates.IRateFactory;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 @Service
-public class CalculatorFactory {
+public class CalculatorFactory implements ICalculatorFactory {
     private static final Logger LOGGER = LogManager.getLogger(CalculatorFactory.class);
-    private final RateFactory rateFactory;
-    private final RateConverter rateConverter;
-    private final CalculatorLoader calculatorLoader;
+
+    private final IRateFactory rateFactory;
+    private final IRateConverter rateConverter;
+    private final ICalculatorLoader calculatorLoader;
 
     @Autowired
-    public CalculatorFactory(RateFactory rateFactory, RateConverter rateConverter, CalculatorLoader calculatorLoader) {
+    public CalculatorFactory(IRateFactory rateFactory, IRateConverter rateConverter, ICalculatorLoader calculatorLoader) {
         this.rateFactory = rateFactory;
         this.rateConverter = rateConverter;
         this.calculatorLoader = calculatorLoader;
     }
 
+    @Override
     public IRateCalculator getCalculator(CalculatorEnum strategy, String path) {
         try {
-
             switch (strategy) {
                 case CalculatorEnum.JAVASCRIPT -> {
                     return getJavascriptCalculator(path);

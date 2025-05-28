@@ -1,9 +1,11 @@
 package com.berkepite.RateDistributionEngine.calculators;
 
+import com.berkepite.RateDistributionEngine.common.calculators.ICalculatorLoader;
+import com.berkepite.RateDistributionEngine.common.calculators.IRateCalculator;
 import com.berkepite.RateDistributionEngine.common.rates.CalculatedRate;
 import com.berkepite.RateDistributionEngine.common.rates.MeanRate;
-import com.berkepite.RateDistributionEngine.rates.RateConverter;
-import com.berkepite.RateDistributionEngine.rates.RateFactory;
+import com.berkepite.RateDistributionEngine.common.rates.IRateConverter;
+import com.berkepite.RateDistributionEngine.common.rates.IRateFactory;
 import com.berkepite.RateDistributionEngine.common.rates.RawRate;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -16,13 +18,13 @@ import java.io.Reader;
 import java.time.Instant;
 
 public class JavascriptCalculator implements IRateCalculator {
-    private final RateFactory rateFactory;
-    private final RateConverter rateConverter;
-    private final CalculatorLoader calculatorLoader;
+    private final IRateFactory rateFactory;
+    private final IRateConverter rateConverter;
+    private final ICalculatorLoader calculatorLoader;
     private static final Logger LOGGER = LogManager.getLogger(JavascriptCalculator.class);
     private Source source;
 
-    public JavascriptCalculator(RateFactory rateFactory, RateConverter rateConverter, CalculatorLoader calculatorLoader) {
+    public JavascriptCalculator(IRateFactory rateFactory, IRateConverter rateConverter, ICalculatorLoader calculatorLoader) {
         this.rateFactory = rateFactory;
         this.calculatorLoader = calculatorLoader;
         this.rateConverter = rateConverter;

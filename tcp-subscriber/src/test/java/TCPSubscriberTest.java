@@ -1,6 +1,6 @@
 import com.berkepite.RateDistributionEngine.TCPSubscriber.TCPConfig;
 import com.berkepite.RateDistributionEngine.TCPSubscriber.TCPSubscriber;
-import com.berkepite.RateDistributionEngine.common.ICoordinator;
+import com.berkepite.RateDistributionEngine.common.coordinator.ICoordinator;
 import com.berkepite.RateDistributionEngine.common.exception.subscriber.SubscriberBadCredentialsException;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;

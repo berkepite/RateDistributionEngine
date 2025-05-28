@@ -10,6 +10,7 @@ services:
       - ./subscribers:/app/subscribers
       - ./rate_calculators:/app/rate_calculators
       - ./application-config.yaml:/app/application-config.yaml:ro
+      - ./rates.csv:/app/rates.csv:ro
     depends_on:
       rest-platform:
         condition: service_started
@@ -20,6 +21,7 @@ services:
       SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:9092
       APP_RATE_CALCULATION_STRATEGY: PYTHON
       APP_RATE_CALCULATOR_PATH: "/app/rate_calculators/py-calc.py"
+      APP_RATES: "/app/rates.csv"
       SPRING_DATA_REDIS_HOST: redis
       SPRING_DATA_REDIS_PORT: 6379
       TCP_SUBSCRIBER_ENABLED: true

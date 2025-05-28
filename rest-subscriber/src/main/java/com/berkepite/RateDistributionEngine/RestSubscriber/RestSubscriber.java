@@ -108,6 +108,11 @@ public class RestSubscriber implements ISubscriber {
         ratesToSubscribe.addAll(config.getIncludeRates());
         ratesToSubscribe.removeAll(config.getExcludeRates());
 
+        if (ratesToSubscribe.isEmpty()) {
+            LOGGER.warn("{} received empty rates to subscribe {}. Aborting...", config.getName(), ratesToSubscribe);
+            return;
+        }
+
         LOGGER.info("{} subscribing to {} ", config.getName(), ratesToSubscribe);
         List<String> endpoints = rateMapper.mapRateEnumToEndpoints(ratesToSubscribe);
 

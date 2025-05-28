@@ -4,6 +4,7 @@ import com.berkepite.RateDistributionEngine.common.*;
 import com.berkepite.RateDistributionEngine.common.rates.RawRate;
 import com.berkepite.RateDistributionEngine.rates.IRateManager;
 import com.berkepite.RateDistributionEngine.common.status.ConnectionStatus;
+import com.berkepite.RateDistributionEngine.rates.RatesLoader;
 import com.berkepite.RateDistributionEngine.subscribers.SubscriberLoader;
 import jakarta.annotation.PostConstruct;
 import org.apache.logging.log4j.LogManager;
@@ -28,6 +29,7 @@ public class Coordinator implements CommandLineRunner, ICoordinator {
     private final IRateManager rateManager;
     private final SubscriberLoader subscriberLoader;
     private final ThreadPoolTaskExecutor executorService;
+    private final RatesLoader ratesLoader;
 
     private List<ISubscriber> subscribers;
 
@@ -40,11 +42,12 @@ public class Coordinator implements CommandLineRunner, ICoordinator {
      * @param executorService   the thread pool executor for managing async tasks
      */
     @Autowired
-    public Coordinator(CoordinatorConfig coordinatorConfig, IRateManager rateManager, SubscriberLoader subscriberLoader, @Qualifier("coordinatorExecutor") ThreadPoolTaskExecutor executorService) {
+    public Coordinator(RatesLoader ratesLoader, CoordinatorConfig coordinatorConfig, IRateManager rateManager, SubscriberLoader subscriberLoader, @Qualifier("coordinatorExecutor") ThreadPoolTaskExecutor executorService) {
         this.coordinatorConfig = coordinatorConfig;
         this.subscriberLoader = subscriberLoader;
         this.executorService = executorService;
         this.rateManager = rateManager;
+        this.ratesLoader = ratesLoader;
     }
 
     /**
@@ -129,12 +132,12 @@ public class Coordinator implements CommandLineRunner, ICoordinator {
     @Override
     public void onConnect(ISubscriber subscriber) {
         ISubscriberConfig config = subscriber.getConfig();
-        LOGGER.info("Subscriber rates: {}", coordinatorConfig.getRates());
+        LOGGER.info("Subscriber rates: {}", ratesLoader.getRatesList());
 
         LOGGER.info("{} connected to {}, trying to subscribe...", config.getName(), config.getUrl());
         executorService.execute(() -> {
             try {
-                subscriber.subscribe(coordinatorConfig.getRates());
+                subscriber.subscribe(ratesLoader.getRatesList());
             } catch (Exception e) {
                 LOGGER.error("Failed to subscribe to rates!", e);
             }

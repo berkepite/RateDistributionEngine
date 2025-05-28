@@ -111,6 +111,11 @@ public class TCPSubscriber implements ISubscriber {
         ratesToSubscribe.addAll(config.getIncludeRates());
         ratesToSubscribe.removeAll(config.getExcludeRates());
 
+        if (ratesToSubscribe.isEmpty()) {
+            LOGGER.warn("{} received empty rates to subscribe {}. Aborting...", config.getName(), ratesToSubscribe);
+            return;
+        }
+
         LOGGER.info("{} trying to subscribe to {} ", config.getName(), ratesToSubscribe);
         List<String> endpoints = rateMapper.mapRateEnumToEndpoints(ratesToSubscribe);  // Map rate enums to endpoints
 

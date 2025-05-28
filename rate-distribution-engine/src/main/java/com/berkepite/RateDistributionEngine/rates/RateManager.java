@@ -25,20 +25,20 @@ import java.util.List;
 public class RateManager implements IRateManager {
     private final Logger LOGGER = LogManager.getLogger(RateManager.class);
 
+    private final RatesLoader ratesLoader;
     private IRateCalculator rateCalculator;
     private final CalculatorFactory calculatorFactory;
     private final IRateCacheService rateCacheService;
     //private final KafkaRawRateProducer kafkaRawRateProducer;
     //private final KafkaCalcRateProducer kafkaCalcRateProducer;
 
+    private List<String> rawRateTypesExcludingUSD_TRY;
+
     @Value("${app.rate-calculation-strategy}")
     private CalculatorEnum rateCalculationStrategy;
 
     @Value("${app.rate-calculator-path}")
     private String rateCalculatorPath;
-
-    @Value("#{'${app.coordinator.rates}'.split(',')}")
-    private List<String> rawRateTypesExcludingUSD_TRY;
 
     /**
      * Constructor for RateService.
@@ -48,9 +48,10 @@ public class RateManager implements IRateManager {
      * @param kafkaRawRateProducer  Producer for raw rates to Kafka.
      * @param kafkaCalcRateProducer Producer for calculated rates to Kafka.
      */
-    public RateManager(IRateCacheService rateCacheService, CalculatorFactory calculatorFactory, KafkaRawRateProducer kafkaRawRateProducer, KafkaCalcRateProducer kafkaCalcRateProducer) {
+    public RateManager(RatesLoader ratesLoader, IRateCacheService rateCacheService, CalculatorFactory calculatorFactory, KafkaRawRateProducer kafkaRawRateProducer, KafkaCalcRateProducer kafkaCalcRateProducer) {
         this.rateCacheService = rateCacheService;
         this.calculatorFactory = calculatorFactory;
+        this.ratesLoader = ratesLoader;
         // this.kafkaRawRateProducer = kafkaRawRateProducer;
         // this.kafkaCalcRateProducer = kafkaCalcRateProducer;
     }
@@ -62,6 +63,7 @@ public class RateManager implements IRateManager {
     public void init() {
         rateCalculator = calculatorFactory.getCalculator(rateCalculationStrategy, rateCalculatorPath);
 
+        rawRateTypesExcludingUSD_TRY = ratesLoader.getRatesList();
         rawRateTypesExcludingUSD_TRY.remove("USD_TRY");
     }
 

@@ -1,100 +1,34 @@
 package com.berkepite.RateDistributionEngine.coordinator;
 
-import jakarta.annotation.PostConstruct;
+import com.berkepite.RateDistributionEngine.common.coordinator.ICoordinatorConfig;
+import com.berkepite.RateDistributionEngine.common.coordinator.ISubscriberBindingConfig;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Component
 @ConfigurationProperties(prefix = "app.coordinator")
-public class CoordinatorConfig {
+public class CoordinatorConfig implements ICoordinatorConfig {
 
-    private List<SubscriberBindingConfig> subscribers;
-    private List<String> rates;
+    private List<SubscriberBindingConfig> subscriberBindings;
 
-    public List<String> getRates() {
-        return rates;
+    public void setSubscriberBindings(List<SubscriberBindingConfig> subscriberBindings) {
+        this.subscriberBindings = subscriberBindings;
     }
 
-    public List<SubscriberBindingConfig> getSubscribers() {
-        return subscribers;
+    @Override
+    public List<ISubscriberBindingConfig> getSubscriberBindings() {
+        return subscriberBindings.stream()
+                .map(sb -> (ISubscriberBindingConfig) sb)
+                .collect(Collectors.toList());
     }
 
-    public void setRates(List<String> rates) {
-        this.rates = rates;
-    }
-
-    public void setSubscribers(List<SubscriberBindingConfig> subscribers) {
-        this.subscribers = subscribers;
-    }
-
-    public static class SubscriberBindingConfig {
-        private String name;
-        private boolean enabled;
-        private String jarName;
-        private String configName;
-        private String classPath;
-        private String configClassPath;
-
-        public String getConfigClassPath() {
-            return configClassPath;
-        }
-
-        public void setConfigClassPath(String configClassPath) {
-            this.configClassPath = configClassPath;
-        }
-
-        public String getClassPath() {
-            return classPath;
-        }
-
-        public String getName() {
-            return name;
-        }
-
-        public boolean isEnabled() {
-            return enabled;
-        }
-
-        public String getConfigName() {
-            return configName;
-        }
-
-        public void setClassPath(String classPath) {
-            this.classPath = classPath;
-        }
-
-        public void setName(String name) {
-            this.name = name;
-        }
-
-        public void setEnabled(boolean enabled) {
-            this.enabled = enabled;
-        }
-
-        public void setConfigName(String configName) {
-            this.configName = configName;
-        }
-
-        public String getJarName() {
-            return jarName;
-        }
-
-        public void setJarName(String jarName) {
-            this.jarName = jarName;
-        }
-
-        @Override
-        public String toString() {
-            return "SubscriberBindingConfig{" +
-                    "name='" + name + '\'' +
-                    ", enabled=" + enabled +
-                    ", jarName='" + jarName + '\'' +
-                    ", configName='" + configName + '\'' +
-                    ", classPath='" + classPath + '\'' +
-                    ", configClassPath='" + configClassPath + '\'' +
-                    '}';
-        }
+    @Override
+    public String toString() {
+        return "CoordinatorConfig{" +
+                "subscribers=" + subscriberBindings +
+                '}';
     }
 }

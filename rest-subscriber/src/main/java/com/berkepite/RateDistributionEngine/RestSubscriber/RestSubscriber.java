@@ -1,8 +1,8 @@
 package com.berkepite.RateDistributionEngine.RestSubscriber;
 
-import com.berkepite.RateDistributionEngine.common.ISubscriberConfig;
-import com.berkepite.RateDistributionEngine.common.ISubscriber;
-import com.berkepite.RateDistributionEngine.common.ICoordinator;
+import com.berkepite.RateDistributionEngine.common.subscribers.ISubscriberConfig;
+import com.berkepite.RateDistributionEngine.common.subscribers.ISubscriber;
+import com.berkepite.RateDistributionEngine.common.coordinator.ICoordinator;
 import com.berkepite.RateDistributionEngine.common.ThrowingRunnable;
 import com.berkepite.RateDistributionEngine.common.exception.subscriber.SubscriberConnectionException;
 import com.berkepite.RateDistributionEngine.common.rates.RawRate;
@@ -107,6 +107,11 @@ public class RestSubscriber implements ISubscriber {
         List<String> ratesToSubscribe = new ArrayList<>(rates);
         ratesToSubscribe.addAll(config.getIncludeRates());
         ratesToSubscribe.removeAll(config.getExcludeRates());
+
+        if (ratesToSubscribe.isEmpty()) {
+            LOGGER.warn("{} received empty rates to subscribe {}. Aborting...", config.getName(), ratesToSubscribe);
+            return;
+        }
 
         LOGGER.info("{} subscribing to {} ", config.getName(), ratesToSubscribe);
         List<String> endpoints = rateMapper.mapRateEnumToEndpoints(ratesToSubscribe);

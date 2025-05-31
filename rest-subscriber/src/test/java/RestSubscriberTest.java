@@ -1,20 +1,15 @@
 import com.berkepite.RateDistributionEngine.RestSubscriber.RestConfig;
 import com.berkepite.RateDistributionEngine.RestSubscriber.RestSubscriber;
-import com.berkepite.RateDistributionEngine.common.ICoordinator;
-import com.berkepite.RateDistributionEngine.common.exception.subscriber.SubscriberConnectionException;
-import com.berkepite.RateDistributionEngine.common.rates.RawRate;
+import com.berkepite.RateDistributionEngine.common.coordinator.ICoordinator;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.ArgumentCaptor;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.util.List;
-import java.util.concurrent.Executors;
 
 import static org.junit.jupiter.api.Assertions.assertThrowsExactly;
 import static org.mockito.Mockito.*;

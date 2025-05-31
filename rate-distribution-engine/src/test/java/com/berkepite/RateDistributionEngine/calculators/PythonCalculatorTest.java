@@ -1,6 +1,7 @@
 package com.berkepite.RateDistributionEngine.calculators;
 
 import com.berkepite.RateDistributionEngine.common.rates.CalculatedRate;
+import com.berkepite.RateDistributionEngine.common.rates.MeanRate;
 import com.berkepite.RateDistributionEngine.common.rates.RawRate;
 import com.berkepite.RateDistributionEngine.rates.RateConverter;
 import com.berkepite.RateDistributionEngine.rates.RateFactory;
@@ -10,8 +11,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ActiveProfiles;
 
 import java.util.ArrayList;
@@ -37,7 +36,7 @@ public class PythonCalculatorTest {
     @Test
     public void shouldHaveAtLeastOnePercentDiff() throws Exception {
         RawRate rate1 = createRateWithBidAndAsk(1.005, 2.1);
-        RawRate rate2 = createRateWithBidAndAsk(1.01, 2);
+        MeanRate rate2 = createMeanRate(1.01, 2);
 
         Boolean result = pythonCalculator.hasAtLeastOnePercentDiff(rate1, rate2);
 
@@ -55,10 +54,10 @@ public class PythonCalculatorTest {
         Double[] bids = values.get(0);
         Double[] asks = values.get(1);
 
-        RawRate rate = pythonCalculator.calculateMeanRate(incomingRate, bids, asks);
+        MeanRate rate = pythonCalculator.calculateMeanRate(bids, asks);
 
-        Assertions.assertEquals(5, rate.getBid());
-        Assertions.assertEquals(4, rate.getAsk());
+        Assertions.assertEquals(5, rate.getMeanBid());
+        Assertions.assertEquals(4, rate.getMeanAsk());
     }
 
     @Test
@@ -72,10 +71,10 @@ public class PythonCalculatorTest {
         Double[] bids = values.get(0);
         Double[] asks = values.get(1);
 
-        RawRate rate = pythonCalculator.calculateMeanRate(incomingRate, bids, asks);
+        MeanRate rate = pythonCalculator.calculateMeanRate(bids, asks);
 
-        Assertions.assertEquals(0.15, rate.getBid());
-        Assertions.assertEquals(0.35, rate.getAsk());
+        Assertions.assertEquals(0.15, rate.getMeanBid());
+        Assertions.assertEquals(0.35, rate.getMeanAsk());
     }
 
     @Test
@@ -131,6 +130,13 @@ public class PythonCalculatorTest {
         RawRate rate = new RawRate();
         rate.setBid(bid);
         rate.setAsk(ask);
+        return rate;
+    }
+
+    private MeanRate createMeanRate(double bid, double ask) throws Exception {
+        MeanRate rate = new MeanRate();
+        rate.setMeanBid(bid);
+        rate.setMeanAsk(ask);
         return rate;
     }
 

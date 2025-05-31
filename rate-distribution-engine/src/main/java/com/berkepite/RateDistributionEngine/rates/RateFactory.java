@@ -1,14 +1,23 @@
 package com.berkepite.RateDistributionEngine.rates;
 
 import com.berkepite.RateDistributionEngine.common.rates.CalculatedRate;
+import com.berkepite.RateDistributionEngine.common.rates.IRateFactory;
+import com.berkepite.RateDistributionEngine.common.rates.MeanRate;
 import com.berkepite.RateDistributionEngine.common.rates.RawRate;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import java.time.Instant;
 
 @Component
-public class RateFactory {
+public class RateFactory implements IRateFactory {
+
+    public MeanRate createMeanRate(Double meanBid, Double meanAsk) {
+        MeanRate meanRate = new MeanRate();
+        meanRate.setMeanBid(meanBid);
+        meanRate.setMeanAsk(meanAsk);
+
+        return meanRate;
+    }
 
     public RawRate createRawRate(String type, String provider, Double bid, Double ask, Instant timestamp) {
         RawRate rawRate = new RawRate();

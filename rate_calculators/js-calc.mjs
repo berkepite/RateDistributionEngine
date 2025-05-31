@@ -1,4 +1,4 @@
-import {Decimal} from 'rate-distribution-engine/vendor/decimal.js/decimal.mjs';
+import {Decimal} from 'rate_calculators/vendor/decimal.js/decimal.mjs';
 
 export function calculateMeanRate(bids, asks) {
     const [bid_mean, ask_mean] = calculateMeans(bids, asks);
@@ -25,7 +25,7 @@ export function calculateUSDMID(bids, asks) {
 
     const usdmid = bid_mean.plus(ask_mean).dividedBy('2');
 
-    return usdmid.toNumber();
+    return Number(usdmid.toNumber());
 }
 
 export function calculateForRawRateType(usdmid, bids, asks) {
@@ -39,7 +39,7 @@ export function calculateForRawRateType(usdmid, bids, asks) {
 export function calculateForUSD_TRY(bids, asks) {
     const [bid_mean, ask_mean] = calculateMeans(bids, asks);
 
-    return [bid_mean, ask_mean];
+    return [bid_mean.toNumber(), ask_mean.toNumber()];
 }
 
 function calculateMean(numbers) {
@@ -49,7 +49,7 @@ function calculateMean(numbers) {
         sum = sum.plus(new Decimal(num.toString()));
     }
 
-    return sum.dividedBy(numbers.length);
+    return new Decimal(sum.dividedBy(numbers.length));
 }
 
 function calculateMeans(bids, asks) {

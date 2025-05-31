@@ -1,13 +1,14 @@
 package com.berkepite.RateDistributionEngine.subscribers;
 
 import com.berkepite.RateDistributionEngine.MainApplication32BitApplication;
-import com.berkepite.RateDistributionEngine.common.ICoordinator;
-import com.berkepite.RateDistributionEngine.common.ISubscriber;
-import com.berkepite.RateDistributionEngine.common.ISubscriberConfig;
+import com.berkepite.RateDistributionEngine.common.coordinator.ICoordinator;
+import com.berkepite.RateDistributionEngine.common.coordinator.ISubscriberBindingConfig;
+import com.berkepite.RateDistributionEngine.common.subscribers.ISubscriber;
+import com.berkepite.RateDistributionEngine.common.subscribers.ISubscriberConfig;
 import com.berkepite.RateDistributionEngine.common.exception.subscriber.SubscriberClassNotFoundException;
 import com.berkepite.RateDistributionEngine.common.exception.subscriber.SubscriberLoadingException;
 import com.berkepite.RateDistributionEngine.common.exception.subscriber.SubscriberProperConstructorNotFoundException;
-import com.berkepite.RateDistributionEngine.coordinator.CoordinatorConfig;
+import com.berkepite.RateDistributionEngine.common.subscribers.ISubscriberLoader;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.springframework.stereotype.Component;
@@ -18,10 +19,11 @@ import java.net.URL;
 import java.net.URLClassLoader;
 
 @Component
-public class SubscriberLoader {
+public class SubscriberLoader implements ISubscriberLoader {
     private static final Logger LOGGER = LogManager.getLogger(SubscriberLoader.class);
 
-    public ISubscriber load(CoordinatorConfig.SubscriberBindingConfig bindingConfig, ICoordinator coordinator) {
+    @Override
+    public ISubscriber load(ISubscriberBindingConfig bindingConfig, ICoordinator coordinator) {
         try {
             // Path to the JAR file
             String jarPath = "subscribers/" + bindingConfig.getJarName();
@@ -47,7 +49,7 @@ public class SubscriberLoader {
         }
     }
 
-    private ISubscriber loadSubscriber(URLClassLoader classLoader, CoordinatorConfig.SubscriberBindingConfig bindingConfig, ICoordinator coordinator, ISubscriberConfig subscriberConfig) throws SubscriberLoadingException {
+    private ISubscriber loadSubscriber(URLClassLoader classLoader, ISubscriberBindingConfig bindingConfig, ICoordinator coordinator, ISubscriberConfig subscriberConfig) throws SubscriberLoadingException {
         try {
             Class<?> loadedClass = classLoader.loadClass(bindingConfig.getClassPath());
             return (ISubscriber) loadedClass.getDeclaredConstructor(ICoordinator.class, ISubscriberConfig.class).newInstance(coordinator, subscriberConfig);
@@ -61,7 +63,7 @@ public class SubscriberLoader {
         }
     }
 
-    private ISubscriberConfig loadConfig(URLClassLoader classLoader, CoordinatorConfig.SubscriberBindingConfig bindingConfig) throws SubscriberLoadingException {
+    private ISubscriberConfig loadConfig(URLClassLoader classLoader, ISubscriberBindingConfig bindingConfig) throws SubscriberLoadingException {
         try {
             Class<?> loadedConfigClass = classLoader.loadClass(bindingConfig.getConfigClassPath());
             return SubscriberConfigLoader.load(bindingConfig.getConfigName(), loadedConfigClass);

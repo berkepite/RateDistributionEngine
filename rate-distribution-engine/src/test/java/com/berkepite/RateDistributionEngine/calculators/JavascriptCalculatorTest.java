@@ -1,6 +1,7 @@
 package com.berkepite.RateDistributionEngine.calculators;
 
 import com.berkepite.RateDistributionEngine.common.rates.CalculatedRate;
+import com.berkepite.RateDistributionEngine.common.rates.MeanRate;
 import com.berkepite.RateDistributionEngine.common.rates.RawRate;
 import com.berkepite.RateDistributionEngine.rates.RateConverter;
 import com.berkepite.RateDistributionEngine.rates.RateFactory;
@@ -12,6 +13,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.test.context.ActiveProfiles;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -25,16 +27,17 @@ public class JavascriptCalculatorTest {
     private RateConverter rateConverter;
 
     @BeforeEach
-    public void setUp() {
+    public void setUp() throws IOException {
         RateFactory rateFactory = new RateFactory();
         CalculatorLoader calculatorLoader = new CalculatorLoader();
         javascriptCalculator = new JavascriptCalculator(rateFactory, rateConverter, calculatorLoader);
+        javascriptCalculator.init("src/test/resources/rate_calculators/JAVASCRIPT_CALCULATOR.mjs");
     }
 
     @Test
     public void shouldHaveAtLeastOnePercentDiff() throws Exception {
         RawRate rate1 = createRateWithBidAndAsk(1.005, 2.1);
-        RawRate rate2 = createRateWithBidAndAsk(1.01, 2);
+        MeanRate rate2 = createMeanRate(1.01, 2);
 
         Boolean result = javascriptCalculator.hasAtLeastOnePercentDiff(rate1, rate2);
 
@@ -52,10 +55,10 @@ public class JavascriptCalculatorTest {
         Double[] bids = values.get(0);
         Double[] asks = values.get(1);
 
-        RawRate rate = javascriptCalculator.calculateMeanRate(incomingRate, bids, asks);
+        MeanRate rate = javascriptCalculator.calculateMeanRate(bids, asks);
 
-        Assertions.assertEquals(5, rate.getBid());
-        Assertions.assertEquals(4, rate.getAsk());
+        Assertions.assertEquals(5, rate.getMeanBid());
+        Assertions.assertEquals(4, rate.getMeanAsk());
     }
 
     @Test
@@ -69,10 +72,10 @@ public class JavascriptCalculatorTest {
         Double[] bids = values.get(0);
         Double[] asks = values.get(1);
 
-        RawRate rate = javascriptCalculator.calculateMeanRate(incomingRate, bids, asks);
+        MeanRate rate = javascriptCalculator.calculateMeanRate(bids, asks);
 
-        Assertions.assertEquals(0.15, rate.getBid());
-        Assertions.assertEquals(0.35, rate.getAsk());
+        Assertions.assertEquals(0.15, rate.getMeanBid());
+        Assertions.assertEquals(0.35, rate.getMeanAsk());
     }
 
     @Test
@@ -128,6 +131,13 @@ public class JavascriptCalculatorTest {
         RawRate rate = new RawRate();
         rate.setBid(bid);
         rate.setAsk(ask);
+        return rate;
+    }
+
+    private MeanRate createMeanRate(double bid, double ask) throws Exception {
+        MeanRate rate = new MeanRate();
+        rate.setMeanBid(bid);
+        rate.setMeanAsk(ask);
         return rate;
     }
 

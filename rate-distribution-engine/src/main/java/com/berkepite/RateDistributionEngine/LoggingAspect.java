@@ -2,8 +2,8 @@ package com.berkepite.RateDistributionEngine;
 
 import com.berkepite.RateDistributionEngine.common.status.ConnectionStatus;
 import com.berkepite.RateDistributionEngine.common.status.RateStatus;
-import com.berkepite.RateDistributionEngine.common.ISubscriber;
-import com.berkepite.RateDistributionEngine.common.ISubscriberConfig;
+import com.berkepite.RateDistributionEngine.common.subscribers.ISubscriber;
+import com.berkepite.RateDistributionEngine.common.subscribers.ISubscriberConfig;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.aspectj.lang.JoinPoint;

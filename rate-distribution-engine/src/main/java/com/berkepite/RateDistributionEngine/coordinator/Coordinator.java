@@ -1,12 +1,15 @@
 package com.berkepite.RateDistributionEngine.coordinator;
 
+import com.berkepite.RateDistributionEngine.common.coordinator.ICoordinator;
+import com.berkepite.RateDistributionEngine.common.coordinator.ICoordinatorConfig;
+import com.berkepite.RateDistributionEngine.common.coordinator.ISubscriberBindingConfig;
 import com.berkepite.RateDistributionEngine.common.rates.RawRate;
-import com.berkepite.RateDistributionEngine.rates.RateManager;
+import com.berkepite.RateDistributionEngine.common.rates.IRateManager;
 import com.berkepite.RateDistributionEngine.common.status.ConnectionStatus;
-import com.berkepite.RateDistributionEngine.common.ISubscriber;
-import com.berkepite.RateDistributionEngine.common.ICoordinator;
-import com.berkepite.RateDistributionEngine.common.ISubscriberConfig;
-import com.berkepite.RateDistributionEngine.subscribers.SubscriberLoader;
+import com.berkepite.RateDistributionEngine.common.rates.IRatesLoader;
+import com.berkepite.RateDistributionEngine.common.subscribers.ISubscriber;
+import com.berkepite.RateDistributionEngine.common.subscribers.ISubscriberConfig;
+import com.berkepite.RateDistributionEngine.common.subscribers.ISubscriberLoader;
 import jakarta.annotation.PostConstruct;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -24,13 +27,13 @@ import java.util.*;
  */
 @Component
 public class Coordinator implements CommandLineRunner, ICoordinator {
-
     private final Logger LOGGER = LogManager.getLogger(Coordinator.class);
 
-    private final CoordinatorConfig coordinatorConfig;
-    //private final RateService rateService;
-    private final SubscriberLoader subscriberLoader;
+    private final ICoordinatorConfig coordinatorConfig;
+    private final IRateManager rateManager;
+    private final ISubscriberLoader subscriberLoader;
     private final ThreadPoolTaskExecutor executorService;
+    private final IRatesLoader ratesLoader;
 
     private List<ISubscriber> subscribers;
 
@@ -43,11 +46,12 @@ public class Coordinator implements CommandLineRunner, ICoordinator {
      * @param executorService   the thread pool executor for managing async tasks
      */
     @Autowired
-    public Coordinator(CoordinatorConfig coordinatorConfig, RateManager rateManager, SubscriberLoader subscriberLoader, @Qualifier("coordinatorExecutor") ThreadPoolTaskExecutor executorService) {
+    public Coordinator(IRatesLoader ratesLoader, ICoordinatorConfig coordinatorConfig, IRateManager rateManager, ISubscriberLoader subscriberLoader, @Qualifier("coordinatorExecutor") ThreadPoolTaskExecutor executorService) {
         this.coordinatorConfig = coordinatorConfig;
         this.subscriberLoader = subscriberLoader;
         this.executorService = executorService;
-        //this.rateService = rateService;
+        this.rateManager = rateManager;
+        this.ratesLoader = ratesLoader;
     }
 
     /**
@@ -58,7 +62,7 @@ public class Coordinator implements CommandLineRunner, ICoordinator {
     @PostConstruct
     private void init() {
         subscribers = new ArrayList<>(2);
-        loadSubscriberClasses(coordinatorConfig.getSubscribers());
+        loadSubscriberClasses(coordinatorConfig.getSubscriberBindings());
 
         if (!subscribers.isEmpty()) {
             LOGGER.info("Subscriber classes loaded!: {}", subscribers.toString());
@@ -111,7 +115,7 @@ public class Coordinator implements CommandLineRunner, ICoordinator {
      *
      * @param subscriberBindingConfigs list of subscriber binding configurations
      */
-    private void loadSubscriberClasses(List<CoordinatorConfig.SubscriberBindingConfig> subscriberBindingConfigs) {
+    private void loadSubscriberClasses(List<ISubscriberBindingConfig> subscriberBindingConfigs) {
         subscriberBindingConfigs.forEach(subscriberBindingConfig -> {
             if (subscriberBindingConfig.isEnabled()) {
                 ISubscriber subscriber = subscriberLoader.load(subscriberBindingConfig, this);
@@ -132,12 +136,12 @@ public class Coordinator implements CommandLineRunner, ICoordinator {
     @Override
     public void onConnect(ISubscriber subscriber) {
         ISubscriberConfig config = subscriber.getConfig();
-        LOGGER.info("Subscriber rates: {}", coordinatorConfig.getRates());
+        LOGGER.info("Subscriber rates: {}", ratesLoader.getRatesList());
 
         LOGGER.info("{} connected to {}, trying to subscribe...", config.getName(), config.getUrl());
         executorService.execute(() -> {
             try {
-                subscriber.subscribe(coordinatorConfig.getRates());
+                subscriber.subscribe(ratesLoader.getRatesList());
             } catch (Exception e) {
                 LOGGER.error("Failed to subscribe to rates!", e);
             }
@@ -197,7 +201,7 @@ public class Coordinator implements CommandLineRunner, ICoordinator {
     public void onRateUpdate(ISubscriber subscriber, RawRate rate) {
         LOGGER.info("({}) rate received {}", subscriber.getConfig().getName(), rate.toString());
 
-        //executorService.execute(() -> rateService.manageRawRate(rate));
+        executorService.execute(() -> rateManager.manageIncomingRawRate(rate));
     }
 
     /**
@@ -207,7 +211,6 @@ public class Coordinator implements CommandLineRunner, ICoordinator {
      * @param status     the connection error status
      */
     @Override
-    @CoordinatorEventStatus
     public void onConnectionError(ISubscriber subscriber, ConnectionStatus status) {
         LOGGER.info("({}) connection error {}", subscriber.getConfig().getName(), status.toString());
     }
@@ -217,6 +220,7 @@ public class Coordinator implements CommandLineRunner, ICoordinator {
      *
      * @return the list of subscribers
      */
+    @Override
     public List<ISubscriber> getSubscribers() {
         return subscribers;
     }
@@ -226,7 +230,8 @@ public class Coordinator implements CommandLineRunner, ICoordinator {
      *
      * @return the coordinator configuration
      */
-    public CoordinatorConfig getCoordinatorConfig() {
+    @Override
+    public ICoordinatorConfig getConfig() {
         return coordinatorConfig;
     }
 }

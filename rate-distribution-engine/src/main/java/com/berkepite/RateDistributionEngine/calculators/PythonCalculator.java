@@ -1,38 +1,39 @@
 package com.berkepite.RateDistributionEngine.calculators;
 
+import com.berkepite.RateDistributionEngine.common.calculators.ICalculatorLoader;
+import com.berkepite.RateDistributionEngine.common.calculators.IRateCalculator;
 import com.berkepite.RateDistributionEngine.common.rates.CalculatedRate;
-import com.berkepite.RateDistributionEngine.rates.RateConverter;
-import com.berkepite.RateDistributionEngine.rates.RateFactory;
+import com.berkepite.RateDistributionEngine.common.rates.MeanRate;
+import com.berkepite.RateDistributionEngine.common.rates.IRateConverter;
+import com.berkepite.RateDistributionEngine.common.rates.IRateFactory;
 import com.berkepite.RateDistributionEngine.common.rates.RawRate;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.graalvm.polyglot.Context;
 import org.graalvm.polyglot.Source;
 import org.graalvm.polyglot.Value;
-import org.springframework.core.io.ClassPathResource;
 
 import java.io.IOException;
-import java.io.InputStreamReader;
 import java.io.Reader;
 import java.time.Instant;
 
 public class PythonCalculator implements IRateCalculator {
-    private final RateFactory rateFactory;
-    private final RateConverter rateConverter;
-    private final CalculatorLoader calculatorLoader;
+    private final IRateFactory rateFactory;
+    private final IRateConverter rateConverter;
+    private final ICalculatorLoader calculatorLoader;
     private static final Logger LOGGER = LogManager.getLogger(PythonCalculator.class);
     private Source source;
 
-    public PythonCalculator(RateFactory rateFactory, RateConverter rateConverter, CalculatorLoader calculatorLoader) {
+    public PythonCalculator(IRateFactory rateFactory, IRateConverter rateConverter, ICalculatorLoader calculatorLoader) {
         this.rateFactory = rateFactory;
         this.calculatorLoader = calculatorLoader;
         this.rateConverter = rateConverter;
-        init();
     }
 
-    public void init() {
+    @Override
+    public void init(String calculatorPath) {
         try {
-            Reader calculatorSource = calculatorLoader.load("rate_calculators/PYTHON_CALCULATOR.py");
+            Reader calculatorSource = calculatorLoader.load(calculatorPath);
 
             source = Source.newBuilder("python", calculatorSource, "pymod.py").build();
         } catch (IOException e) {
@@ -42,7 +43,7 @@ public class PythonCalculator implements IRateCalculator {
     }
 
     @Override
-    public RawRate calculateMeanRate(RawRate incomingRate, Double[] bids, Double[] asks) {
+    public MeanRate calculateMeanRate(Double[] bids, Double[] asks) {
         try (Context context = Context.newBuilder("python")
                 .allowAllAccess(true)
                 .build()) {
@@ -51,11 +52,10 @@ public class PythonCalculator implements IRateCalculator {
             Value m_calculateMeanRate = module.getMember("calculate_mean_rate");
             Value result = m_calculateMeanRate.execute(bids, asks);
 
-            return rateFactory.createRawRate(incomingRate.getType(),
-                    incomingRate.getProvider(),
+            return rateFactory.createMeanRate(
                     result.getArrayElement(0).asDouble(),
-                    result.getArrayElement(1).asDouble(),
-                    incomingRate.getTimestamp());
+                    result.getArrayElement(1).asDouble()
+            );
         }
     }
 
@@ -97,7 +97,7 @@ public class PythonCalculator implements IRateCalculator {
 
 
     @Override
-    public boolean hasAtLeastOnePercentDiff(RawRate incomingRate, RawRate meanRate) {
+    public boolean hasAtLeastOnePercentDiff(RawRate incomingRate, MeanRate meanRate) {
         try (Context context = Context.newBuilder("python")
                 .allowAllAccess(true)
                 .build()) {
@@ -105,7 +105,7 @@ public class PythonCalculator implements IRateCalculator {
             Value m_hasAtLeastOnePercentDiff = module.getMember("has_at_least_one_percent_diff");
 
             Value result = m_hasAtLeastOnePercentDiff.execute(
-                    incomingRate.getBid(), incomingRate.getAsk(), meanRate.getBid(), meanRate.getAsk());
+                    incomingRate.getBid(), incomingRate.getAsk(), meanRate.getMeanBid(), meanRate.getMeanAsk());
 
             return result.asBoolean();
         }

@@ -1,24 +1,27 @@
 package com.berkepite.RateDistributionEngine.calculators;
 
 import com.berkepite.RateDistributionEngine.common.calculators.ICalculatorLoader;
+import com.berkepite.RateDistributionEngine.common.exception.calculator.CalculatorLoadingException;
 import org.springframework.stereotype.Component;
 
-import java.io.*;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 
 @Component
 public class CalculatorLoader implements ICalculatorLoader {
-    public Reader load(String path) throws RuntimeException {
-        File calculatorFile = new File(path);
-
-        if (!calculatorFile.exists()) {
-            throw new RuntimeException("Calculator file was not found: " + path);
-        }
-
+    public Path load(String path) throws CalculatorLoadingException {
         try {
-            InputStream stream = new FileInputStream(calculatorFile);
-            return new InputStreamReader(stream);
-        } catch (IOException ex) {
-            throw new RuntimeException("Calculator file could not be converted to a stream: " + path);
+            Path calculatorPath = Paths.get(path);
+
+            if (!Files.exists(calculatorPath)) {
+                throw new CalculatorLoadingException("Calculator file was not found: " + path);
+            }
+
+            return calculatorPath;
+
+        } catch (Exception ex) {
+            throw new CalculatorLoadingException("Calculator file could not be loaded!");
         }
     }
 }

@@ -1,7 +1,9 @@
 package com.berkepite.RateDistributionEngine.common.calculators;
 
-import java.io.Reader;
+import com.berkepite.RateDistributionEngine.common.exception.calculator.CalculatorLoadingException;
+
+import java.nio.file.Path;
 
 public interface ICalculatorLoader {
-    Reader load(String path) throws RuntimeException;
+    Path load(String path) throws CalculatorLoadingException;
 }

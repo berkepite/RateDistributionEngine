@@ -9,6 +9,7 @@ import com.berkepite.RateDistributionEngine.common.rates.IRateFactory;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -19,6 +20,12 @@ public class CalculatorFactory implements ICalculatorFactory {
     private final IRateConverter rateConverter;
     private final ICalculatorLoader calculatorLoader;
 
+    @Value("${app.rate-calculation-strategy}")
+    private CalculatorEnum rateCalculationStrategy;
+
+    @Value("${app.rate-calculator-path}")
+    private String rateCalculatorPath;
+
     @Autowired
     public CalculatorFactory(IRateFactory rateFactory, IRateConverter rateConverter, ICalculatorLoader calculatorLoader) {
         this.rateFactory = rateFactory;
@@ -27,14 +34,14 @@ public class CalculatorFactory implements ICalculatorFactory {
     }
 
     @Override
-    public IRateCalculator getCalculator(CalculatorEnum strategy, String path) {
+    public IRateCalculator getCalculator() {
         try {
-            switch (strategy) {
+            switch (rateCalculationStrategy) {
                 case CalculatorEnum.JAVASCRIPT -> {
-                    return getJavascriptCalculator(path);
+                    return getJavascriptCalculator();
                 }
                 case CalculatorEnum.PYTHON -> {
-                    return getPythonCalculator(path);
+                    return getPythonCalculator();
                 }
             }
         } catch (Exception e) {
@@ -44,16 +51,16 @@ public class CalculatorFactory implements ICalculatorFactory {
         return null;
     }
 
-    private JavascriptCalculator getJavascriptCalculator(String path) throws Exception {
+    private JavascriptCalculator getJavascriptCalculator() throws Exception {
         var c = new JavascriptCalculator(rateFactory, rateConverter, calculatorLoader);
-        c.init(path);
+        c.init(rateCalculatorPath);
 
         return c;
     }
 
-    private PythonCalculator getPythonCalculator(String path) throws Exception {
+    private PythonCalculator getPythonCalculator() throws Exception {
         var c = new PythonCalculator(rateFactory, rateConverter, calculatorLoader);
-        c.init(path);
+        c.init(rateCalculatorPath);
 
         return c;
     }

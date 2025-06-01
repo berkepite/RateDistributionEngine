@@ -1,8 +1,8 @@
 package com.berkepite.RateDistributionEngine.common.coordinator;
 
+import com.berkepite.RateDistributionEngine.common.calculators.IRateCalculator;
 import com.berkepite.RateDistributionEngine.common.subscribers.ISubscriber;
 import com.berkepite.RateDistributionEngine.common.rates.RawRate;
-import com.berkepite.RateDistributionEngine.common.status.ConnectionStatus;
 
 import java.util.List;
 
@@ -19,7 +19,11 @@ public interface ICoordinator {
 
     void onRateUpdate(ISubscriber subscriber, RawRate rate);
 
-    void onConnectionError(ISubscriber subscriber, ConnectionStatus status);
+    void onSubscriberError(ISubscriber subscriber, Exception e);
+
+    void onRateError(ISubscriber subscriber, IRateCalculator calculator, Exception e);
+
+    void onCalculatorError(IRateCalculator calculator, Exception e);
 
     List<ISubscriber> getSubscribers();
 

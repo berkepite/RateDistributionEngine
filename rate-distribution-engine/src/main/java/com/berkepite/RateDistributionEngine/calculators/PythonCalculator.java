@@ -2,27 +2,28 @@ package com.berkepite.RateDistributionEngine.calculators;
 
 import com.berkepite.RateDistributionEngine.common.calculators.ICalculatorLoader;
 import com.berkepite.RateDistributionEngine.common.calculators.IRateCalculator;
+import com.berkepite.RateDistributionEngine.common.exception.calculator.CalculatorException;
+import com.berkepite.RateDistributionEngine.common.exception.calculator.CalculatorLoadingException;
 import com.berkepite.RateDistributionEngine.common.rates.CalculatedRate;
 import com.berkepite.RateDistributionEngine.common.rates.MeanRate;
 import com.berkepite.RateDistributionEngine.common.rates.IRateConverter;
 import com.berkepite.RateDistributionEngine.common.rates.IRateFactory;
 import com.berkepite.RateDistributionEngine.common.rates.RawRate;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 import org.graalvm.polyglot.Context;
 import org.graalvm.polyglot.Source;
 import org.graalvm.polyglot.Value;
 
 import java.io.IOException;
-import java.io.Reader;
+import java.nio.file.Path;
 import java.time.Instant;
 
 public class PythonCalculator implements IRateCalculator {
     private final IRateFactory rateFactory;
     private final IRateConverter rateConverter;
     private final ICalculatorLoader calculatorLoader;
-    private static final Logger LOGGER = LogManager.getLogger(PythonCalculator.class);
+
     private Source source;
+    private String path;
 
     public PythonCalculator(IRateFactory rateFactory, IRateConverter rateConverter, ICalculatorLoader calculatorLoader) {
         this.rateFactory = rateFactory;
@@ -31,19 +32,20 @@ public class PythonCalculator implements IRateCalculator {
     }
 
     @Override
-    public void init(String calculatorPath) {
-        try {
-            Reader calculatorSource = calculatorLoader.load(calculatorPath);
+    public void init(String calculatorPath) throws CalculatorException {
+        setPath(calculatorPath);
 
-            source = Source.newBuilder("python", calculatorSource, "pymod.py").build();
+        try {
+            Path _path = calculatorLoader.load(calculatorPath);
+            source = Source.newBuilder("python", _path.toFile()).build();
+
         } catch (IOException e) {
-            LOGGER.error(e);
-            throw new RuntimeException(e);
+            throw new CalculatorLoadingException("Could not load calculator source.", e);
         }
     }
 
     @Override
-    public MeanRate calculateMeanRate(Double[] bids, Double[] asks) {
+    public MeanRate calculateMeanRate(Double[] bids, Double[] asks) throws CalculatorException {
         try (Context context = Context.newBuilder("python")
                 .allowAllAccess(true)
                 .build()) {
@@ -56,11 +58,13 @@ public class PythonCalculator implements IRateCalculator {
                     result.getArrayElement(0).asDouble(),
                     result.getArrayElement(1).asDouble()
             );
+        } catch (Exception e) {
+            throw new CalculatorException("Failed to calculate mean rate.", e);
         }
     }
 
     @Override
-    public CalculatedRate calculateForRawRateType(String type, Double usdmid, Double[] bids, Double[] asks) {
+    public CalculatedRate calculateForRawRateType(String type, Double usdmid, Double[] bids, Double[] asks) throws CalculatorException {
         try (Context context = Context.newBuilder("python")
                 .allowAllAccess(true)
                 .build()) {
@@ -73,11 +77,13 @@ public class PythonCalculator implements IRateCalculator {
                     result.getArrayElement(0).asDouble(),
                     result.getArrayElement(1).asDouble(),
                     Instant.now());
+        } catch (Exception e) {
+            throw new CalculatorException("Failed to calculate for raw rate %s.".formatted(type), e);
         }
     }
 
     @Override
-    public CalculatedRate calculateForUSD_TRY(Double[] bids, Double[] asks) {
+    public CalculatedRate calculateForUSD_TRY(Double[] bids, Double[] asks) throws CalculatorException {
         try (Context context = Context.newBuilder("python")
                 .allowAllAccess(true)
                 .build()) {
@@ -92,12 +98,14 @@ public class PythonCalculator implements IRateCalculator {
                     result.getArrayElement(0).asDouble(),
                     result.getArrayElement(1).asDouble(),
                     Instant.now());
+        } catch (Exception e) {
+            throw new CalculatorException("Failed to calculate for USD_TRY.", e);
         }
     }
 
 
     @Override
-    public boolean hasAtLeastOnePercentDiff(RawRate incomingRate, MeanRate meanRate) {
+    public boolean hasAtLeastOnePercentDiff(RawRate incomingRate, MeanRate meanRate) throws CalculatorException {
         try (Context context = Context.newBuilder("python")
                 .allowAllAccess(true)
                 .build()) {
@@ -108,11 +116,13 @@ public class PythonCalculator implements IRateCalculator {
                     incomingRate.getBid(), incomingRate.getAsk(), meanRate.getMeanBid(), meanRate.getMeanAsk());
 
             return result.asBoolean();
+        } catch (Exception e) {
+            throw new CalculatorException("Failed to calculate one percent difference.", e);
         }
     }
 
     @Override
-    public Double calculateUSDMID(Double[] bids, Double[] asks) {
+    public Double calculateUSDMID(Double[] bids, Double[] asks) throws CalculatorException {
         try (Context context = Context.newBuilder("python")
                 .allowAllAccess(true)
                 .build()) {
@@ -122,6 +132,22 @@ public class PythonCalculator implements IRateCalculator {
             Value result = calculateUSDMID.execute(bids, asks);
 
             return result.asDouble();
+        } catch (Exception e) {
+            throw new CalculatorException("Failed to calculate for usdmid.", e);
         }
+    }
+
+    @Override
+    public String getStrategy() {
+        return "PYTHON";
+    }
+
+    @Override
+    public String getPath() {
+        return path;
+    }
+
+    private void setPath(String path) {
+        this.path = path;
     }
 }

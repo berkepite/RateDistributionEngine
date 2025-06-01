@@ -14,6 +14,7 @@ public class TCPConfig implements ISubscriberConfig {
     private String password;
     private Integer requestInterval;
     private Integer requestRetryLimit;
+    private Integer requestTimeout;
     private List<String> includeRates;
     private List<String> excludeRates;
 
@@ -22,6 +23,7 @@ public class TCPConfig implements ISubscriberConfig {
                 + ", classPath=" + classPath + ", url=" + url + ", port=" + port
                 + ", username=" + username + ", password=" + password + ", requestInterval="
                 + requestInterval + ", requestRetryLimit=" + requestRetryLimit
+                + ", requestTimeout=" + requestTimeout
                 + ", includeRates=" + includeRates + ", excludeRates=" + excludeRates + "]";
     }
 
@@ -31,6 +33,10 @@ public class TCPConfig implements ISubscriberConfig {
 
     public Integer getRequestRetryLimit() {
         return requestRetryLimit;
+    }
+
+    public Integer getRequestTimeout() {
+        return requestTimeout;
     }
 
     @Override
@@ -135,5 +141,9 @@ public class TCPConfig implements ISubscriberConfig {
 
     public void setRequestRetryLimit(Integer requestRetryLimit) {
         this.requestRetryLimit = requestRetryLimit;
+    }
+
+    public void setRequestTimeout(Integer requestTimeout) {
+        this.requestTimeout = requestTimeout;
     }
 }

@@ -1,14 +1,12 @@
 package com.berkepite.RateDistributionEngine.TCPSubscriber;
 
-import com.berkepite.RateDistributionEngine.common.exception.RateMapperException;
+import com.berkepite.RateDistributionEngine.common.exception.RateMappingException;
 import com.berkepite.RateDistributionEngine.common.subscribers.ISubscriber;
 import com.berkepite.RateDistributionEngine.common.subscribers.ISubscriberConfig;
 import com.berkepite.RateDistributionEngine.common.coordinator.ICoordinator;
-import com.berkepite.RateDistributionEngine.common.exception.subscriber.SubscriberBadCredentialsException;
 import com.berkepite.RateDistributionEngine.common.exception.subscriber.SubscriberConnectionException;
 import com.berkepite.RateDistributionEngine.common.exception.subscriber.SubscriberException;
 import com.berkepite.RateDistributionEngine.common.rates.RawRate;
-import com.berkepite.RateDistributionEngine.common.status.ConnectionStatus;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -20,8 +18,7 @@ import java.net.Socket;
 import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.ScheduledThreadPoolExecutor;
+import java.util.concurrent.*;
 
 /**
  * TCPSubscriber is a subscriber that connects to the  TCP service to subscribe to rate updates.
@@ -69,11 +66,13 @@ public class TCPSubscriber implements ISubscriber {
             try {
                 socket.shutdownInput(); // Shutdown input stream
             } catch (Exception e) {
-                LOGGER.info("Socket is probably null : {}", e.getMessage());
+                LOGGER.warn("{}", e.getMessage());
             }
             executorService.shutdown();
+
             isListeningForRates = false;
             isListeningForInitialResponses = false;
+
             LOGGER.info("Subscriber stopped. ({})", config.getName());
         }, "shutdown-hook-" + config.getName()));
     }
@@ -179,13 +178,8 @@ public class TCPSubscriber implements ISubscriber {
                 LOGGER.warn("The listener ({}) stopped listening because retry limit exceeded.", config.getName());
                 executorService.shutdown();  // Shutdown the executor when done listening
 
-                ConnectionStatus status = ConnectionStatus.newBuilder()
-                        .withSubscriber(this)
-                        .withSocket(socket, config.getUrl() + ":" + config.getPort())
-                        .withMethod("listen")
-                        .build();
-
-                coordinator.onConnectionError(this, status);
+                coordinator.onSubscriberError(this,
+                        new SubscriberConnectionException("The listener (%s) stopped listening because retry limit exceeded.".formatted(config.getName())));
             }
         }
 
@@ -200,7 +194,7 @@ public class TCPSubscriber implements ISubscriber {
         try {
             RawRate rate = rateMapper.createRawRate(data);
             coordinator.onRateUpdate(this, rate);
-        } catch (RateMapperException e) {
+        } catch (RateMappingException e) {
             LOGGER.warn(e);
         } catch (Exception e) {
             LOGGER.error("An unexpected error occurred.", e);
@@ -212,14 +206,14 @@ public class TCPSubscriber implements ISubscriber {
      *
      * @param response the response received from the server
      */
-    private void handleInitialResponses(String response) throws SubscriberConnectionException {
+    private void handleInitialResponses(String response) {
         LOGGER.info("Received the following initial responses: {}", response);
 
         if (response.equals("AUTH SUCCESS")) {
             isListeningForInitialResponses = false;  // Stop listening for initial responses after subscription
             coordinator.onConnect(this);  // Notify the coordinator if authentication is successful
         } else if (response.equals("AUTH FAILED")) {
-            throw new SubscriberBadCredentialsException("Response is AUTH FAILED, check for bad credentials!");
+            coordinator.onSubscriberError(this, new SubscriberConnectionException("Authentication failed."));
         }
     }
 

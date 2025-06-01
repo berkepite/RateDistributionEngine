@@ -9,6 +9,8 @@ import com.berkepite.RateDistributionEngine.common.rates.MeanRate;
 import com.berkepite.RateDistributionEngine.common.rates.IRateConverter;
 import com.berkepite.RateDistributionEngine.common.rates.IRateFactory;
 import com.berkepite.RateDistributionEngine.common.rates.RawRate;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.graalvm.polyglot.Context;
 import org.graalvm.polyglot.Source;
 import org.graalvm.polyglot.Value;
@@ -18,6 +20,7 @@ import java.nio.file.Path;
 import java.time.Instant;
 
 public class JavascriptCalculator implements IRateCalculator {
+    private final Logger LOGGER = LogManager.getLogger(JavascriptCalculator.class);
     private final IRateFactory rateFactory;
     private final IRateConverter rateConverter;
     private final ICalculatorLoader calculatorLoader;
@@ -151,6 +154,11 @@ public class JavascriptCalculator implements IRateCalculator {
     @Override
     public String getPath() {
         return path;
+    }
+
+    @Override
+    public Logger getLogger() {
+        return LOGGER;
     }
 
     private void setPath(String path) {

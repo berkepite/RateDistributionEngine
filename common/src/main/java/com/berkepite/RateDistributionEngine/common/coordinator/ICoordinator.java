@@ -1,6 +1,8 @@
 package com.berkepite.RateDistributionEngine.common.coordinator;
 
 import com.berkepite.RateDistributionEngine.common.calculators.IRateCalculator;
+import com.berkepite.RateDistributionEngine.common.exception.calculator.CalculatorException;
+import com.berkepite.RateDistributionEngine.common.exception.subscriber.SubscriberException;
 import com.berkepite.RateDistributionEngine.common.subscribers.ISubscriber;
 import com.berkepite.RateDistributionEngine.common.rates.RawRate;
 
@@ -19,11 +21,9 @@ public interface ICoordinator {
 
     void onRateUpdate(ISubscriber subscriber, RawRate rate);
 
-    void onSubscriberError(ISubscriber subscriber, Exception e);
+    void onSubscriberError(ISubscriber subscriber, SubscriberException e);
 
-    void onRateError(ISubscriber subscriber, IRateCalculator calculator, Exception e);
-
-    void onCalculatorError(IRateCalculator calculator, Exception e);
+    void onCalculatorError(IRateCalculator calculator, CalculatorException e);
 
     List<ISubscriber> getSubscribers();
 

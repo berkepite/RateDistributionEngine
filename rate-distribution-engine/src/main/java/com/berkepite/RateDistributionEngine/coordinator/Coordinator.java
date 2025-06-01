@@ -1,15 +1,18 @@
 package com.berkepite.RateDistributionEngine.coordinator;
 
+import com.berkepite.RateDistributionEngine.common.calculators.IRateCalculator;
 import com.berkepite.RateDistributionEngine.common.coordinator.ICoordinator;
 import com.berkepite.RateDistributionEngine.common.coordinator.ICoordinatorConfig;
 import com.berkepite.RateDistributionEngine.common.coordinator.ISubscriberBindingConfig;
+import com.berkepite.RateDistributionEngine.common.exception.calculator.CalculatorException;
+import com.berkepite.RateDistributionEngine.common.exception.subscriber.SubscriberException;
 import com.berkepite.RateDistributionEngine.common.rates.RawRate;
 import com.berkepite.RateDistributionEngine.common.rates.IRateManager;
-import com.berkepite.RateDistributionEngine.common.status.ConnectionStatus;
 import com.berkepite.RateDistributionEngine.common.rates.IRatesLoader;
 import com.berkepite.RateDistributionEngine.common.subscribers.ISubscriber;
 import com.berkepite.RateDistributionEngine.common.subscribers.ISubscriberConfig;
 import com.berkepite.RateDistributionEngine.common.subscribers.ISubscriberLoader;
+import com.berkepite.RateDistributionEngine.exception.ExceptionHandler;
 import jakarta.annotation.PostConstruct;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -32,8 +35,9 @@ public class Coordinator implements CommandLineRunner, ICoordinator {
     private final ICoordinatorConfig coordinatorConfig;
     private final IRateManager rateManager;
     private final ISubscriberLoader subscriberLoader;
-    private final ThreadPoolTaskExecutor executorService;
     private final IRatesLoader ratesLoader;
+    private final ThreadPoolTaskExecutor executorService;
+    private final ExceptionHandler exceptionHandler;
 
     private List<ISubscriber> subscribers;
 
@@ -46,12 +50,13 @@ public class Coordinator implements CommandLineRunner, ICoordinator {
      * @param executorService   the thread pool executor for managing async tasks
      */
     @Autowired
-    public Coordinator(IRatesLoader ratesLoader, ICoordinatorConfig coordinatorConfig, IRateManager rateManager, ISubscriberLoader subscriberLoader, @Qualifier("coordinatorExecutor") ThreadPoolTaskExecutor executorService) {
+    public Coordinator(ExceptionHandler exceptionHandler, IRatesLoader ratesLoader, ICoordinatorConfig coordinatorConfig, IRateManager rateManager, ISubscriberLoader subscriberLoader, @Qualifier("coordinatorExecutor") ThreadPoolTaskExecutor executorService) {
         this.coordinatorConfig = coordinatorConfig;
         this.subscriberLoader = subscriberLoader;
         this.executorService = executorService;
         this.rateManager = rateManager;
         this.ratesLoader = ratesLoader;
+        this.exceptionHandler = exceptionHandler;
     }
 
     /**
@@ -62,7 +67,8 @@ public class Coordinator implements CommandLineRunner, ICoordinator {
     @PostConstruct
     private void init() {
         subscribers = new ArrayList<>(2);
-        loadSubscriberClasses(coordinatorConfig.getSubscriberBindings());
+
+        loadSubscriberClasses(coordinatorConfig.getSubscriberBindings(), subscribers);
 
         if (!subscribers.isEmpty()) {
             LOGGER.info("Subscriber classes loaded!: {}", subscribers.toString());
@@ -72,17 +78,7 @@ public class Coordinator implements CommandLineRunner, ICoordinator {
         }
         LOGGER.info("Coordinator Initialized!");
 
-        Iterator<ISubscriber> iterator = subscribers.iterator();
-        while (iterator.hasNext()) {
-            ISubscriber subscriber = iterator.next();
-            try {
-                subscriber.init();
-            } catch (Exception e) {
-                LOGGER.error("Failed to init subscriber class! {} Cause: {}", subscriber.getConfig().getClassName(), e);
-                LOGGER.warn("Removing {} from subscribers!", subscriber.getConfig().getClassName());
-                iterator.remove();
-            }
-        }
+        initSubscribers();
 
         Runtime.getRuntime().addShutdownHook(new Thread(() -> {
             executorService.shutdown();
@@ -90,6 +86,22 @@ public class Coordinator implements CommandLineRunner, ICoordinator {
             LOGGER.info("Executor stopped. ({})", this.getClass().getSimpleName());
         }, "shutdown-hook-coordinator"));
 
+    }
+
+    private void initSubscribers() {
+        Iterator<ISubscriber> iterator = subscribers.iterator();
+
+        while (iterator.hasNext()) {
+            ISubscriber subscriber = iterator.next();
+            try {
+                subscriber.init();
+            } catch (Exception e) {
+                LOGGER.error("Failed to init subscriber class! {} Cause: {}", subscriber.getConfig().getClassName(), e);
+                LOGGER.warn("Removing {} from subscribers!", subscriber.getConfig().getClassName());
+
+                iterator.remove();
+            }
+        }
     }
 
     /**
@@ -115,7 +127,7 @@ public class Coordinator implements CommandLineRunner, ICoordinator {
      *
      * @param subscriberBindingConfigs list of subscriber binding configurations
      */
-    private void loadSubscriberClasses(List<ISubscriberBindingConfig> subscriberBindingConfigs) {
+    private void loadSubscriberClasses(List<ISubscriberBindingConfig> subscriberBindingConfigs, List<ISubscriber> subscribers) {
         subscriberBindingConfigs.forEach(subscriberBindingConfig -> {
             if (subscriberBindingConfig.isEnabled()) {
                 ISubscriber subscriber = subscriberLoader.load(subscriberBindingConfig, this);
@@ -124,8 +136,6 @@ public class Coordinator implements CommandLineRunner, ICoordinator {
                 }
             }
         });
-
-
     }
 
     /**
@@ -200,19 +210,21 @@ public class Coordinator implements CommandLineRunner, ICoordinator {
     @Override
     public void onRateUpdate(ISubscriber subscriber, RawRate rate) {
         LOGGER.info("({}) rate received {}", subscriber.getConfig().getName(), rate.toString());
-
-        executorService.execute(() -> rateManager.manageIncomingRawRate(rate));
+        if (!executorService.getThreadPoolExecutor().isShutdown()) {
+            executorService.execute(() -> rateManager.manageIncomingRawRate(rate));
+        } else {
+            LOGGER.warn("Executor is shut down. Dropping rate: {}", rate);
+        }
     }
 
-    /**
-     * Handles the event when a connection error occurs for a subscriber.
-     *
-     * @param subscriber the subscriber experiencing the connection error
-     * @param status     the connection error status
-     */
     @Override
-    public void onConnectionError(ISubscriber subscriber, ConnectionStatus status) {
-        LOGGER.info("({}) connection error {}", subscriber.getConfig().getName(), status.toString());
+    public void onSubscriberError(ISubscriber subscriber, SubscriberException e) {
+        exceptionHandler.handle(e, subscriber);
+    }
+
+    @Override
+    public void onCalculatorError(IRateCalculator calculator, CalculatorException e) {
+        exceptionHandler.handle(e, calculator);
     }
 
     /**

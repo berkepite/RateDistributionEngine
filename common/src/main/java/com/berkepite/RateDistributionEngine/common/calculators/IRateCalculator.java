@@ -4,6 +4,7 @@ import com.berkepite.RateDistributionEngine.common.exception.calculator.Calculat
 import com.berkepite.RateDistributionEngine.common.rates.CalculatedRate;
 import com.berkepite.RateDistributionEngine.common.rates.MeanRate;
 import com.berkepite.RateDistributionEngine.common.rates.RawRate;
+import org.apache.logging.log4j.Logger;
 
 public interface IRateCalculator {
     void init(String calculatorPath) throws CalculatorException;
@@ -22,4 +23,5 @@ public interface IRateCalculator {
 
     String getPath();
 
+    Logger getLogger();
 }

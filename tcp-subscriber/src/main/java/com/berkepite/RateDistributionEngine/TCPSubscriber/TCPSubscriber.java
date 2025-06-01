@@ -1,6 +1,7 @@
 package com.berkepite.RateDistributionEngine.TCPSubscriber;
 
 import com.berkepite.RateDistributionEngine.common.exception.RateMappingException;
+import com.berkepite.RateDistributionEngine.common.exception.subscriber.SubscriberBadCredentialsException;
 import com.berkepite.RateDistributionEngine.common.subscribers.ISubscriber;
 import com.berkepite.RateDistributionEngine.common.subscribers.ISubscriberConfig;
 import com.berkepite.RateDistributionEngine.common.coordinator.ICoordinator;
@@ -213,7 +214,7 @@ public class TCPSubscriber implements ISubscriber {
             isListeningForInitialResponses = false;  // Stop listening for initial responses after subscription
             coordinator.onConnect(this);  // Notify the coordinator if authentication is successful
         } else if (response.equals("AUTH FAILED")) {
-            coordinator.onSubscriberError(this, new SubscriberConnectionException("Authentication failed."));
+            coordinator.onSubscriberError(this, new SubscriberBadCredentialsException("Authentication failed."));
         }
     }
 
@@ -225,6 +226,11 @@ public class TCPSubscriber implements ISubscriber {
     @Override
     public ISubscriberConfig getConfig() {
         return config;
+    }
+
+    @Override
+    public Logger getLogger() {
+        return LOGGER;
     }
 
     public Socket getSocket() {

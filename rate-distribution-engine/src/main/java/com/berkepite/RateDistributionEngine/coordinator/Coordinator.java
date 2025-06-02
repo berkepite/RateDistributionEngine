@@ -1,5 +1,8 @@
 package com.berkepite.RateDistributionEngine.coordinator;
 
+import com.berkepite.RateDistributionEngine.common.exception.subscriber.SubscriberConnectionException;
+import com.berkepite.RateDistributionEngine.common.exception.subscriber.SubscriberInitException;
+import com.berkepite.RateDistributionEngine.email.EmailService;
 import com.berkepite.RateDistributionEngine.common.calculators.IRateCalculator;
 import com.berkepite.RateDistributionEngine.common.coordinator.ICoordinator;
 import com.berkepite.RateDistributionEngine.common.coordinator.ICoordinatorConfig;
@@ -38,6 +41,7 @@ public class Coordinator implements CommandLineRunner, ICoordinator {
     private final IRatesLoader ratesLoader;
     private final ThreadPoolTaskExecutor executorService;
     private final ExceptionHandler exceptionHandler;
+    private final EmailService emailService;
 
     private List<ISubscriber> subscribers;
 
@@ -50,13 +54,14 @@ public class Coordinator implements CommandLineRunner, ICoordinator {
      * @param executorService   the thread pool executor for managing async tasks
      */
     @Autowired
-    public Coordinator(ExceptionHandler exceptionHandler, IRatesLoader ratesLoader, ICoordinatorConfig coordinatorConfig, IRateManager rateManager, ISubscriberLoader subscriberLoader, @Qualifier("coordinatorExecutor") ThreadPoolTaskExecutor executorService) {
+    public Coordinator(ExceptionHandler exceptionHandler, IRatesLoader ratesLoader, ICoordinatorConfig coordinatorConfig, IRateManager rateManager, ISubscriberLoader subscriberLoader, @Qualifier("coordinatorExecutor") ThreadPoolTaskExecutor executorService, EmailService emailService) {
         this.coordinatorConfig = coordinatorConfig;
         this.subscriberLoader = subscriberLoader;
         this.executorService = executorService;
         this.rateManager = rateManager;
         this.ratesLoader = ratesLoader;
         this.exceptionHandler = exceptionHandler;
+        this.emailService = emailService;
     }
 
     /**
@@ -73,7 +78,7 @@ public class Coordinator implements CommandLineRunner, ICoordinator {
         if (!subscribers.isEmpty()) {
             LOGGER.info("Subscriber classes loaded!: {}", subscribers.toString());
         } else {
-            LOGGER.error("0 subscriber classes loaded! Stopping...");
+            LOGGER.error("0 subscriber classes loaded! Exiting...");
             return;
         }
         LOGGER.info("Coordinator Initialized!");
@@ -97,8 +102,10 @@ public class Coordinator implements CommandLineRunner, ICoordinator {
                 subscriber.init();
             } catch (Exception e) {
                 LOGGER.error("Failed to init subscriber class! {} Cause: {}", subscriber.getConfig().getClassName(), e);
-                LOGGER.warn("Removing {} from subscribers!", subscriber.getConfig().getClassName());
 
+                exceptionHandler.handle(new SubscriberInitException("Failed to init subscriber class (%s)".formatted(subscriber.getConfig().getClassName()), e), subscriber);
+
+                LOGGER.warn("Removing {} from subscribers!", subscriber.getConfig().getClassName());
                 iterator.remove();
             }
         }
@@ -116,7 +123,7 @@ public class Coordinator implements CommandLineRunner, ICoordinator {
                 try {
                     subscriber.connect();
                 } catch (Exception e) {
-                    LOGGER.error("Failed to connect to platform!", e);
+                    exceptionHandler.handle(new SubscriberConnectionException("Subscriber (%s) failed to connect to platform (%s)".formatted(subscriber.getConfig().getClassName(), subscriber.getConfig().getUrl()), e), subscriber);
                 }
             });
         }
@@ -153,7 +160,7 @@ public class Coordinator implements CommandLineRunner, ICoordinator {
             try {
                 subscriber.subscribe(ratesLoader.getRatesList());
             } catch (Exception e) {
-                LOGGER.error("Failed to subscribe to rates!", e);
+                exceptionHandler.handle(new SubscriberException("Subscriber (%s) failed to subscribe to rates (%s)".formatted(subscriber.getConfig().getName(), ratesLoader.getRatesList()), e), subscriber);
             }
         });
     }
@@ -174,10 +181,13 @@ public class Coordinator implements CommandLineRunner, ICoordinator {
      * Handles the unsubscription event for a subscriber.
      *
      * @param subscriber the subscriber that has unsubscribed
+     * @param rates      d
      */
     @Override
-    public void onUnSubscribe(ISubscriber subscriber) {
-        // No action required in this implementation
+    public void onUnSubscribe(ISubscriber subscriber, List<String> rates) {
+        ISubscriberConfig config = subscriber.getConfig();
+
+        LOGGER.info("{} unsubscribed rates {} from {}", config.getName(), rates.toString(), config.getUrl());
     }
 
     /**
@@ -187,7 +197,9 @@ public class Coordinator implements CommandLineRunner, ICoordinator {
      */
     @Override
     public void onDisConnect(ISubscriber subscriber) {
-        LOGGER.info("{} stopped listening/requesting.", subscriber.getConfig().getName());
+        ISubscriberConfig config = subscriber.getConfig();
+
+        LOGGER.info("{} stopped listening/requesting.", config.getName());
     }
 
     /**
@@ -209,11 +221,17 @@ public class Coordinator implements CommandLineRunner, ICoordinator {
      */
     @Override
     public void onRateUpdate(ISubscriber subscriber, RawRate rate) {
-        LOGGER.info("({}) rate received {}", subscriber.getConfig().getName(), rate.toString());
-        if (!executorService.getThreadPoolExecutor().isShutdown()) {
-            executorService.execute(() -> rateManager.manageIncomingRawRate(rate));
-        } else {
-            LOGGER.warn("Executor is shut down. Dropping rate: {}", rate);
+        try {
+            LOGGER.info("({}) rate received {}", subscriber.getConfig().getName(), rate.toString());
+
+            if (!executorService.getThreadPoolExecutor().isShutdown()) {
+                executorService.execute(() -> rateManager.manageIncomingRawRate(rate));
+            } else {
+                LOGGER.warn("Executor is shut down. Dropping rate: {}", rate);
+            }
+
+        } catch (Exception e) {
+            LOGGER.error("Something went wrong: ", e);
         }
     }
 

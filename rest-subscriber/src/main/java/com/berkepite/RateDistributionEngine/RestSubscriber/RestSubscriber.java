@@ -1,12 +1,12 @@
 package com.berkepite.RateDistributionEngine.RestSubscriber;
 
+import com.berkepite.RateDistributionEngine.common.exception.subscriber.SubscriberException;
 import com.berkepite.RateDistributionEngine.common.subscribers.ISubscriberConfig;
 import com.berkepite.RateDistributionEngine.common.subscribers.ISubscriber;
 import com.berkepite.RateDistributionEngine.common.coordinator.ICoordinator;
 import com.berkepite.RateDistributionEngine.common.ThrowingRunnable;
 import com.berkepite.RateDistributionEngine.common.exception.subscriber.SubscriberConnectionException;
 import com.berkepite.RateDistributionEngine.common.rates.RawRate;
-import com.berkepite.RateDistributionEngine.common.status.ConnectionStatus;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -15,9 +15,7 @@ import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.time.Duration;
-import java.util.ArrayList;
-import java.util.Base64;
-import java.util.List;
+import java.util.*;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 
@@ -27,13 +25,16 @@ import java.util.concurrent.ScheduledThreadPoolExecutor;
  * It manages connection retries, rate subscriptions, and rate updates.
  */
 public class RestSubscriber implements ISubscriber {
+    private static final Logger LOGGER = LogManager.getLogger(RestSubscriber.class);
     private final RestConfig config;
     private final RateMapper rateMapper;
     private final ICoordinator coordinator;
     private final ExecutorService executorService;
-    private final Logger LOGGER = LogManager.getLogger(RestSubscriber.class);
     private HttpClient httpClient;
     private String credentials;
+
+    private volatile Map<String, Boolean> ratesToSubscribe;
+    private volatile boolean isRequesting = false;
 
     public RestSubscriber(ICoordinator coordinator, ISubscriberConfig config) {
         this.config = (RestConfig) config;
@@ -41,21 +42,26 @@ public class RestSubscriber implements ISubscriber {
         this.rateMapper = new RateMapper();
         this.httpClient = HttpClient.newBuilder().build();
         this.executorService = new ScheduledThreadPoolExecutor(10);
+        this.ratesToSubscribe = new HashMap<>(3);
     }
 
     /**
      * Initializes the subscriber and prepares it for connection by setting up necessary shutdown hooks and credentials.
      */
     public void init() throws Exception {
-        // Shutdown hook to cleanly shut down the executor when the application is stopped
-        Runtime.getRuntime().addShutdownHook(new Thread(() -> {
-            executorService.shutdown();
-            LOGGER.info("Subscriber stopped. ({})", config.getName());
-        }, "shutdown-hook-" + config.getName()));
+        try {
+            // Shutdown hook to cleanly shut down the executor when the application is stopped
+            Runtime.getRuntime().addShutdownHook(new Thread(() -> {
+                executorService.shutdown();
+                LOGGER.info("Subscriber stopped. ({})", config.getName());
+            }, "shutdown-hook-" + config.getName()));
 
-        // Create Basic Authorization credentials
-        String username_password = config.getUsername() + ":" + config.getPassword();
-        credentials = "Basic " + Base64.getEncoder().encodeToString(username_password.getBytes());
+            // Create Basic Authorization credentials
+            String username_password = config.getUsername() + ":" + config.getPassword();
+            credentials = "Basic " + Base64.getEncoder().encodeToString(username_password.getBytes());
+        } catch (Exception e) {
+            throw new SubscriberException("Something went wrong: ", e);
+        }
     }
 
     /**
@@ -66,23 +72,13 @@ public class RestSubscriber implements ISubscriber {
     public void connect() throws Exception {
         try {
             tryConnect();
-        } catch (Exception e) {
-            ConnectionStatus status = ConnectionStatus.newBuilder()
-                    .withSubscriber(this)
-                    .withException(e)
-                    .withMethod("RestSubscriber.tryConnect")
-                    .withNotes("Health check failed for the platform!")
-                    .build();
-
-            LOGGER.info("Subscriber stopped health check. ({}) ", config.getName());
-
-            httpClient.close();
-
-            coordinator.onConnectionError(this, status);
+        } catch (SubscriberConnectionException e) {
+            disConnect();
+            coordinator.onSubscriberError(this, e);
         }
     }
 
-    private void tryConnect() throws SubscriberConnectionException {
+    private void tryConnect() throws SubscriberException {
         HttpRequest healthRequest = createHealthRequest();
 
         executeWithRetry("Health Check", config.getHealthRequestRetryLimit(), config.getRequestInterval(), () -> {
@@ -91,9 +87,11 @@ public class RestSubscriber implements ISubscriber {
             if (response.statusCode() == 200) {
                 coordinator.onConnect(this);
             } else {
+                LOGGER.warn("Subscriber stopped health check. ({}) ", config.getName());
                 throw new SubscriberConnectionException("Health Check failed (response code: %d)".formatted(response.statusCode()));
             }
         });
+
     }
 
     /**
@@ -104,37 +102,29 @@ public class RestSubscriber implements ISubscriber {
      */
     @Override
     public void subscribe(List<String> rates) {
-        List<String> ratesToSubscribe = new ArrayList<>(rates);
-        ratesToSubscribe.addAll(config.getIncludeRates());
-        ratesToSubscribe.removeAll(config.getExcludeRates());
+        List<String> endpoints = rateMapper.mapRateEnumToEndpoints(rates);
+
+        endpoints.forEach(rate -> ratesToSubscribe.put(rate, true));
+        config.getIncludeRates().forEach(rate -> ratesToSubscribe.put(rate, true));
+        config.getExcludeRates().forEach(ratesToSubscribe::remove);
 
         if (ratesToSubscribe.isEmpty()) {
             LOGGER.warn("{} received empty rates to subscribe {}. Aborting...", config.getName(), ratesToSubscribe);
             return;
         }
 
-        LOGGER.info("{} subscribing to {} ", config.getName(), ratesToSubscribe);
-        List<String> endpoints = rateMapper.mapRateEnumToEndpoints(ratesToSubscribe);
+        LOGGER.info("{} trying to subscribe to {} ", config.getName(), ratesToSubscribe);
 
         try {
             for (String endpoint : endpoints) {
                 trySubscribeToRate(endpoint);
             }
-        } catch (SubscriberConnectionException e) {
-            ConnectionStatus status = ConnectionStatus.newBuilder()
-                    .withSubscriber(this)
-                    .withException(e)
-                    .withMethod("RestSubscriber.trySubscribeToRate")
-                    .withNotes("Subscribing to rate failed for the platform!")
-                    .build();
-
-            coordinator.onConnectionError(this, status);
+        } catch (SubscriberException e) {
+            coordinator.onSubscriberError(this, e);
         }
-
-        LOGGER.info("Subscriber stopped trying to subscribe to rates. ({}) ", config.getName());
     }
 
-    private void trySubscribeToRate(String endpoint) throws SubscriberConnectionException {
+    private void trySubscribeToRate(String endpoint) throws SubscriberException {
         // Attempt to subscribe to each rate endpoint
         HttpRequest req = createRateRequest(endpoint);
 
@@ -148,8 +138,9 @@ public class RestSubscriber implements ISubscriber {
                 // Start the subscription task in a separate thread
                 executorService.execute(() -> {
                     try {
+                        isRequesting = true;
                         subscribeToRate(endpoint);
-                    } catch (SubscriberConnectionException e) {
+                    } catch (SubscriberException e) {
                         LOGGER.warn("Shutting down subscriber thread ({}) for rate {} ", Thread.currentThread().getName(), endpoint);
                     }
                 });
@@ -158,8 +149,6 @@ public class RestSubscriber implements ISubscriber {
                 throw new SubscriberConnectionException("Subscribing to rate: %s failed (response code: %d)".formatted(endpoint, response.statusCode()));
             }
         });
-
-
     }
 
     /**
@@ -167,7 +156,7 @@ public class RestSubscriber implements ISubscriber {
      *
      * @param endpoint the endpoint to subscribe to
      */
-    private void subscribeToRate(String endpoint) throws SubscriberConnectionException {
+    private void subscribeToRate(String endpoint) throws SubscriberException {
         HttpRequest req = createRateRequest(endpoint);
 
         executeWithRetry("Request for rate: %s".formatted(endpoint), config.getRequestRetryLimit(), config.getRequestInterval(), () -> {
@@ -176,7 +165,8 @@ public class RestSubscriber implements ISubscriber {
                 throw new SubscriberConnectionException("Subscribing thread interrupted for rate: %s ".formatted(endpoint));
             }
 
-            while (true) {
+            // if ratesToSubsribe map does contain a key with endpoint and it has a false value, then break the loop
+            while (isRequesting && ratesToSubscribe.get(endpoint) && !Thread.currentThread().isInterrupted()) {
                 HttpResponse<String> response = httpClient.send(req, HttpResponse.BodyHandlers.ofString());
 
                 if (response.statusCode() == 200) {
@@ -198,12 +188,24 @@ public class RestSubscriber implements ISubscriber {
 
     @Override
     public void unSubscribe(List<String> rates) {
-        // Implementation for unsubscription
+        List<String> endpoints = rateMapper.mapRateEnumToEndpoints(rates);
+
+        endpoints.forEach(rate -> ratesToSubscribe.put(rate, false));
+
+        coordinator.onUnSubscribe(this, rates);
     }
 
     @Override
     public void disConnect() {
-        // Implementation for disconnect
+        isRequesting = false;
+
+        try {
+            httpClient.close();
+        } catch (Exception e) {
+            LOGGER.warn("Failed to close HTTP client: {}", e.getMessage());
+        }
+
+        coordinator.onDisConnect(this);
     }
 
     @Override
@@ -216,6 +218,11 @@ public class RestSubscriber implements ISubscriber {
         return config;
     }
 
+    @Override
+    public Logger getLogger() {
+        return LOGGER;
+    }
+
     public void setHttpClient(HttpClient httpClient) {
         this.httpClient = httpClient;
     }
@@ -226,13 +233,17 @@ public class RestSubscriber implements ISubscriber {
      * @param endpoint the endpoint to send the request to
      * @return the constructed HTTP request
      */
-    private HttpRequest createRateRequest(String endpoint) {
-        return HttpRequest.newBuilder()
-                .uri(URI.create(config.getUrl() + "/api/currencies/" + endpoint))
-                .setHeader("Authorization", credentials)
-                .GET()
-                .timeout(Duration.ofSeconds(5))
-                .build();
+    private HttpRequest createRateRequest(String endpoint) throws SubscriberException {
+        try {
+            return HttpRequest.newBuilder()
+                    .uri(URI.create(config.getUrl() + "/api/currencies/" + endpoint))
+                    .setHeader("Authorization", credentials)
+                    .GET()
+                    .timeout(Duration.ofSeconds(5))
+                    .build();
+        } catch (Exception e) {
+            throw new SubscriberException("Failed to create Rate Request!", e);
+        }
     }
 
     /**
@@ -240,12 +251,16 @@ public class RestSubscriber implements ISubscriber {
      *
      * @return the constructed HTTP health check request
      */
-    private HttpRequest createHealthRequest() {
-        return HttpRequest.newBuilder()
-                .uri(URI.create(config.getUrl() + "/api/health"))
-                .setHeader("Authorization", credentials)
-                .GET()
-                .build();
+    private HttpRequest createHealthRequest() throws SubscriberException {
+        try {
+            return HttpRequest.newBuilder()
+                    .uri(URI.create(config.getUrl() + "/api/health"))
+                    .setHeader("Authorization", credentials)
+                    .GET()
+                    .build();
+        } catch (Exception e) {
+            throw new SubscriberException("Failed to create Health Request!", e);
+        }
     }
 
     private Throwable getRootCause(Throwable throwable) {

@@ -2,9 +2,7 @@ package com.berkepite.RateDistributionEngine.exception;
 
 import com.berkepite.RateDistributionEngine.common.calculators.IRateCalculator;
 import com.berkepite.RateDistributionEngine.common.exception.calculator.CalculatorException;
-import com.berkepite.RateDistributionEngine.common.exception.subscriber.SubscriberBadCredentialsException;
-import com.berkepite.RateDistributionEngine.common.exception.subscriber.SubscriberConnectionException;
-import com.berkepite.RateDistributionEngine.common.exception.subscriber.SubscriberException;
+import com.berkepite.RateDistributionEngine.common.exception.subscriber.*;
 import com.berkepite.RateDistributionEngine.common.subscribers.ISubscriber;
 import com.berkepite.RateDistributionEngine.email.EmailService;
 import jakarta.annotation.PostConstruct;
@@ -40,17 +38,24 @@ public class ExceptionHandler {
     }
 
     public void handle(SubscriberException e, ISubscriber subscriber) {
-        if (e instanceof SubscriberBadCredentialsException) {
-            LOGGER.error("({}) subscriber error: {}", subscriber.getConfig().getName(),
-                    isDebugEnabled ? e : e.getMessage());
+        LOGGER.error("({}) subscriber error: {}", subscriber.getConfig().getName(),
+                isDebugEnabled ? e : e.getMessage());
 
+        if (e instanceof SubscriberBadCredentialsException) {
             emailService.sendEmail(
-                    "FATAL ERROR RATE-DISTRIBUTION-ENGINE",
-                    "fatal",
+                    "FATAL - RATE DISTRIBUTION ENGINE",
+                    "Subscriber (%s) could not be authenticated for the platform (%s)!"
+                            .formatted(subscriber.getConfig().getName(),
+                                    subscriber.getConfig().getUrl() + subscriber.getConfig().getPort()),
                     "fatal");
 
-        } else if (e instanceof SubscriberConnectionException) {
-            LOGGER.error(e);
+        } else if (e instanceof SubscriberConnectionLostException) {
+            emailService.sendEmail(
+                    "WARNING - RATE DISTRIBUTION ENGINE",
+                    "Subscriber (%s) lost connection to the platform (%s)!"
+                            .formatted(subscriber.getConfig().getName(),
+                                    subscriber.getConfig().getUrl() + subscriber.getConfig().getPort()),
+                    "warn");
         }
     }
 }

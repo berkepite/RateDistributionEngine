@@ -1,5 +1,5 @@
 import com.berkepite.RateDistributionEngine.RestSubscriber.RateMapper;
-import com.berkepite.RateDistributionEngine.common.exception.RateMappingException;
+import com.berkepite.RateDistributionEngine.common.exception.subscriber.SubscriberRateException;
 import com.berkepite.RateDistributionEngine.common.rates.RawRate;
 import org.junit.jupiter.api.Test;
 
@@ -48,7 +48,7 @@ class RateMapperTest {
                 """;
 
         // Act & Assert
-        RateMappingException exception = assertThrows(RateMappingException.class, () -> {
+        SubscriberRateException exception = assertThrows(SubscriberRateException.class, () -> {
             rateMapper.createRawRate(json);
         });
 

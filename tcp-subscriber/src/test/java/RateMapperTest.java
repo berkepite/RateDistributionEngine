@@ -1,5 +1,5 @@
 import com.berkepite.RateDistributionEngine.TCPSubscriber.RateMapper;
-import com.berkepite.RateDistributionEngine.common.exception.RateMappingException;
+import com.berkepite.RateDistributionEngine.common.exception.subscriber.SubscriberRateException;
 import com.berkepite.RateDistributionEngine.common.rates.RawRate;
 import org.junit.jupiter.api.Test;
 
@@ -34,7 +34,7 @@ class RateMapperTest {
         String invalidData = "name=USDTRY|bid=32.20|ask=32.25|timestamp=INVALID";
 
         // Act & Assert
-        RateMappingException exception = assertThrows(RateMappingException.class, () -> {
+        SubscriberRateException exception = assertThrows(SubscriberRateException.class, () -> {
             rateMapper.createRawRate(invalidData);
         });
 

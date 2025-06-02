@@ -1,6 +1,6 @@
 package com.berkepite.RateDistributionEngine.RestSubscriber;
 
-import com.berkepite.RateDistributionEngine.common.exception.RateMappingException;
+import com.berkepite.RateDistributionEngine.common.exception.subscriber.SubscriberRateException;
 import com.berkepite.RateDistributionEngine.common.rates.RawRate;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -12,7 +12,7 @@ import java.util.List;
 
 public class RateMapper {
 
-    public RawRate createRawRate(String data) throws RateMappingException {
+    public RawRate createRawRate(String data) throws SubscriberRateException {
         RawRate rate = new RawRate();
 
         try {
@@ -29,7 +29,7 @@ public class RateMapper {
             rate.setProvider("REST_PROVIDER");
 
         } catch (Exception e) {
-            throw new RateMappingException("Could not parse Raw Rate data: %s".formatted(data), e.getCause());
+            throw new SubscriberRateException("Could not parse Raw Rate data: %s".formatted(data), e.getCause());
         }
 
         return rate;

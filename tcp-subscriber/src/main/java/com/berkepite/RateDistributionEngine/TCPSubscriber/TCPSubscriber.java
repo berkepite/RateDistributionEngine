@@ -1,12 +1,9 @@
 package com.berkepite.RateDistributionEngine.TCPSubscriber;
 
-import com.berkepite.RateDistributionEngine.common.exception.RateMappingException;
-import com.berkepite.RateDistributionEngine.common.exception.subscriber.SubscriberBadCredentialsException;
+import com.berkepite.RateDistributionEngine.common.exception.subscriber.*;
 import com.berkepite.RateDistributionEngine.common.subscribers.ISubscriber;
 import com.berkepite.RateDistributionEngine.common.subscribers.ISubscriberConfig;
 import com.berkepite.RateDistributionEngine.common.coordinator.ICoordinator;
-import com.berkepite.RateDistributionEngine.common.exception.subscriber.SubscriberConnectionException;
-import com.berkepite.RateDistributionEngine.common.exception.subscriber.SubscriberException;
 import com.berkepite.RateDistributionEngine.common.rates.RawRate;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -132,6 +129,7 @@ public class TCPSubscriber implements ISubscriber {
 
         for (String endpoint : endpoints) {
             writer.println("unsub|" + endpoint);  // Send unsubscription request to the server
+            coordinator.onUnSubscribe(this, List.of(endpoint));
         }
     }
 
@@ -178,9 +176,10 @@ public class TCPSubscriber implements ISubscriber {
             if (retryLimit < 0) {
                 LOGGER.warn("The listener ({}) stopped listening because retry limit exceeded.", config.getName());
                 executorService.shutdown();  // Shutdown the executor when done listening
+                disConnect();
 
                 coordinator.onSubscriberError(this,
-                        new SubscriberConnectionException("The listener (%s) stopped listening because retry limit exceeded.".formatted(config.getName())));
+                        new SubscriberConnectionLostException("The listener (%s) stopped listening because retry limit exceeded.".formatted(config.getName())));
             }
         }
 
@@ -195,10 +194,8 @@ public class TCPSubscriber implements ISubscriber {
         try {
             RawRate rate = rateMapper.createRawRate(data);
             coordinator.onRateUpdate(this, rate);
-        } catch (RateMappingException e) {
-            LOGGER.warn(e);
-        } catch (Exception e) {
-            LOGGER.error("An unexpected error occurred.", e);
+        } catch (SubscriberRateException e) {
+            coordinator.onSubscriberError(this, e);
         }
     }
 
@@ -214,6 +211,7 @@ public class TCPSubscriber implements ISubscriber {
             isListeningForInitialResponses = false;  // Stop listening for initial responses after subscription
             coordinator.onConnect(this);  // Notify the coordinator if authentication is successful
         } else if (response.equals("AUTH FAILED")) {
+            disConnect();
             coordinator.onSubscriberError(this, new SubscriberBadCredentialsException("Authentication failed."));
         }
     }

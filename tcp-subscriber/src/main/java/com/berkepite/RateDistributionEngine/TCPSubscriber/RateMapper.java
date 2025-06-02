@@ -1,6 +1,7 @@
 package com.berkepite.RateDistributionEngine.TCPSubscriber;
 
-import com.berkepite.RateDistributionEngine.common.exception.RateMappingException;
+import com.berkepite.RateDistributionEngine.common.exception.subscriber.SubscriberRateException;
+import com.berkepite.RateDistributionEngine.common.exception.subscriber.SubscriberRateMappingException;
 import com.berkepite.RateDistributionEngine.common.rates.RawRate;
 
 import java.time.Instant;
@@ -10,7 +11,7 @@ import java.util.Arrays;
 import java.util.List;
 
 public class RateMapper {
-    public RawRate createRawRate(String data) throws RateMappingException {
+    public RawRate createRawRate(String data) throws SubscriberRateException {
         RawRate rate = new RawRate();
 
         List<String> fields = Arrays.stream(data.split("\\|")).toList();
@@ -30,7 +31,7 @@ public class RateMapper {
             rate.setTimestamp(truncatedTimestamp);
             rate.setProvider("TCP_PROVIDER");
         } catch (Exception e) {
-            throw new RateMappingException("Could not parse Raw Rate data: %s".formatted(data), e.getCause());
+            throw new SubscriberRateMappingException("Could not parse Raw Rate data: %s".formatted(data), e.getCause());
         }
         return rate;
     }

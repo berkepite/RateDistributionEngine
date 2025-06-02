@@ -13,7 +13,7 @@ public interface ICoordinator {
 
     void onSubscribe(ISubscriber subscriber);
 
-    void onUnSubscribe(ISubscriber subscriber);
+    void onUnSubscribe(ISubscriber subscriber, List<String> rates);
 
     void onDisConnect(ISubscriber subscriber);
 

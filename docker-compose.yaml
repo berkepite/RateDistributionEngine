@@ -37,7 +37,9 @@ services:
       APP_RATE_CALCULATOR_PATH: /app/rate_calculators/js-calc.mjs
       APP_RATES: /app/rates.csv
       TCP_SUBSCRIBER_ENABLED: true
-      REST_SUBSCRIBER_ENABLED: false
+      REST_SUBSCRIBER_ENABLED: true
+    ports:
+      - "3000:8080"
 
   tcp-platform:
     image: luieitalian/tcp-platform-standalone
@@ -70,7 +72,7 @@ services:
       TZ: Europe/Istanbul # timezone
       REST_SERVER_USER: client
       REST_SERVER_PASSWORD: 1234
-      REST_REQUEST_LIMIT: 100
+      REST_REQUEST_LIMIT: 1000
       SPRING_PROFILES_ACTIVE: prod
       SIMULATOR_ENABLED: true
       SIMULATOR_INTENSITY: med

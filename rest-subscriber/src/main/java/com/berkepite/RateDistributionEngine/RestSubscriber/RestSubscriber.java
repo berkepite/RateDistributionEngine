@@ -165,7 +165,7 @@ public class RestSubscriber implements ISubscriber {
                 throw new SubscriberConnectionException("Subscribing thread interrupted for rate: %s ".formatted(endpoint));
             }
 
-            // if ratesToSubsribe map does contain a key with endpoint and it has a false value, then break the loop
+            // if ratesToSubscribe map does contain a key with an endpoint, and it has a false value, then break the loop
             while (isRequesting && ratesToSubscribe.get(endpoint) && !Thread.currentThread().isInterrupted()) {
                 HttpResponse<String> response = httpClient.send(req, HttpResponse.BodyHandlers.ofString());
 

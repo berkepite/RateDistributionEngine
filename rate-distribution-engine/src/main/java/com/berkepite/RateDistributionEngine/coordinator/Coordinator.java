@@ -26,6 +26,7 @@ import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import org.springframework.stereotype.Component;
 
 import java.util.*;
+import java.util.stream.Collectors;
 
 /**
  * Coordinator class responsible for managing subscribers and processing rates.
@@ -243,6 +244,66 @@ public class Coordinator implements CommandLineRunner, ICoordinator {
     @Override
     public void onCalculatorError(IRateCalculator calculator, CalculatorException e) {
         exceptionHandler.handle(e, calculator);
+    }
+
+    @Override
+    public String connect(String subscriberName) {
+        try {
+            for (ISubscriber subscriber : subscribers) {
+                if (subscriber.getConfig().getName().equals(subscriberName)) {
+                    subscriber.connect();
+                    return "Connected subscriber: " + subscriberName;
+                }
+            }
+            return "No subscriber found with name: " + subscriberName;
+        } catch (Exception e) {
+            return e.getMessage();
+        }
+    }
+
+    @Override
+    public String disconnect(String subscriberName) {
+        try {
+            for (ISubscriber subscriber : subscribers) {
+                if (subscriber.getConfig().getName().equals(subscriberName)) {
+                    subscriber.disConnect();
+                    return "Disconnected subscriber: " + subscriberName;
+                }
+            }
+            return "No subscriber found with name: " + subscriberName;
+        } catch (Exception e) {
+            return e.getMessage();
+        }
+    }
+
+    @Override
+    public String subscribe(String subscriberName, List<String> rates) {
+        try {
+            for (ISubscriber subscriber : subscribers) {
+                if (subscriber.getConfig().getName().equals(subscriberName)) {
+                    subscriber.subscribe(rates);
+                    return subscriberName + " subscribed rates: " + rates;
+                }
+            }
+            return "No subscriber found with name: " + subscriberName;
+        } catch (Exception e) {
+            return e.getMessage();
+        }
+    }
+
+    @Override
+    public String unSubscribe(String subscriberName, List<String> rates) {
+        try {
+            for (ISubscriber subscriber : subscribers) {
+                if (subscriber.getConfig().getName().equals(subscriberName)) {
+                    subscriber.unSubscribe(rates);
+                    return subscriberName + " unsubscribed rates: " + rates;
+                }
+            }
+            return "No subscriber found with name: " + subscriberName;
+        } catch (Exception e) {
+            return e.getMessage();
+        }
     }
 
     /**

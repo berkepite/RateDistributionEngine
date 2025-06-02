@@ -6,9 +6,11 @@ import com.berkepite.RateDistributionEngine.common.exception.subscriber.Subscrib
 import com.berkepite.RateDistributionEngine.common.exception.subscriber.SubscriberConnectionException;
 import com.berkepite.RateDistributionEngine.common.exception.subscriber.SubscriberException;
 import com.berkepite.RateDistributionEngine.common.subscribers.ISubscriber;
+import com.berkepite.RateDistributionEngine.email.EmailService;
 import jakarta.annotation.PostConstruct;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.env.Environment;
 import org.springframework.stereotype.Component;
 
@@ -19,10 +21,13 @@ public class ExceptionHandler {
     private static final Logger LOGGER = LogManager.getLogger(ExceptionHandler.class);
 
     private final Environment environment;
+    private final EmailService emailService;
     private boolean isDebugEnabled = false;
 
-    public ExceptionHandler(Environment environment) {
+    @Autowired
+    public ExceptionHandler(Environment environment, EmailService emailService) {
         this.environment = environment;
+        this.emailService = emailService;
     }
 
     @PostConstruct
@@ -38,7 +43,12 @@ public class ExceptionHandler {
         if (e instanceof SubscriberBadCredentialsException) {
             LOGGER.error("({}) subscriber error: {}", subscriber.getConfig().getName(),
                     isDebugEnabled ? e : e.getMessage());
-            // mail
+
+            emailService.sendEmail(
+                    "FATAL ERROR RATE-DISTRIBUTION-ENGINE",
+                    "fatal",
+                    "fatal");
+
         } else if (e instanceof SubscriberConnectionException) {
             LOGGER.error(e);
         }

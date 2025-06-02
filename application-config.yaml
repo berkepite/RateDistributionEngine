@@ -47,3 +47,5 @@ app:
   email:
     group-file: ${APP_EMAIL_GROUPS}
     enabled: ${APP_EMAIL_ENABLED}
+  api:
+    password: ${APP_API_PASSWORD}

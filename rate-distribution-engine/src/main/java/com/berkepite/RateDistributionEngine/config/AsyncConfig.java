@@ -1,4 +1,4 @@
-package com.berkepite.RateDistributionEngine;
+package com.berkepite.RateDistributionEngine.config;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;

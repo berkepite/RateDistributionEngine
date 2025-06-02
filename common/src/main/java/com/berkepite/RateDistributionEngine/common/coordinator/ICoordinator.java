@@ -25,6 +25,14 @@ public interface ICoordinator {
 
     void onCalculatorError(IRateCalculator calculator, CalculatorException e);
 
+    String connect(String subscriberName);
+
+    String disconnect(String subscriberName);
+
+    String subscribe(String subscriberName, List<String> rates);
+
+    String unSubscribe(String subscriberName, List<String> rates);
+
     List<ISubscriber> getSubscribers();
 
     ICoordinatorConfig getConfig();

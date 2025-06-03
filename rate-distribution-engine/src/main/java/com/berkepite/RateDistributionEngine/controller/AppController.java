@@ -1,6 +1,7 @@
 package com.berkepite.RateDistributionEngine.controller;
 
 import com.berkepite.RateDistributionEngine.common.coordinator.ICoordinator;
+import com.berkepite.RateDistributionEngine.common.subscriber.ISubscriber;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -20,24 +21,24 @@ public class AppController {
     }
 
     @GetMapping("/ping")
-    public String greeting() {
+    public String ping() {
         return "pong";
     }
 
     @GetMapping("/subscribers")
-    public Object subscribers() {
+    public List<ISubscriber> subscribers() {
         return coordinator.getSubscribers();
     }
 
     @PostMapping("/subscribe")
     public String subscribe(@RequestParam String subscriber, @RequestBody List<String> rates) {
-        LOGGER.warn("Received subscription request: {}", subscriber + " - " + rates.toString());
+        LOGGER.warn("Received subscription request: {} - {}", subscriber, rates.toString());
         return coordinator.subscribe(subscriber, rates);
     }
 
     @PostMapping("/unsubscribe")
     public String unsubscribe(@RequestParam String subscriber, @RequestBody List<String> rates) {
-        LOGGER.warn("Received unsubscription request: {}", subscriber + " - " + rates.toString());
+        LOGGER.warn("Received unsubscription request: {} - {}", subscriber, rates.toString());
         return coordinator.unSubscribe(subscriber, rates);
     }
 

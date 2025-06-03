@@ -1,7 +1,9 @@
 package com.berkepite.RateDistributionEngine.cache;
 
-import com.berkepite.RateDistributionEngine.common.rates.CalculatedRate;
-import com.berkepite.RateDistributionEngine.common.rates.RawRate;
+import com.berkepite.RateDistributionEngine.common.cache.IRateCacheService;
+import com.berkepite.RateDistributionEngine.common.exception.cache.CacheException;
+import com.berkepite.RateDistributionEngine.common.rate.CalculatedRate;
+import com.berkepite.RateDistributionEngine.common.rate.RawRate;
 import org.springframework.context.annotation.Primary;
 import org.springframework.context.annotation.Profile;
 import org.springframework.data.redis.core.RedisTemplate;
@@ -25,65 +27,93 @@ public class RateCacheServiceRedisAPI implements IRateCacheService {
     }
 
     @Override
-    public Double getUSDMID() {
+    public Double getUSDMID() throws CacheException {
         String key = "usdmid";
-
-        return redisUSDMIDTemplate.opsForValue().get(key);
-    }
-
-    @Override
-    public Double saveUSDMID(Double value) {
-        String key = "usdmid";
-
-        redisUSDMIDTemplate.opsForValue().set(key, value);
-        return value;
-    }
-
-    @Override
-    public CalculatedRate getCalcRate(CalculatedRate rate) {
-        String key = String.format("calc_rates::rates:%s", rate.getType());
-
-        return calculatedRateRedisTemplate.opsForValue().get(key);
-    }
-
-    @Override
-    public CalculatedRate saveCalcRate(CalculatedRate rate) {
-        String key = String.format("calc_rates::rates:%s", rate.getType());
-
-        calculatedRateRedisTemplate.opsForValue().set(key, rate);
-        return rate;
-    }
-
-    @Override
-    public RawRate getRawRate(RawRate rate) {
-        String key = String.format("raw_rates::rates:%s:%s", rate.getProvider(), rate.getType());
-
-        return rawRateRedisTemplate.opsForValue().get(key);
-    }
-
-
-    @Override
-    public RawRate saveRawRate(RawRate rate) {
-        String key = String.format("raw_rates::rates:%s:%s", rate.getProvider(), rate.getType());
-
-        rawRateRedisTemplate.opsForValue().set(key, rate);
-        return rate;
-    }
-
-    @Override
-    public List<RawRate> getAllRawRatesForType(String type) {
-        List<String> keys = rawRateRedisTemplate.keys("*")
-                .stream()
-                .filter(s -> s.startsWith("raw_rates::rates:") && s.endsWith(":" + type))
-                .toList();
-
-
-        if (keys.isEmpty()) {
-            return List.of(); // Return empty list if no matches
+        try {
+            return redisUSDMIDTemplate.opsForValue().get(key);
+        } catch (Exception e) {
+            throw new CacheException(e.getMessage(), e);
         }
+    }
 
-        return keys.stream()
-                .map(key -> rawRateRedisTemplate.opsForValue().get(key)) // Fetch each entity
-                .collect(Collectors.toList()); // Collect results into a list
+    @Override
+    public Double saveUSDMID(Double value) throws CacheException {
+        String key = "usdmid";
+        try {
+            redisUSDMIDTemplate.opsForValue().set(key, value);
+            return value;
+        } catch (Exception e) {
+            throw new CacheException(e.getMessage(), e);
+        }
+    }
+
+    @Override
+    public CalculatedRate getCalcRate(CalculatedRate rate) throws CacheException {
+        try {
+            String key = String.format("calc_rates::rates:%s", rate.getType());
+
+            return calculatedRateRedisTemplate.opsForValue().get(key);
+        } catch (Exception e) {
+            throw new CacheException(e.getMessage(), e);
+        }
+    }
+
+    @Override
+    public CalculatedRate saveCalcRate(CalculatedRate rate) throws CacheException {
+        try {
+            String key = String.format("calc_rates::rates:%s", rate.getType());
+            calculatedRateRedisTemplate.opsForValue().set(key, rate);
+            return rate;
+        } catch (Exception e) {
+            throw new CacheException(e.getMessage(), e);
+        }
+    }
+
+    @Override
+    public RawRate getRawRate(RawRate rate) throws CacheException {
+        try {
+            String key = String.format("raw_rates::rates:%s:%s", rate.getProvider(), rate.getType());
+            return rawRateRedisTemplate.opsForValue().get(key);
+        } catch (Exception e) {
+            throw new CacheException(e.getMessage(), e);
+        }
+    }
+
+
+    @Override
+    public RawRate saveRawRate(RawRate rate) throws CacheException {
+        try {
+            String key = String.format("raw_rates::rates:%s:%s", rate.getProvider(), rate.getType());
+            rawRateRedisTemplate.opsForValue().set(key, rate);
+            return rate;
+        } catch (Exception e) {
+            throw new CacheException(e.getMessage(), e);
+        }
+    }
+
+    @Override
+    public List<RawRate> getAllRawRatesForType(String type) throws CacheException {
+        try {
+            List<String> keys = rawRateRedisTemplate.keys("*")
+                    .stream()
+                    .filter(s -> s.startsWith("raw_rates::rates:") && s.endsWith(":" + type))
+                    .toList();
+
+            if (keys.isEmpty()) {
+                return List.of(); // Return empty list if no matches
+            }
+
+            return keys.stream()
+                    .map(key -> rawRateRedisTemplate.opsForValue().get(key)) // Fetch each entity
+                    .collect(Collectors.toList()); // Collect results into a list
+
+        } catch (Exception e) {
+            throw new CacheException(e.getMessage(), e);
+        }
+    }
+
+    @Override
+    public String getName() {
+        return "RedisAPI";
     }
 }

@@ -1,7 +1,9 @@
 package com.berkepite.RateDistributionEngine.cache;
 
-import com.berkepite.RateDistributionEngine.common.rates.CalculatedRate;
-import com.berkepite.RateDistributionEngine.common.rates.RawRate;
+import com.berkepite.RateDistributionEngine.common.cache.IRateCacheService;
+import com.berkepite.RateDistributionEngine.common.exception.cache.CacheException;
+import com.berkepite.RateDistributionEngine.common.rate.CalculatedRate;
+import com.berkepite.RateDistributionEngine.common.rate.RawRate;
 import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Service;
 
@@ -62,7 +64,7 @@ public class RateCacheServiceInMemory implements IRateCacheService {
     }
 
     @Override
-    public List<RawRate> getAllRawRatesForType(String type) {
+    public List<RawRate> getAllRawRatesForType(String type) throws CacheException {
 
         List<String> keys = rawRateCache.keySet()
                 .stream()
@@ -77,5 +79,10 @@ public class RateCacheServiceInMemory implements IRateCacheService {
         return keys.stream()
                 .map(rawRateCache::get) // Fetch each entity
                 .collect(Collectors.toList()); // Collect results into a list
+    }
+
+    @Override
+    public String getName() {
+        return "InMemoryAPI";
     }
 }

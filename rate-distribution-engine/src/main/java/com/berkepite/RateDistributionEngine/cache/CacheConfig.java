@@ -2,8 +2,8 @@ package com.berkepite.RateDistributionEngine.cache;
 
 import java.time.Duration;
 
-import com.berkepite.RateDistributionEngine.common.rates.CalculatedRate;
-import com.berkepite.RateDistributionEngine.common.rates.RawRate;
+import com.berkepite.RateDistributionEngine.common.rate.CalculatedRate;
+import com.berkepite.RateDistributionEngine.common.rate.RawRate;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.cache.CacheManager;
 import org.springframework.cache.annotation.EnableCaching;
@@ -75,6 +75,4 @@ public class CacheConfig {
 
         return template;
     }
-
-
 }

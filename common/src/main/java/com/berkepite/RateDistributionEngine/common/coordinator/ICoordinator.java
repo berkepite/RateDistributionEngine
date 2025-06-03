@@ -1,10 +1,10 @@
 package com.berkepite.RateDistributionEngine.common.coordinator;
 
-import com.berkepite.RateDistributionEngine.common.calculators.IRateCalculator;
+import com.berkepite.RateDistributionEngine.common.calculator.IRateCalculator;
 import com.berkepite.RateDistributionEngine.common.exception.calculator.CalculatorException;
 import com.berkepite.RateDistributionEngine.common.exception.subscriber.SubscriberException;
-import com.berkepite.RateDistributionEngine.common.subscribers.ISubscriber;
-import com.berkepite.RateDistributionEngine.common.rates.RawRate;
+import com.berkepite.RateDistributionEngine.common.subscriber.ISubscriber;
+import com.berkepite.RateDistributionEngine.common.rate.RawRate;
 
 import java.util.List;
 

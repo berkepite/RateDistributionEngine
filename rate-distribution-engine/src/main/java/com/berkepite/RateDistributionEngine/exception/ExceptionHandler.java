@@ -1,9 +1,12 @@
 package com.berkepite.RateDistributionEngine.exception;
 
-import com.berkepite.RateDistributionEngine.common.calculators.IRateCalculator;
+import com.berkepite.RateDistributionEngine.common.cache.IRateCacheService;
+import com.berkepite.RateDistributionEngine.common.calculator.IRateCalculator;
+import com.berkepite.RateDistributionEngine.common.exception.cache.CacheException;
 import com.berkepite.RateDistributionEngine.common.exception.calculator.CalculatorException;
+import com.berkepite.RateDistributionEngine.common.exception.producer.ProducerException;
 import com.berkepite.RateDistributionEngine.common.exception.subscriber.*;
-import com.berkepite.RateDistributionEngine.common.subscribers.ISubscriber;
+import com.berkepite.RateDistributionEngine.common.subscriber.ISubscriber;
 import com.berkepite.RateDistributionEngine.email.EmailService;
 import jakarta.annotation.PostConstruct;
 import org.apache.logging.log4j.LogManager;
@@ -37,6 +40,14 @@ public class ExceptionHandler {
         LOGGER.error("({}) calculator error: {}", calculator.getStrategy() + '\\' + calculator.getPath(), isDebugEnabled ? e : e.getMessage());
     }
 
+    public void handle(CalculatorException e) {
+        LOGGER.error("calculator error: {}", isDebugEnabled ? e : e.getMessage());
+    }
+
+    public void handle(SubscriberException e) {
+        LOGGER.error("subscriber error: {}", isDebugEnabled ? e : e.getMessage());
+    }
+
     public void handle(SubscriberException e, ISubscriber subscriber) {
         LOGGER.error("({}) subscriber error: {}", subscriber.getConfig().getName(),
                 isDebugEnabled ? e : e.getMessage());
@@ -57,5 +68,20 @@ public class ExceptionHandler {
                                     subscriber.getConfig().getUrl() + subscriber.getConfig().getPort()),
                     "warn");
         }
+    }
+
+    public void handle(CacheException e, IRateCacheService cacheService) {
+        LOGGER.error("({}) cache error: {}", cacheService.getName(),
+                isDebugEnabled ? e : e.getMessage());
+    }
+
+    public void handle(CacheException e) {
+        LOGGER.error("cache error: {}",
+                isDebugEnabled ? e : e.getMessage());
+    }
+
+    public void handle(ProducerException e) {
+        LOGGER.error("kafka producer error: {}",
+                isDebugEnabled ? e : e.getMessage());
     }
 }

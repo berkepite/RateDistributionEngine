@@ -2,7 +2,7 @@ filebeat.inputs:
   - type: log
     enabled: true
     paths:
-      - /app/logs/*.json
+      - /app/logs/*
     json.keys_under_root: true
     json.add_error_key: true
 
@@ -15,7 +15,7 @@ setup.template.enabled: false
 setup.kibana:
   host: "https://opensearch-dashboards:5601"
   username: "admin"
-  password: "Aloha.32bit"
+  password: "${RDE_OPENSEARCH_PASSWORD}"
   ssl:
     verification_mode: none
 

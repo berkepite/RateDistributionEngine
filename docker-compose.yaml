@@ -17,8 +17,8 @@ services:
         condition: service_started
       tcp-platform:
         condition: service_started
-      #      kafka:
-      #        condition: service_healthy
+      kafka:
+        condition: service_healthy
       redis:
         condition: service_started
     env_file:
@@ -27,17 +27,17 @@ services:
       TZ: Europe/Istanbul # timezone
       SPRING_PROFILES_ACTIVE: dev
       SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:9092
-      SPRING_DATA_REDIS_HOST: redis
-      SPRING_DATA_REDIS_PORT: 6379
-      APP_EMAIL_USERNAME: ${APP_EMAIL_USERNAME}
-      APP_EMAIL_PASSWORD: ${APP_EMAIL_PASSWORD}
-      APP_EMAIL_ENABLED: false
-      APP_EMAIL_GROUPS: /app/email-groups.txt
-      APP_RATE_CALCULATION_STRATEGY: JAVASCRIPT
-      APP_RATE_CALCULATOR_PATH: /app/rate_calculators/js-calc.mjs
-      APP_RATES: /app/rates.csv
-      TCP_SUBSCRIBER_ENABLED: true
-      REST_SUBSCRIBER_ENABLED: true
+      SPRING_DATA_REDIS_HOST: ${RDE_REDIS_HOST}
+      SPRING_DATA_REDIS_PORT: ${RDE_REDIS_PORT}
+      RDE_EMAIL_USERNAME: ${RDE_EMAIL_USERNAME}
+      RDE_EMAIL_PASSWORD: ${RDE_EMAIL_PASSWORD}
+      RDE_EMAIL_ENABLED: false
+      RDE_EMAIL_GROUPS: /app/email-groups.txt
+      RDE_RATE_CALCULATION_STRATEGY: JAVASCRIPT
+      RDE_RATE_CALCULATOR_PATH: /app/rate_calculators/js-calc.mjs
+      RDE_RATES: /app/rates.csv
+      RDE_TCP_SUBSCRIBER_ENABLED: true
+      RDE_REST_SUBSCRIBER_ENABLED: true
     ports:
       - "3000:8080"
 
@@ -48,10 +48,12 @@ services:
       - ./initial_data_tcp.json:/app/initial_data.json:ro
     networks:
       - network
+    env_file:
+      - .env
     environment:
       TZ: Europe/Istanbul # timezone
-      TCP_SERVER_USER: client
-      TCP_SERVER_PASSWORD: 2345
+      TCP_SERVER_USER: ${TCP_SERVER_USER}
+      TCP_SERVER_PASSWORD: ${TCP_SERVER_PASSWORD}
       TCP_SIMULATOR_UPDATE_INTERVAL: 2000
       TCP_SERVER_TOTAL_STREAMS: 1000
       TCP_SERVER_STREAM_INTERVAL: 2100
@@ -70,8 +72,8 @@ services:
       - network
     environment:
       TZ: Europe/Istanbul # timezone
-      REST_SERVER_USER: client
-      REST_SERVER_PASSWORD: 1234
+      REST_SERVER_USER: ${REST_SERVER_USER}
+      REST_SERVER_PASSWORD: ${REST_SERVER_PASSWORD}
       REST_REQUEST_LIMIT: 1000
       SPRING_PROFILES_ACTIVE: prod
       SIMULATOR_ENABLED: true
@@ -84,146 +86,153 @@ services:
     container_name: redis
     networks:
       - network
-    ports:
-      - "6379:6379"
 
-#  postgres:
-#    image: postgres:latest
-#    container_name: postgres
-#    networks:
-#      - network
-#    environment:
-#      POSTGRES_USER: debug_user
-#      POSTGRES_PASSWORD: 1234
-#      POSTGRES_DB: backend
-#
-#  kafka:
-#    image: confluentinc/cp-kafka
-#    container_name: kafka
-#    networks:
-#      - network
-#    healthcheck:
-#      test: [ "CMD", "sh", "-c", "nc -z localhost 9092" ]
-#      interval: 10s
-#      retries: 5
-#      timeout: 10s
-#      start_period: 10s
-#    environment:
-#      # Cluster ID (unique identifier for Kafka cluster)
-#      CLUSTER_ID: qlWgb1R5R4GHgldQpgTcTQ
-#      # Kafka listeners (broker and controller)
-#      KAFKA_LISTENERS: PLAINTEXT://:9092,CONTROLLER://:9093
-#      # Advertised listeners (used by clients to connect)
-#      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092
-#      # Unique broker ID
-#      KAFKA_BROKER_ID: 1
-#      # Replication factor settings
-#      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
-#      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
-#      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
-#      # Enable auto topic creation
-#      KAFKA_AUTO_CREATE_TOPICS_ENABLE: true
-#      # Kafka process roles (broker and controller)
-#      KAFKA_PROCESS_ROLES: broker,controller
-#      # Node ID (for KRaft mode)
-#      KAFKA_NODE_ID: 1
-#      # Controller quorum voters (list of controllers)
-#      KAFKA_CONTROLLER_QUORUM_VOTERS: 1@kafka:9093
-#      # Listener security protocol mapping
-#      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,CONTROLLER:PLAINTEXT
-#      # Define controller listener
-#      KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
-#      # Define inter-broker listener name
-#      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
-#
-#  opensearch-consumer:
-#    image: luieitalian/opensearch-consumer
-#    container_name: opensearch-consumer
-#    networks:
-#      - network
-#    depends_on:
-#      opensearch:
-#        condition: service_healthy
-#      kafka:
-#        condition: service_healthy
-#    environment:
-#      OPENSEARCH_USERNAME: admin
-#      OPENSEARCH_PASSWORD: Aloha.32bit
-#      OPENSEARCH_HOST: opensearch
-#      OPENSEARCH_PORT: 9200
-#
-#  postgres-consumer:
-#    image: luieitalian/postgres-consumer
-#    container_name: postgres-consumer
-#    networks:
-#      - network
-#    depends_on:
-#      postgres:
-#        condition: service_started
-#      kafka:
-#        condition: service_healthy
-#    environment:
-#      POSTGRES_USER: debug_user
-#      POSTGRES_PASSWORD: 1234
-#
-#  opensearch:
-#    image: opensearchproject/opensearch:latest
-#    container_name: opensearch
-#    networks:
-#      - network
-#    healthcheck:
-#      test: [ "CMD", "curl", "-X", "GET", "https://opensearch:9200", "-ku", "admin:Aloha.32bit" ]
-#      interval: 10s
-#      timeout: 10s
-#      retries: 5
-#      start_period: 20s
-#    environment:
-#      discovery.type: single-node
-#      OPENSEARCH_JAVA_OPTS: "-Xms512m -Xmx512m"
-#      bootstrap.memory_lock: true
-#      OPENSEARCH_INITIAL_ADMIN_PASSWORD: "Aloha.32bit"
-#
-#  opensearch-dashboards:
-#    image: opensearchproject/opensearch-dashboards:latest
-#    container_name: opensearch-dashboards
-#    ports:
-#      - "5601:5601" # OpenSearch Dashboards web arayüzü
-#    networks:
-#      - network
-#    depends_on:
-#      opensearch:
-#        condition: service_healthy
-#    environment:
-#      - OPENSEARCH_HOSTS=["https://opensearch:9200"]
-#      - SERVER_HOST=0.0.0.0
-#      - OPENSEARCH_USERNAME=admin
-#      - OPENSEARCH_PASSWORD=Aloha.32bit
-#
-#  filebeat:
-#    image: docker.elastic.co/beats/filebeat-oss:7.12.1
-#    container_name: filebeat
-#    user: root
-#    volumes:
-#      - ./filebeat.yaml:/usr/share/filebeat/filebeat.yaml
-#      - logs_volume:/app/logs:ro
-#    command: "filebeat -e -strict.perms=false"
-#    networks:
-#      - network
-#    depends_on:
-#      - logstash
-#
-#  logstash:
-#    image: opensearchproject/logstash-oss-with-opensearch-output-plugin:latest
-#    container_name: logstash
-#    networks:
-#      - network
-#    volumes:
-#      - ./logstash.conf:/usr/share/logstash/pipeline/logstash.conf
-#    depends_on:
-#      opensearch:
-#        condition: service_healthy
-#    environment:
-#      LS_JAVA_OPTS: "-Xms256m -Xmx256m"
+  postgres:
+    image: postgres:latest
+    container_name: postgres
+    networks:
+      - network
+    env_file:
+      - .env
+    environment:
+      POSTGRES_USER: ${RDE_POSTGRES_USER}
+      POSTGRES_PASSWORD: ${RDE_POSTGRES_PASSWORD}
+      POSTGRES_DB: ${RDE_POSTGRES_DB}
+    ports:
+      - "5431:5432"
+
+  kafka:
+    image: confluentinc/cp-kafka
+    container_name: kafka
+    networks:
+      - network
+    healthcheck:
+      test: [ "CMD", "sh", "-c", "nc -z localhost 9092" ]
+      interval: 10s
+      retries: 5
+      timeout: 10s
+      start_period: 10s
+    env_file:
+      - .env
+    environment:
+      # Cluster ID (unique identifier for Kafka cluster)
+      CLUSTER_ID: ${RDE_KAFKA_CLUSTER_ID}
+      KAFKA_LISTENERS: PLAINTEXT://:9092,CONTROLLER://:9093
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092
+      KAFKA_BROKER_ID: 1
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: true
+      KAFKA_PROCESS_ROLES: broker,controller
+      # Node ID (for KRaft mode)
+      KAFKA_NODE_ID: 1
+      KAFKA_CONTROLLER_QUORUM_VOTERS: 1@kafka:9093
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,CONTROLLER:PLAINTEXT
+      KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+
+  opensearch-consumer:
+    image: luieitalian/opensearch-consumer
+    container_name: opensearch-consumer
+    networks:
+      - network
+    depends_on:
+      opensearch:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+    env_file:
+      - .env
+    environment:
+      OPENSEARCH_USERNAME: ${RDE_OPENSEARCH_USERNAME}
+      OPENSEARCH_PASSWORD: ${RDE_OPENSEARCH_PASSWORD}
+      OPENSEARCH_HOST: ${RDE_OPENSEARCH_HOST}
+      OPENSEARCH_PORT: ${RDE_OPENSEARCH_PORT}
+
+  postgres-consumer:
+    image: luieitalian/postgres-consumer
+    container_name: postgres-consumer
+    networks:
+      - network
+    depends_on:
+      postgres:
+        condition: service_started
+      kafka:
+        condition: service_healthy
+    env_file:
+      - .env
+    environment:
+      POSTGRES_USER: ${RDE_POSTGRES_USER}
+      POSTGRES_PASSWORD: ${RDE_POSTGRES_PASSWORD}
+
+  opensearch:
+    image: opensearchproject/opensearch:latest
+    container_name: opensearch
+    networks:
+      - network
+    healthcheck:
+      test: [ "CMD-SHELL", "curl -X GET https://${RDE_OPENSEARCH_HOST}:${RDE_OPENSEARCH_PORT} -ku ${RDE_OPENSEARCH_USERNAME}:${RDE_OPENSEARCH_PASSWORD}" ]
+      interval: 10s
+      timeout: 10s
+      retries: 5
+      start_period: 20s
+    env_file:
+      - .env
+    environment:
+      discovery.type: single-node
+      OPENSEARCH_JAVA_OPTS: "-Xms512m -Xmx512m"
+      bootstrap.memory_lock: true
+      OPENSEARCH_INITIAL_ADMIN_PASSWORD: ${RDE_OPENSEARCH_PASSWORD}
+
+  opensearch-dashboards:
+    image: opensearchproject/opensearch-dashboards:latest
+    container_name: opensearch-dashboards
+    ports:
+      - "5601:5601" # OpenSearch Dashboards web arayüzü
+    networks:
+      - network
+    depends_on:
+      opensearch:
+        condition: service_healthy
+    env_file:
+      - .env
+    environment:
+      - OPENSEARCH_HOSTS=https://${RDE_OPENSEARCH_HOST}:${RDE_OPENSEARCH_PORT}
+      - SERVER_HOST=0.0.0.0
+
+  filebeat:
+    image: berkepite/envsubst-filebeat
+    container_name: filebeat
+    user: root
+    volumes:
+      - ./filebeat.tpl.yml:/usr/share/filebeat/filebeat.tpl.yml:ro
+      - logs_volume:/app/logs:ro
+    entrypoint: sh -c "envsubst < /usr/share/filebeat/filebeat.tpl.yml > /usr/share/filebeat/filebeat.yml && filebeat -e -strict.perms=false"
+    env_file:
+      - .env
+    networks:
+      - network
+    depends_on:
+      opensearch:
+        condition: service_healthy
+
+  logstash:
+    image: opensearchproject/logstash-oss-with-opensearch-output-plugin:latest
+    container_name: logstash
+    networks:
+      - network
+    volumes:
+      - ./logstash.conf:/usr/share/logstash/pipeline/logstash.conf
+    env_file:
+      - .env
+    depends_on:
+      opensearch:
+        condition: service_healthy
+      filebeat:
+        condition: service_started
+    environment:
+      LS_JAVA_OPTS: "-Xms256m -Xmx512m"
 
 networks:
   network:

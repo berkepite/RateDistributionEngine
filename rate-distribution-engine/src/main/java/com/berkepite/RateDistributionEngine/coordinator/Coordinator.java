@@ -1,20 +1,21 @@
 package com.berkepite.RateDistributionEngine.coordinator;
 
+import com.berkepite.RateDistributionEngine.common.calculator.ICalculatorFactory;
 import com.berkepite.RateDistributionEngine.common.exception.subscriber.SubscriberConnectionException;
 import com.berkepite.RateDistributionEngine.common.exception.subscriber.SubscriberInitException;
 import com.berkepite.RateDistributionEngine.email.EmailService;
-import com.berkepite.RateDistributionEngine.common.calculators.IRateCalculator;
+import com.berkepite.RateDistributionEngine.common.calculator.IRateCalculator;
 import com.berkepite.RateDistributionEngine.common.coordinator.ICoordinator;
 import com.berkepite.RateDistributionEngine.common.coordinator.ICoordinatorConfig;
 import com.berkepite.RateDistributionEngine.common.coordinator.ISubscriberBindingConfig;
 import com.berkepite.RateDistributionEngine.common.exception.calculator.CalculatorException;
 import com.berkepite.RateDistributionEngine.common.exception.subscriber.SubscriberException;
-import com.berkepite.RateDistributionEngine.common.rates.RawRate;
-import com.berkepite.RateDistributionEngine.common.rates.IRateManager;
-import com.berkepite.RateDistributionEngine.common.rates.IRatesLoader;
-import com.berkepite.RateDistributionEngine.common.subscribers.ISubscriber;
-import com.berkepite.RateDistributionEngine.common.subscribers.ISubscriberConfig;
-import com.berkepite.RateDistributionEngine.common.subscribers.ISubscriberLoader;
+import com.berkepite.RateDistributionEngine.common.rate.RawRate;
+import com.berkepite.RateDistributionEngine.common.rate.IRateManager;
+import com.berkepite.RateDistributionEngine.common.rate.IRatesLoader;
+import com.berkepite.RateDistributionEngine.common.subscriber.ISubscriber;
+import com.berkepite.RateDistributionEngine.common.subscriber.ISubscriberConfig;
+import com.berkepite.RateDistributionEngine.common.subscriber.ISubscriberLoader;
 import com.berkepite.RateDistributionEngine.exception.ExceptionHandler;
 import jakarta.annotation.PostConstruct;
 import org.apache.logging.log4j.LogManager;
@@ -26,7 +27,6 @@ import org.springframework.scheduling.concurrent.ThreadPoolTaskExecutor;
 import org.springframework.stereotype.Component;
 
 import java.util.*;
-import java.util.stream.Collectors;
 
 /**
  * Coordinator class responsible for managing subscribers and processing rates.
@@ -42,7 +42,6 @@ public class Coordinator implements CommandLineRunner, ICoordinator {
     private final IRatesLoader ratesLoader;
     private final ThreadPoolTaskExecutor executorService;
     private final ExceptionHandler exceptionHandler;
-    private final EmailService emailService;
 
     private List<ISubscriber> subscribers;
 
@@ -55,14 +54,13 @@ public class Coordinator implements CommandLineRunner, ICoordinator {
      * @param executorService   the thread pool executor for managing async tasks
      */
     @Autowired
-    public Coordinator(ExceptionHandler exceptionHandler, IRatesLoader ratesLoader, ICoordinatorConfig coordinatorConfig, IRateManager rateManager, ISubscriberLoader subscriberLoader, @Qualifier("coordinatorExecutor") ThreadPoolTaskExecutor executorService, EmailService emailService) {
+    public Coordinator(ExceptionHandler exceptionHandler, IRatesLoader ratesLoader, ICoordinatorConfig coordinatorConfig, IRateManager rateManager, ISubscriberLoader subscriberLoader, @Qualifier("coordinatorExecutor") ThreadPoolTaskExecutor executorService) {
         this.coordinatorConfig = coordinatorConfig;
         this.subscriberLoader = subscriberLoader;
         this.executorService = executorService;
         this.rateManager = rateManager;
         this.ratesLoader = ratesLoader;
         this.exceptionHandler = exceptionHandler;
-        this.emailService = emailService;
     }
 
     /**
@@ -73,7 +71,6 @@ public class Coordinator implements CommandLineRunner, ICoordinator {
     @PostConstruct
     private void init() {
         subscribers = new ArrayList<>(2);
-
         loadSubscriberClasses(coordinatorConfig.getSubscriberBindings(), subscribers);
 
         if (!subscribers.isEmpty()) {
@@ -82,14 +79,14 @@ public class Coordinator implements CommandLineRunner, ICoordinator {
             LOGGER.error("0 subscriber classes loaded! Exiting...");
             return;
         }
-        LOGGER.info("Coordinator Initialized!");
 
+        LOGGER.info("Coordinator Initialized!");
         initSubscribers();
 
         Runtime.getRuntime().addShutdownHook(new Thread(() -> {
             executorService.shutdown();
 
-            LOGGER.info("Executor stopped. ({})", this.getClass().getSimpleName());
+            LOGGER.info("Coordinator executor stopped. ({})", this.getClass().getSimpleName());
         }, "shutdown-hook-coordinator"));
 
     }
@@ -137,11 +134,15 @@ public class Coordinator implements CommandLineRunner, ICoordinator {
      */
     private void loadSubscriberClasses(List<ISubscriberBindingConfig> subscriberBindingConfigs, List<ISubscriber> subscribers) {
         subscriberBindingConfigs.forEach(subscriberBindingConfig -> {
-            if (subscriberBindingConfig.isEnabled()) {
-                ISubscriber subscriber = subscriberLoader.load(subscriberBindingConfig, this);
-                if (subscriber != null) {
-                    subscribers.add(subscriber);
+            try {
+                if (subscriberBindingConfig.isEnabled()) {
+                    ISubscriber subscriber = subscriberLoader.load(subscriberBindingConfig, this);
+                    if (subscriber != null) {
+                        subscribers.add(subscriber);
+                    }
                 }
+            } catch (Exception e) {
+                LOGGER.error(e);
             }
         });
     }

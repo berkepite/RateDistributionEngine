@@ -1,6 +1,6 @@
 import com.berkepite.RateDistributionEngine.RestSubscriber.RateMapper;
 import com.berkepite.RateDistributionEngine.common.exception.subscriber.SubscriberRateException;
-import com.berkepite.RateDistributionEngine.common.rates.RawRate;
+import com.berkepite.RateDistributionEngine.common.rate.RawRate;
 import org.junit.jupiter.api.Test;
 
 import java.time.Instant;

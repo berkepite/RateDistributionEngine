@@ -1,10 +1,10 @@
 package com.berkepite.RateDistributionEngine.TCPSubscriber;
 
 import com.berkepite.RateDistributionEngine.common.exception.subscriber.*;
-import com.berkepite.RateDistributionEngine.common.subscribers.ISubscriber;
-import com.berkepite.RateDistributionEngine.common.subscribers.ISubscriberConfig;
+import com.berkepite.RateDistributionEngine.common.subscriber.ISubscriber;
+import com.berkepite.RateDistributionEngine.common.subscriber.ISubscriberConfig;
 import com.berkepite.RateDistributionEngine.common.coordinator.ICoordinator;
-import com.berkepite.RateDistributionEngine.common.rates.RawRate;
+import com.berkepite.RateDistributionEngine.common.rate.RawRate;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 

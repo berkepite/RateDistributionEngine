@@ -1,7 +1,7 @@
 package com.berkepite.RateDistributionEngine.RestSubscriber;
 
 import com.berkepite.RateDistributionEngine.common.exception.subscriber.SubscriberRateException;
-import com.berkepite.RateDistributionEngine.common.rates.RawRate;
+import com.berkepite.RateDistributionEngine.common.rate.RawRate;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 

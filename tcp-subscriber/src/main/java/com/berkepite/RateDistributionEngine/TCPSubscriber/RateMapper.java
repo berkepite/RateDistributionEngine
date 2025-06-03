@@ -2,7 +2,7 @@ package com.berkepite.RateDistributionEngine.TCPSubscriber;
 
 import com.berkepite.RateDistributionEngine.common.exception.subscriber.SubscriberRateException;
 import com.berkepite.RateDistributionEngine.common.exception.subscriber.SubscriberRateMappingException;
-import com.berkepite.RateDistributionEngine.common.rates.RawRate;
+import com.berkepite.RateDistributionEngine.common.rate.RawRate;
 
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;

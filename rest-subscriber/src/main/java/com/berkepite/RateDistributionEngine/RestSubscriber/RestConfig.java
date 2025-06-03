@@ -1,6 +1,6 @@
 package com.berkepite.RateDistributionEngine.RestSubscriber;
 
-import com.berkepite.RateDistributionEngine.common.subscribers.ISubscriberConfig;
+import com.berkepite.RateDistributionEngine.common.subscriber.ISubscriberConfig;
 
 import java.util.List;
 

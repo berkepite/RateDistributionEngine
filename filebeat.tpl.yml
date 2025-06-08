@@ -1,0 +1,22 @@
+filebeat.inputs:
+  - type: log
+    enabled: true
+    paths:
+      - /app/logs/*
+    json.keys_under_root: true
+    json.add_error_key: true
+
+output.logstash:
+  hosts: [ "${RDE_LOGSTASH_HOST}:${RDE_LOGSTASH_PORT}" ]
+
+setup.ilm.enabled: false
+setup.template.enabled: false
+
+setup.kibana:
+  host: "https://opensearch-dashboards:5601"
+  username: "${RDE_OPENSEARCH_USERNAME}"
+  password: "${RDE_OPENSEARCH_PASSWORD}"
+  ssl:
+    verification_mode: none
+
+logging.level: info

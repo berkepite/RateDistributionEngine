@@ -1,1 +1,6 @@
-rootProject.name = 'MainApplication32Bit'
+rootProject.name = 'RateDistributionEngine'
+
+include("rate-distribution-engine")
+include("rest-subscriber")
+include("common")
+include("tcp-subscriber")

@@ -68,7 +68,7 @@ The application logs various events:
 The project includes **two platforms** for raw rate.
 They both simulate **live raw rate streaming**.
 
-### **1️⃣ [TCP-Based Platform](https://github.com/Luieitalian/TCPPlatform)**
+### **1️⃣ [TCP-Based Platform](https://github.com/berkepite/TCPPlatform)**
 
 - Provides raw data via TCP connection.
 - Can be tested via **Telnet**
@@ -77,7 +77,7 @@ They both simulate **live raw rate streaming**.
 name=USDTRY|bid=34.44|ask=35.43|timestamp=2024-12-14T21:18:21
 ```
 
-### **2️⃣ [REST API-Based Platform](https://github.com/Luieitalian/RestPlatform)**
+### **2️⃣ [REST API-Based Platform](https://github.com/berkepite/RestPlatform)**
 
 - Provides raw data via REST API.
 

@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Configuration status="WARN">
+    <Appenders>
+        <!-- Console Appender (Plaintext) -->
+        <Console name="CONSOLE" target="SYSTEM_OUT">
+            <PatternLayout pattern="%d{yyyy-MM-dd HH:mm:ss} %highlight{%-5p} [%t] %c{1.}:%L - %m%n"/>
+        </Console>
+
+        <!-- File Appender (JSON with stacktrace) -->
+        <File name="File" fileName="logs/app-log.json">
+            <JsonLayout eventEol="true" compact="true" includeStacktrace="true"/>
+        </File>
+    </Appenders>
+
+    <Loggers>
+        <Root level="info">
+            <AppenderRef ref="CONSOLE"/>
+            <AppenderRef ref="File"/>
+        </Root>
+
+        <!-- Spring profile-specific logger (only activates in 'debug' profile) -->
+        <SpringProfile name="debug">
+            <Logger name="com.berkepite.RateDistributionEngine" level="debug" additivity="false">
+                <AppenderRef ref="CONSOLE"/>
+                <AppenderRef ref="File"/>
+            </Logger>
+        </SpringProfile>
+    </Loggers>
+</Configuration>

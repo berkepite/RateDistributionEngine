@@ -1,0 +1,15 @@
+app:
+  coordinator:
+    subscriber-bindings:
+      - name: "RestSubscriber"
+        enabled: ${RDE_REST_SUBSCRIBER_ENABLED}
+        configName: "rest-config.yaml"
+        jarName: "rest-subscriber-0.0.1.jar"
+        classPath: "com.berkepite.RateDistributionEngine.RestSubscriber.RestSubscriber"
+        configClassPath: "com.berkepite.RateDistributionEngine.RestSubscriber.RestConfig"
+      - name: "TCPSubscriber"
+        enabled: ${RDE_TCP_SUBSCRIBER_ENABLED}
+        configName: "tcp-config.yaml"
+        jarName: "tcp-subscriber-0.0.1.jar"
+        classPath: "com.berkepite.RateDistributionEngine.TCPSubscriber.TCPSubscriber"
+        configClassPath: "com.berkepite.RateDistributionEngine.TCPSubscriber.TCPConfig"

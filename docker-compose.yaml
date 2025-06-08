@@ -1,0 +1,265 @@
+name: engine-cluster
+services:
+  rate-distribution-engine:
+    image: berkepite/rate-distribution-engine
+    container_name: rate-distribution-engine
+    networks:
+      - network
+    volumes:
+      - logs_volume:/app/logs
+      - ./email-groups.txt:/app/email-groups.txt:ro
+      - ./subscribers:/app/subscribers
+      - ./rate_calculators:/app/rate_calculators
+      - ./application-config.yaml:/app/application-config.yaml:ro
+      - ./rates.csv:/app/rates.csv:ro
+    depends_on:
+      rest-platform:
+        condition: service_started
+      tcp-platform:
+        condition: service_started
+      kafka:
+        condition: service_healthy
+      redis:
+        condition: service_started
+    env_file:
+      - .env
+    environment:
+      TZ: Europe/Istanbul # timezone
+      SPRING_PROFILES_ACTIVE: dev
+      SPRING_KAFKA_BOOTSTRAP_SERVERS: "${RDE_KAFKA_HOST}:${RDE_KAFKA_PORT}"
+      SPRING_DATA_REDIS_HOST: ${RDE_REDIS_HOST}
+      SPRING_DATA_REDIS_PORT: ${RDE_REDIS_PORT}
+      RDE_EMAIL_USERNAME: ${RDE_EMAIL_USERNAME}
+      RDE_EMAIL_PASSWORD: ${RDE_EMAIL_PASSWORD}
+      RDE_EMAIL_ENABLED: false
+      RDE_EMAIL_GROUPS: /app/email-groups.txt
+      RDE_RATE_CALCULATION_STRATEGY: JAVASCRIPT
+      RDE_RATE_CALCULATOR_PATH: /app/rate_calculators/js-calc.mjs
+      RDE_RATES: /app/rates.csv
+      RDE_REMOTE_CONTROL_API_PASSWORD: ${RDE_REMOTE_CONTROL_API_PASSWORD}
+      RDE_TCP_SUBSCRIBER_ENABLED: true
+      RDE_REST_SUBSCRIBER_ENABLED: true
+      RDE_KAFKA_RAW_RATE_TOPIC: ${RDE_KAFKA_RAW_RATE_TOPIC}
+      RDE_KAFKA_CALC_RATE_TOPIC: ${RDE_KAFKA_CALC_RATE_TOPIC}
+    ports:
+      - "3000:8080"
+
+  tcp-platform:
+    image: berkepite/tcp-platform-standalone
+    container_name: tcp-platform-standalone
+    volumes:
+      - ./initial_data_tcp.json:/app/initial_data.json:ro
+    networks:
+      - network
+    env_file:
+      - .env
+    environment:
+      TZ: Europe/Istanbul # timezone
+      TCP_SERVER_USER: ${TCP_SERVER_USER}
+      TCP_SERVER_PASSWORD: ${TCP_SERVER_PASSWORD}
+      TCP_SIMULATOR_UPDATE_INTERVAL: 2000
+      TCP_SERVER_TOTAL_STREAMS: 1000
+      TCP_SERVER_STREAM_INTERVAL: 2100
+      APPLICATION_PROFILE: prod
+      SIMULATOR_ENABLED: true
+      SIMULATOR_INTENSITY: med # low, med, high
+    ports:
+      - "2000:8080"
+
+  rest-platform:
+    image: berkepite/rest-platform
+    container_name: rest-platform
+    volumes:
+      - ./initial_data_rest.json:/app/initial_data.json:ro
+    networks:
+      - network
+    environment:
+      TZ: Europe/Istanbul # timezone
+      REST_SERVER_USER: ${REST_SERVER_USER}
+      REST_SERVER_PASSWORD: ${REST_SERVER_PASSWORD}
+      REST_REQUEST_LIMIT: 1000
+      SPRING_PROFILES_ACTIVE: prod
+      SIMULATOR_ENABLED: true
+      SIMULATOR_INTENSITY: med # low, med, high
+    ports:
+      - "1000:8080"
+
+  redis:
+    image: redis:latest
+    container_name: redis
+    networks:
+      - network
+
+  postgres:
+    image: postgres:latest
+    container_name: postgres
+    networks:
+      - network
+    env_file:
+      - .env
+    environment:
+      POSTGRES_USER: ${RDE_POSTGRES_USER}
+      POSTGRES_PASSWORD: ${RDE_POSTGRES_PASSWORD}
+      POSTGRES_DB: ${RDE_POSTGRES_DB}
+    ports:
+      - "5431:5432"
+
+  kafka:
+    image: confluentinc/cp-kafka
+    container_name: kafka
+    networks:
+      - network
+    healthcheck:
+      test: [ "CMD", "sh", "-c", "nc -z localhost ${RDE_KAFKA_PORT}" ]
+      interval: 10s
+      retries: 5
+      timeout: 10s
+      start_period: 10s
+    env_file:
+      - .env
+    environment:
+      # Cluster ID (unique identifier for Kafka cluster)
+      CLUSTER_ID: ${RDE_KAFKA_CLUSTER_ID}
+      KAFKA_LISTENERS: PLAINTEXT://:${RDE_KAFKA_PORT},CONTROLLER://:9093
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://${RDE_KAFKA_HOST}:${RDE_KAFKA_PORT}
+      KAFKA_BROKER_ID: 1
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: true
+      KAFKA_PROCESS_ROLES: broker,controller
+      # Node ID (for KRaft mode)
+      KAFKA_NODE_ID: 1
+      KAFKA_CONTROLLER_QUORUM_VOTERS: 1@${RDE_KAFKA_HOST}:9093
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,CONTROLLER:PLAINTEXT
+      KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+
+  opensearch-consumer:
+    image: berkepite/opensearch-consumer
+    container_name: opensearch-consumer
+    networks:
+      - network
+    depends_on:
+      opensearch:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
+    env_file:
+      - .env
+    environment:
+      OPENSEARCH_USERNAME: ${RDE_OPENSEARCH_USERNAME}
+      OPENSEARCH_PASSWORD: ${RDE_OPENSEARCH_PASSWORD}
+      OPENSEARCH_HOST: ${RDE_OPENSEARCH_HOST}
+      OPENSEARCH_PORT: ${RDE_OPENSEARCH_PORT}
+      KAFKA_RAW_RATE_TOPIC: ${RDE_KAFKA_RAW_RATE_TOPIC}
+      KAFKA_CALC_RATE_TOPIC: ${RDE_KAFKA_CALC_RATE_TOPIC}
+      KAFKA_HOST: ${RDE_KAFKA_HOST}
+      KAFKA_PORT: ${RDE_KAFKA_PORT}
+
+  postgres-consumer:
+    image: berkepite/postgres-consumer
+    container_name: postgres-consumer
+    networks:
+      - network
+    depends_on:
+      postgres:
+        condition: service_started
+      kafka:
+        condition: service_healthy
+    env_file:
+      - .env
+    environment:
+      POSTGRES_HOST: ${RDE_POSTGRES_HOST}
+      POSTGRES_PORT: ${RDE_POSTGRES_PORT}
+      POSTGRES_DB: ${RDE_POSTGRES_DB}
+      POSTGRES_USER: ${RDE_POSTGRES_USER}
+      POSTGRES_PASSWORD: ${RDE_POSTGRES_PASSWORD}
+      KAFKA_RAW_RATE_TOPIC: ${RDE_KAFKA_RAW_RATE_TOPIC}
+      KAFKA_CALC_RATE_TOPIC: ${RDE_KAFKA_CALC_RATE_TOPIC}
+      KAFKA_HOST: ${RDE_KAFKA_HOST}
+      KAFKA_PORT: ${RDE_KAFKA_PORT}
+
+  opensearch:
+    image: opensearchproject/opensearch:latest
+    container_name: opensearch
+    networks:
+      - network
+    healthcheck:
+      test: [ "CMD-SHELL", "curl -X GET https://${RDE_OPENSEARCH_HOST}:${RDE_OPENSEARCH_PORT} -ku ${RDE_OPENSEARCH_USERNAME}:${RDE_OPENSEARCH_PASSWORD}" ]
+      interval: 10s
+      timeout: 10s
+      retries: 5
+      start_period: 20s
+    env_file:
+      - .env
+    environment:
+      discovery.type: single-node
+      OPENSEARCH_JAVA_OPTS: "-Xms512m -Xmx512m"
+      bootstrap.memory_lock: true
+      OPENSEARCH_INITIAL_ADMIN_PASSWORD: ${RDE_OPENSEARCH_PASSWORD}
+
+  opensearch-dashboards:
+    image: opensearchproject/opensearch-dashboards:latest
+    container_name: opensearch-dashboards
+    ports:
+      - "5601:5601" # OpenSearch Dashboards web arayüzü
+    networks:
+      - network
+    depends_on:
+      opensearch:
+        condition: service_healthy
+    env_file:
+      - .env
+    environment:
+      - OPENSEARCH_HOSTS=https://${RDE_OPENSEARCH_HOST}:${RDE_OPENSEARCH_PORT}
+      - SERVER_HOST=0.0.0.0
+
+  filebeat:
+    image: berkepite/envsubst-filebeat
+    container_name: filebeat
+    user: root
+    volumes:
+      - ./filebeat.tpl.yml:/usr/share/filebeat/filebeat.tpl.yml:ro
+      - logs_volume:/app/logs:ro
+    entrypoint: sh -c "envsubst < /usr/share/filebeat/filebeat.tpl.yml > /usr/share/filebeat/filebeat.yml && filebeat -e -strict.perms=false"
+    env_file:
+      - .env
+    environment:
+      LOGSTASH_HOST: ${RDE_LOGSTASH_HOST}
+      LOGSTASH_PORT: ${RDE_LOGSTASH_PORT}
+      OPENSEARCH_USERNAME: ${RDE_OPENSEARCH_USERNAME}
+      OPENSEARCH_PASSWORD: ${RDE_OPENSEARCH_PASSWORD}
+    networks:
+      - network
+    depends_on:
+      opensearch:
+        condition: service_healthy
+
+  logstash:
+    image: opensearchproject/logstash-oss-with-opensearch-output-plugin:latest
+    container_name: logstash
+    networks:
+      - network
+    volumes:
+      - ./logstash.conf:/usr/share/logstash/pipeline/logstash.conf
+    env_file:
+      - .env
+    environment:
+      OPENSEARCH_HOST: ${RDE_OPENSEARCH_HOST}
+      OPENSEARCH_PORT: ${RDE_OPENSEARCH_PORT}
+      OPENSEARCH_USERNAME: ${RDE_OPENSEARCH_USERNAME}
+      OPENSEARCH_PASSWORD: ${RDE_OPENSEARCH_PASSWORD}
+      LS_JAVA_OPTS: "-Xms256m -Xmx512m"
+    depends_on:
+      opensearch:
+        condition: service_healthy
+      filebeat:
+        condition: service_started
+
+networks:
+  network:
+    driver: bridge
+
+volumes:
+  logs_volume:

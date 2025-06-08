@@ -1,0 +1,12 @@
+name: tcp_subscriber
+classPath: com.berkepite.RateDistributionEngine.TCPSubscriber
+className: TCPSubscriber
+url: tcp-platform
+port: 8080
+username: client
+password: 2345
+includeRates:
+excludeRates:
+requestInterval: 2000
+requestTimeout: 10000
+requestRetryLimit: 5

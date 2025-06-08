@@ -1,51 +1,15 @@
-spring:
-  application:
-    name: "MainApplication32Bit"
-  profiles:
-    active: ${SPRING_PROFILES_ACTIVE}
-  data:
-    redis:
-      host: ${SPRING_DATA_REDIS_HOST}
-      port: ${SPRING_DATA_REDIS_PORT}
-  cache:
-    type: ${SPRING_CACHE_TYPE}
-  kafka:
-    bootstrap-servers: ${SPRING_KAFKA_BOOTSTRAP_SERVERS}
-  mail:
-    host: smtp.gmail.com
-    port: 587
-    username: ${RDE_EMAIL_USERNAME}
-    password: ${RDE_EMAIL_PASSWORD}
-    properties:
-      mail:
-        smtp:
-          auth: true
-          starttls:
-            enable: true
-
 app:
   coordinator:
     subscriber-bindings:
       - name: "RestSubscriber"
-        enabled: ${RDE_REST_SUBSCRIBER_ENABLED:true}
+        enabled: ${RDE_REST_SUBSCRIBER_ENABLED}
         configName: "rest-config.yaml"
         jarName: "rest-subscriber-0.0.1.jar"
         classPath: "com.berkepite.RateDistributionEngine.RestSubscriber.RestSubscriber"
         configClassPath: "com.berkepite.RateDistributionEngine.RestSubscriber.RestConfig"
       - name: "TCPSubscriber"
-        enabled: ${RDE_TCP_SUBSCRIBER_ENABLED:true}
+        enabled: ${RDE_TCP_SUBSCRIBER_ENABLED}
         configName: "tcp-config.yaml"
         jarName: "tcp-subscriber-0.0.1.jar"
         classPath: "com.berkepite.RateDistributionEngine.TCPSubscriber.TCPSubscriber"
         configClassPath: "com.berkepite.RateDistributionEngine.TCPSubscriber.TCPConfig"
-    rates: ${RDE_RATES}
-  rate-calculation-strategy: ${RDE_RATE_CALCULATION_STRATEGY}
-  rate-calculator-path: ${RDE_RATE_CALCULATOR_PATH}
-  kafka:
-    raw-rate-topic: "raw_rates"
-    calc-rate-topic: "calc_rates"
-  email:
-    group-file: ${RDE_EMAIL_GROUPS}
-    enabled: ${RDE_EMAIL_ENABLED}
-  api:
-    password: ${RDE_API_PASSWORD}

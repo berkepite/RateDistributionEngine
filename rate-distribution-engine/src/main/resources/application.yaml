@@ -1,3 +1,40 @@
 spring:
+  application:
+    name: "RateDistributionEngine"
+  profiles:
+    active: ${SPRING_PROFILES_ACTIVE}
+  data:
+    redis:
+      host: ${SPRING_DATA_REDIS_HOST}
+      port: ${SPRING_DATA_REDIS_PORT}
+  cache:
+    type: ${SPRING_CACHE_TYPE}
+  kafka:
+    bootstrap-servers: ${SPRING_KAFKA_BOOTSTRAP_SERVERS}
+  mail:
+    host: smtp.gmail.com
+    port: 587
+    username: ${RDE_EMAIL_USERNAME}
+    password: ${RDE_EMAIL_PASSWORD}
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
   config:
     import: file:/app/application-config.yaml
+
+app:
+  coordinator:
+    rates: ${RDE_RATES}
+  rate-calculation-strategy: ${RDE_RATE_CALCULATION_STRATEGY}
+  rate-calculator-path: ${RDE_RATE_CALCULATOR_PATH}
+  kafka:
+    raw-rate-topic: ${RDE_KAFKA_RAW_RATE_TOPIC}
+    calc-rate-topic: ${RDE_KAFKA_CALC_RATE_TOPIC}
+  email:
+    group-file: ${RDE_EMAIL_GROUPS}
+    enabled: ${RDE_EMAIL_ENABLED}
+  api:
+    password: ${RDE_REMOTE_CONTROL_API_PASSWORD}

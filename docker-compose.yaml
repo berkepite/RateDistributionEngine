@@ -26,7 +26,7 @@ services:
     environment:
       TZ: Europe/Istanbul # timezone
       SPRING_PROFILES_ACTIVE: dev
-      SPRING_KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+      SPRING_KAFKA_BOOTSTRAP_SERVERS: "${RDE_KAFKA_HOST}:${RDE_KAFKA_PORT}"
       SPRING_DATA_REDIS_HOST: ${RDE_REDIS_HOST}
       SPRING_DATA_REDIS_PORT: ${RDE_REDIS_PORT}
       RDE_EMAIL_USERNAME: ${RDE_EMAIL_USERNAME}
@@ -36,13 +36,16 @@ services:
       RDE_RATE_CALCULATION_STRATEGY: JAVASCRIPT
       RDE_RATE_CALCULATOR_PATH: /app/rate_calculators/js-calc.mjs
       RDE_RATES: /app/rates.csv
+      RDE_REMOTE_CONTROL_API_PASSWORD: ${RDE_REMOTE_CONTROL_API_PASSWORD}
       RDE_TCP_SUBSCRIBER_ENABLED: true
       RDE_REST_SUBSCRIBER_ENABLED: true
+      RDE_KAFKA_RAW_RATE_TOPIC: ${RDE_KAFKA_RAW_RATE_TOPIC}
+      RDE_KAFKA_CALC_RATE_TOPIC: ${RDE_KAFKA_CALC_RATE_TOPIC}
     ports:
       - "3000:8080"
 
   tcp-platform:
-    image: luieitalian/tcp-platform-standalone
+    image: berkepite/tcp-platform-standalone
     container_name: tcp-platform-standalone
     volumes:
       - ./initial_data_tcp.json:/app/initial_data.json:ro
@@ -59,12 +62,12 @@ services:
       TCP_SERVER_STREAM_INTERVAL: 2100
       APPLICATION_PROFILE: prod
       SIMULATOR_ENABLED: true
-      SIMULATOR_INTENSITY: med
+      SIMULATOR_INTENSITY: med # low, med, high
     ports:
       - "2000:8080"
 
   rest-platform:
-    image: luieitalian/rest-platform
+    image: berkepite/rest-platform
     container_name: rest-platform
     volumes:
       - ./initial_data_rest.json:/app/initial_data.json:ro
@@ -77,7 +80,7 @@ services:
       REST_REQUEST_LIMIT: 1000
       SPRING_PROFILES_ACTIVE: prod
       SIMULATOR_ENABLED: true
-      SIMULATOR_INTENSITY: med
+      SIMULATOR_INTENSITY: med # low, med, high
     ports:
       - "1000:8080"
 
@@ -107,7 +110,7 @@ services:
     networks:
       - network
     healthcheck:
-      test: [ "CMD", "sh", "-c", "nc -z localhost 9092" ]
+      test: [ "CMD", "sh", "-c", "nc -z localhost ${RDE_KAFKA_PORT}" ]
       interval: 10s
       retries: 5
       timeout: 10s
@@ -117,8 +120,8 @@ services:
     environment:
       # Cluster ID (unique identifier for Kafka cluster)
       CLUSTER_ID: ${RDE_KAFKA_CLUSTER_ID}
-      KAFKA_LISTENERS: PLAINTEXT://:9092,CONTROLLER://:9093
-      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092
+      KAFKA_LISTENERS: PLAINTEXT://:${RDE_KAFKA_PORT},CONTROLLER://:9093
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://${RDE_KAFKA_HOST}:${RDE_KAFKA_PORT}
       KAFKA_BROKER_ID: 1
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
       KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
@@ -127,13 +130,13 @@ services:
       KAFKA_PROCESS_ROLES: broker,controller
       # Node ID (for KRaft mode)
       KAFKA_NODE_ID: 1
-      KAFKA_CONTROLLER_QUORUM_VOTERS: 1@kafka:9093
+      KAFKA_CONTROLLER_QUORUM_VOTERS: 1@${RDE_KAFKA_HOST}:9093
       KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,CONTROLLER:PLAINTEXT
       KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
       KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
 
   opensearch-consumer:
-    image: luieitalian/opensearch-consumer
+    image: berkepite/opensearch-consumer
     container_name: opensearch-consumer
     networks:
       - network
@@ -149,9 +152,13 @@ services:
       OPENSEARCH_PASSWORD: ${RDE_OPENSEARCH_PASSWORD}
       OPENSEARCH_HOST: ${RDE_OPENSEARCH_HOST}
       OPENSEARCH_PORT: ${RDE_OPENSEARCH_PORT}
+      KAFKA_RAW_RATE_TOPIC: ${RDE_KAFKA_RAW_RATE_TOPIC}
+      KAFKA_CALC_RATE_TOPIC: ${RDE_KAFKA_CALC_RATE_TOPIC}
+      KAFKA_HOST: ${RDE_KAFKA_HOST}
+      KAFKA_PORT: ${RDE_KAFKA_PORT}
 
   postgres-consumer:
-    image: luieitalian/postgres-consumer
+    image: berkepite/postgres-consumer
     container_name: postgres-consumer
     networks:
       - network
@@ -163,8 +170,15 @@ services:
     env_file:
       - .env
     environment:
+      POSTGRES_HOST: ${RDE_POSTGRES_HOST}
+      POSTGRES_PORT: ${RDE_POSTGRES_PORT}
+      POSTGRES_DB: ${RDE_POSTGRES_DB}
       POSTGRES_USER: ${RDE_POSTGRES_USER}
       POSTGRES_PASSWORD: ${RDE_POSTGRES_PASSWORD}
+      KAFKA_RAW_RATE_TOPIC: ${RDE_KAFKA_RAW_RATE_TOPIC}
+      KAFKA_CALC_RATE_TOPIC: ${RDE_KAFKA_CALC_RATE_TOPIC}
+      KAFKA_HOST: ${RDE_KAFKA_HOST}
+      KAFKA_PORT: ${RDE_KAFKA_PORT}
 
   opensearch:
     image: opensearchproject/opensearch:latest
@@ -211,6 +225,11 @@ services:
     entrypoint: sh -c "envsubst < /usr/share/filebeat/filebeat.tpl.yml > /usr/share/filebeat/filebeat.yml && filebeat -e -strict.perms=false"
     env_file:
       - .env
+    environment:
+      LOGSTASH_HOST: ${RDE_LOGSTASH_HOST}
+      LOGSTASH_PORT: ${RDE_LOGSTASH_PORT}
+      OPENSEARCH_USERNAME: ${RDE_OPENSEARCH_USERNAME}
+      OPENSEARCH_PASSWORD: ${RDE_OPENSEARCH_PASSWORD}
     networks:
       - network
     depends_on:
@@ -226,13 +245,17 @@ services:
       - ./logstash.conf:/usr/share/logstash/pipeline/logstash.conf
     env_file:
       - .env
+    environment:
+      OPENSEARCH_HOST: ${RDE_OPENSEARCH_HOST}
+      OPENSEARCH_PORT: ${RDE_OPENSEARCH_PORT}
+      OPENSEARCH_USERNAME: ${RDE_OPENSEARCH_USERNAME}
+      OPENSEARCH_PASSWORD: ${RDE_OPENSEARCH_PASSWORD}
+      LS_JAVA_OPTS: "-Xms256m -Xmx512m"
     depends_on:
       opensearch:
         condition: service_healthy
       filebeat:
         condition: service_started
-    environment:
-      LS_JAVA_OPTS: "-Xms256m -Xmx512m"
 
 networks:
   network:

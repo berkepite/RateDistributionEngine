@@ -99,7 +99,7 @@ public class RateManager implements IRateManager {
                 if (!rateCalculator.hasAtLeastOnePercentDiff(incomingRate, meanRate)) {
                     rateCacheService.saveRawRate(incomingRate);
                 } else {
-                    LOGGER.info("Incoming Rate ({}:{}) does have more than %1 difference.",
+                    LOGGER.info("Incoming Rate ({}:{}) does have more than %1 difference. Dropping rate...",
                             incomingRate.getProvider(),
                             incomingRate.getType());
                     return;
@@ -110,7 +110,8 @@ public class RateManager implements IRateManager {
                 calculateAndSaveUSDMID(incomingRate);
                 calculateAndSaveForUSD_TRY(incomingRate);
 
-                rawRateTypesExcludingUSD_TRY.forEach(this::calculateAndSaveForType);
+                if (!rawRateTypesExcludingUSD_TRY.isEmpty())
+                    rawRateTypesExcludingUSD_TRY.forEach(this::calculateAndSaveForType);
 
             } else {
                 calculateAndSaveForType(incomingRate.getType());
@@ -136,8 +137,8 @@ public class RateManager implements IRateManager {
                 LOGGER.warn("No usdmid found in cache while calculating for type: {}. Aborting...", type);
                 return;
             }
-            List<RawRate> allRawRates = rateCacheService.getAllRawRatesForType(type);
 
+            List<RawRate> allRawRates = rateCacheService.getAllRawRatesForType(type);
             if (allRawRates.isEmpty()) {
                 LOGGER.error("No raw rates found in cache while calculating for type {}. Aborting...", type);
                 return;

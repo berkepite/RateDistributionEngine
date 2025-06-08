@@ -1,7 +1,6 @@
 package com.berkepite.RateDistributionEngine.controller;
 
 import com.berkepite.RateDistributionEngine.common.coordinator.ICoordinator;
-import com.berkepite.RateDistributionEngine.common.subscriber.ISubscriber;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -26,8 +25,11 @@ public class AppController {
     }
 
     @GetMapping("/subscribers")
-    public List<ISubscriber> subscribers() {
-        return coordinator.getSubscribers();
+    public List<String> subscribers() {
+        return coordinator.getSubscribers()
+                .stream()
+                .map(s -> s.getConfig().getName())
+                .toList();
     }
 
     @PostMapping("/subscribe")
@@ -42,13 +44,13 @@ public class AppController {
         return coordinator.unSubscribe(subscriber, rates);
     }
 
-    @PostMapping("/connect")
+    @GetMapping("/connect")
     public String connect(@RequestParam String subscriber) {
         LOGGER.warn("Received connect request: {}", subscriber);
         return coordinator.connect(subscriber);
     }
 
-    @PostMapping("/disconnect")
+    @GetMapping("/disconnect")
     public String disconnect(@RequestParam String subscriber) {
         LOGGER.warn("Received disconnect request: {}", subscriber);
         return coordinator.disconnect(subscriber);

@@ -1,6 +1,6 @@
 package com.berkepite.RateDistributionEngine.subscriber;
 
-import com.berkepite.RateDistributionEngine.MainApplication32BitApplication;
+import com.berkepite.RateDistributionEngine.RateDistributionEngineApplication;
 import com.berkepite.RateDistributionEngine.common.coordinator.ICoordinator;
 import com.berkepite.RateDistributionEngine.common.coordinator.ISubscriberBindingConfig;
 import com.berkepite.RateDistributionEngine.common.subscriber.ISubscriber;
@@ -31,7 +31,7 @@ public class SubscriberLoader implements ISubscriberLoader {
             }
 
             URL jarURL = jarFile.toURI().toURL();  // Convert the file path to a URL
-            URLClassLoader classLoader = new URLClassLoader(new URL[]{jarURL}, MainApplication32BitApplication.class.getClassLoader());
+            URLClassLoader classLoader = new URLClassLoader(new URL[]{jarURL}, RateDistributionEngineApplication.class.getClassLoader());
 
             ISubscriberConfig subscriberConfig = loadConfig(classLoader, bindingConfig);
             ISubscriber instance = loadSubscriber(classLoader, bindingConfig, coordinator, subscriberConfig);

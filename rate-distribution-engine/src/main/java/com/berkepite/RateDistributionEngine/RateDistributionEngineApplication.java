@@ -7,9 +7,9 @@ import org.springframework.boot.context.properties.EnableConfigurationProperties
 
 @SpringBootApplication
 @EnableConfigurationProperties(CoordinatorConfig.class)
-public class MainApplication32BitApplication {
+public class RateDistributionEngineApplication {
     public static void main(String[] args) {
-        SpringApplication.run(MainApplication32BitApplication.class, args);
+        SpringApplication.run(RateDistributionEngineApplication.class, args);
     }
 
 }

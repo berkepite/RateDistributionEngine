@@ -1,4 +1,4 @@
-package com.berkepite.RateDistributionEngine.producer;
+package com.berkepite.RateDistributionEngine.config;
 
 import com.berkepite.RateDistributionEngine.common.rate.CalculatedRate;
 import com.berkepite.RateDistributionEngine.common.rate.RawRate;

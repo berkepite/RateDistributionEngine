@@ -1,3 +1,3 @@
-fatal:enderbud125@hotmail.com,berke.pite@ogr.sakarya.edu.tr,berkepite@hotmail.com
-info:enderbud125@hotmail.com
-warn:enderbud125@hotmail.com,berkepite@hotmail.com
+fatal:berke.pite@ogr.sakarya.edu.tr,berkepite@hotmail.com
+info:berke.pite@ogr.sakarya.edu.tr
+warn:berkepite@hotmail.com

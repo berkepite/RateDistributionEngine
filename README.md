@@ -1,85 +1,84 @@
-## **📌 32Bit SAU2025-BE Project**
+# Rate Distribution Engine - SAÜ 2025 32BIT BACKEND PROJECT
 
-# SAU2025-BE: Real-Time Forex Data Processing System
+A high-performance real-time forex data processing system that aggregates, processes, and distributes foreign exchange
+rates from multiple sources.
 
-## 📖 Overview
+## 🚀 Features
 
-**32Bit SAU2025-BE** is a backend application designed to fetch, process, and distribute real-time foreign exchange (
-forex)
-rates. The system integrates with multiple financial data platforms, cleans incoming data, performs calculations, and
-provides structured forex data. It also supports real-time monitoring and logging.
+- **Multi-Source Integration**
+    - TCP-based real-time streaming
+    - REST API data fetching
+    - Support for multiple data providers
+    - Dynamic loading of subscribers
 
-### **🎯 Key Functionalities**
+- **Real-Time Processing**
+    - BID & ASK rate aggregation
+    - Dynamic rate calculations
+    - 1% tolerance rule for anomaly detection
+    - Real-time data validation and cleaning
 
-- ✅ **Multi-Platform Data Fetching:** Supports TCP and REST API-based data providers.
-- ✅ **Real-Time Data Processing:** Aggregates BID & ASK rates and calculates derived currency values.
-- ✅ **Data Cleaning & Validation:** Applies a **1% tolerance rule** to remove anomalies.
-- ✅ **Caching:** Uses **Redis** for storing raw and processed raw rate data.
-- ✅ **Logging & Monitoring:** Uses **Log4j2** for logging, with filebeat & logstash inserting into OpenSearch.
-- ✅ **Dynamic Calculation of Rates:** Supports dynamic computation using JavaScript, Python.
+- **Advanced Architecture**
+    - Redis-based caching system
+    - Kafka message streaming
+    - PostgreSQL for persistent storage
+    - OpenSearch for analytics and monitoring
 
----
+- **Dynamic Calculations**
+    - JavaScript and Python script support with GraalVM
+    - Runtime script loading
+    - Configurable calculation methods
 
-## ⚙️ System Architecture
+## 🏗️ System Architecture
 
-### **📌 Data Flow**
+### Data Flow
 
-1. **Platform 1 (PF1 - TCP Stream):**
-    - Provides raw rates via **TCP socket streaming**.
-2. **Platform 2 (PF2 - REST API):**
-    - Provides raw rates via **HTTP REST API**.
-3. **Main Application:**
-    - Fetches, cleans, and processes raw data via dynamically loaded methods from **Javascript & Python**.
-    - Stores raw rates in **cache (Redis)** for quick access.
-    - Publishes raw rate & calculated rate to **Kafka** for storage and further analysis.
-4. **Kafka Postgres Consumer:**
-    - Consumes raw rate data and inserts it into **PostgreSQL**.
-5. **Kafka Opensearch Consumer:**
-    - Consumes raw rate & calculated rate data and inserts them into **OpenSearch**.
+```mermaid
+graph LR
+    A[TCP Platform] --> D[Rate Distribution Engine]
+    B[REST Platform] --> D
+    D --> E[Redis Cache]
+    D --> F[Kafka]
+    F --> G[PostgreSQL]
+    F --> H[OpenSearch]
+```
 
-> **Note:** Calculation formulas are **dynamically loaded** and can be changed via **coordinator configuration** (
-> JavaScript, Python).
+1. **Data Ingestion**
+    - TCP Platform: Real-time streaming via TCP sockets
+    - REST Platform: HTTP-based rate fetching
 
----
+2. **Processing Pipeline**
+    - Data validation and cleaning
+    - Rate calculations
+    - Cache management
+    - Message publishing
 
-## 🛠️ Technologies Used
+3. **Storage & Analytics**
+    - Raw rate storage in PostgreSQL
+    - Analytics and monitoring in OpenSearch
+    - Real-time caching in Redis
 
-| Component                 | Technology            |
-|---------------------------|-----------------------|
-| **Backend Framework**     | Java (Spring Boot)    |
-| **Streaming & Messaging** | Kafka                 |
-| **Database**              | PostgreSQL            |
-| **Caching**               | Redis                 |
-| **Logging**               | Log4j2, OpenSearch    |
-| **Log Management**        | Filebeat & Logstash   |
-| **Monitoring**            | OpenSearch Dashboards |
+## 🛠️ Technology Stack
 
----
+| Component          | Technology            |
+|--------------------|-----------------------|
+| Backend            | Java (Spring Boot)    |
+| Message Broker     | Apache Kafka          |
+| Database           | PostgreSQL            |
+| Cache              | Redis                 |
+| Search & Analytics | OpenSearch            |
+| Logging            | Log4j2                |
+| Log Management     | Filebeat & Logstash   |
+| Monitoring         | OpenSearch Dashboards |
 
-## 📜 Logging & Alerts
+## 📦 Data Formats
 
-The application logs various events:
-- Receiving rate from platforms,
-- Subscriber events (errors, shutdown processes),
-- If a function takes too long to execute
-
-## 📡 Platform Simulation
-
-The project includes **two platforms** for raw rate.
-They both simulate **live raw rate streaming**.
-
-### **1️⃣ [TCP-Based Platform](https://github.com/berkepite/TCPPlatform)**
-
-- Provides raw data via TCP connection.
-- Can be tested via **Telnet**
+### TCP Platform Format
 
 ```
 name=USDTRY|bid=34.44|ask=35.43|timestamp=2024-12-14T21:18:21
 ```
 
-### **2️⃣ [REST API-Based Platform](https://github.com/berkepite/RestPlatform)**
-
-- Provides raw data via REST API.
+### REST Platform Format
 
 ```json
 {
@@ -90,12 +89,32 @@ name=USDTRY|bid=34.44|ask=35.43|timestamp=2024-12-14T21:18:21
 }
 ```
 
----
+## 🔍 Monitoring & Logging
 
-## 📦 Kafka Producer
+The system provides comprehensive monitoring through:
 
-The Kafka Producer:
+- Real-time rate processing logs
+- Subscriber event tracking
+- Error tracking and alerts
 
-- Writes raw rate and calculated rate data to **Kafka topics**.
+## 🚀 Getting Started
 
----
+1. **Prerequisites**
+    - Java 17 or higher
+    - Docker and Docker Compose
+
+2. **Installation**
+   ```bash
+   git clone [repository-url]
+   cd RateDistributionEngine
+   ```
+
+3. **Running the Application**
+   ```bash
+   # Start all required services (Kafka, Redis, PostgreSQL, OpenSearch)
+   docker-compose up -d
+   ```
+
+## 👥 Authors
+
+- Berke Pite

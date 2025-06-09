@@ -88,8 +88,6 @@ graph LR
 | Log Management     | Filebeat & Logstash   |
 | Monitoring         | OpenSearch Dashboards |
 
-Tabii! İşte İngilizce ve README’ye eklemeye uygun şekilde kısaltılmış hali:
-
 ---
 
 ## Platform Overview

@@ -15,6 +15,14 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
+/**
+ * Factory service responsible for creating and providing the appropriate {@link IRateCalculator}
+ * implementation based on the configured rate calculation strategy.
+ * <p>
+ * Supports multiple calculation strategies such as JavaScript and Python.
+ * The implementation is loaded dynamically and initialized at startup.
+ * </p>
+ */
 @Service
 public class CalculatorFactory implements ICalculatorFactory {
     private static final Logger LOGGER = LogManager.getLogger(CalculatorFactory.class);
@@ -24,12 +32,26 @@ public class CalculatorFactory implements ICalculatorFactory {
     private final IRateConverter rateConverter;
     private final ICalculatorLoader calculatorLoader;
 
+    /**
+     * The calculation strategy defined in application properties,
+     * used to determine which calculator implementation to load.
+     */
     @Value("${app.rate-calculation-strategy}")
     private String rateCalculationStrategy;
 
+    /**
+     * The path to the rate calculator implementation, loaded at initialization.
+     */
     @Value("${app.rate-calculator-path}")
     private String rateCalculatorPath;
 
+    /**
+     * Constructs the CalculatorFactory with required dependencies.
+     *
+     * @param rateFactory      factory to create rate instances
+     * @param rateConverter    converter to handle rate conversions
+     * @param calculatorLoader loader responsible for loading calculator implementations
+     */
     @Autowired
     public CalculatorFactory(IRateFactory rateFactory, IRateConverter rateConverter, ICalculatorLoader calculatorLoader) {
         this.rateFactory = rateFactory;
@@ -37,6 +59,12 @@ public class CalculatorFactory implements ICalculatorFactory {
         this.calculatorLoader = calculatorLoader;
     }
 
+    /**
+     * Initializes the calculator factory by loading the appropriate calculator
+     * based on the configured calculation strategy.
+     *
+     * @throws CalculatorException if the strategy is unsupported or initialization fails.
+     */
     @PostConstruct
     public void init() throws CalculatorException {
         try {
@@ -59,15 +87,27 @@ public class CalculatorFactory implements ICalculatorFactory {
         }
     }
 
+    /**
+     * Returns the initialized {@link IRateCalculator}.
+     *
+     * @return the rate calculator instance
+     * @throws CalculatorException if the calculator is not initialized.
+     */
     @Override
     public IRateCalculator getCalculator() throws CalculatorException {
-        if (!(rateCalculator == null)) {
+        if (rateCalculator != null) {
             return rateCalculator;
         } else {
             throw new CalculatorException("Rate calculator does not exist!");
         }
     }
 
+    /**
+     * Creates and initializes a JavaScript-based calculator.
+     *
+     * @return the initialized {@link JavascriptCalculator}
+     * @throws CalculatorException if initialization fails.
+     */
     private JavascriptCalculator getJavascriptCalculator() throws CalculatorException {
         var c = new JavascriptCalculator(rateFactory, rateConverter, calculatorLoader);
         c.init(rateCalculatorPath);
@@ -75,6 +115,12 @@ public class CalculatorFactory implements ICalculatorFactory {
         return c;
     }
 
+    /**
+     * Creates and initializes a Python-based calculator.
+     *
+     * @return the initialized {@link PythonCalculator}
+     * @throws CalculatorException if initialization fails.
+     */
     private PythonCalculator getPythonCalculator() throws CalculatorException {
         var c = new PythonCalculator(rateFactory, rateConverter, calculatorLoader);
         c.init(rateCalculatorPath);

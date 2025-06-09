@@ -10,7 +10,19 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
+/**
+ * RateMapper is responsible for converting raw string data received from the TCP subscriber
+ * into {@link RawRate} objects and mapping between rate enums and endpoint strings.
+ */
 public class RateMapper {
+
+    /**
+     * Parses a raw rate data string and creates a {@link RawRate} object.
+     *
+     * @param data raw rate data in the format "name=XXX|bid=XXX|ask=XXX|timestamp=XXX"
+     * @return the parsed {@link RawRate}
+     * @throws SubscriberRateException if the data cannot be parsed correctly
+     */
     public RawRate createRawRate(String data) throws SubscriberRateException {
         RawRate rate = new RawRate();
 
@@ -36,6 +48,12 @@ public class RateMapper {
         return rate;
     }
 
+    /**
+     * Converts a rate enum string (e.g. "EUR_USD") to an endpoint string by removing underscores (e.g. "EURUSD").
+     *
+     * @param rate the rate enum string
+     * @return the corresponding endpoint string
+     */
     public String mapRateEnumToEndpoint(String rate) {
         String endpoint;
         endpoint = rate.replace("_", "");
@@ -43,6 +61,12 @@ public class RateMapper {
         return endpoint;
     }
 
+    /**
+     * Converts a list of rate enum strings to their corresponding endpoint strings.
+     *
+     * @param rates list of rate enum strings
+     * @return list of endpoint strings
+     */
     public List<String> mapRateEnumToEndpoints(List<String> rates) {
         List<String> endpoints = new ArrayList<>();
         rates.forEach(r -> endpoints.add(mapRateEnumToEndpoint(r)));
@@ -50,6 +74,13 @@ public class RateMapper {
         return endpoints;
     }
 
+    /**
+     * Converts an endpoint string (e.g. "EURUSD") back to a rate enum string by inserting an underscore (e.g. "EUR_USD").
+     *
+     * @param rateStr the endpoint string
+     * @return the corresponding rate enum string
+     * @throws Exception if the conversion fails
+     */
     public String mapEndpointToRateEnum(String rateStr) throws Exception {
         String rate;
         rate = rateStr.substring(0, 3) + "_" + rateStr.substring(3);

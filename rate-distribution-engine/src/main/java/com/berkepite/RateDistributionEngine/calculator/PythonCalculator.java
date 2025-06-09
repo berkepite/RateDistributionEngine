@@ -19,7 +19,18 @@ import java.io.IOException;
 import java.nio.file.Path;
 import java.time.Instant;
 
+/**
+ * Implementation of the {@link IRateCalculator} interface that uses
+ * a Python script to perform various rate calculations.
+ * <p>
+ * This calculator loads a Python source file and executes specific
+ * Python functions using GraalVM's polyglot API to calculate rates.
+ * It supports calculating mean rates, raw rate types, USD/TRY rates,
+ * and checks for differences in rates.
+ * </p>
+ */
 public class PythonCalculator implements IRateCalculator {
+
     private final Logger LOGGER = LogManager.getLogger(PythonCalculator.class);
     private final IRateFactory rateFactory;
     private final IRateConverter rateConverter;
@@ -28,12 +39,25 @@ public class PythonCalculator implements IRateCalculator {
     private Source source;
     private String path;
 
+    /**
+     * Constructs a PythonCalculator instance with required dependencies.
+     *
+     * @param rateFactory      Factory to create rate objects.
+     * @param rateConverter    Converter to convert between raw and calculated rate types.
+     * @param calculatorLoader Loader responsible for loading the Python source file.
+     */
     public PythonCalculator(IRateFactory rateFactory, IRateConverter rateConverter, ICalculatorLoader calculatorLoader) {
         this.rateFactory = rateFactory;
         this.calculatorLoader = calculatorLoader;
         this.rateConverter = rateConverter;
     }
 
+    /**
+     * Initializes the calculator by loading the Python source file from the given path.
+     *
+     * @param calculatorPath Path to the Python calculator script.
+     * @throws CalculatorException If the source file cannot be loaded or read.
+     */
     @Override
     public void init(String calculatorPath) throws CalculatorException {
         setPath(calculatorPath);
@@ -41,19 +65,25 @@ public class PythonCalculator implements IRateCalculator {
         try {
             Path _path = calculatorLoader.load(calculatorPath);
             source = Source.newBuilder("python", _path.toFile()).build();
-
         } catch (IOException e) {
             throw new CalculatorLoadingException("Could not load calculator source.", e);
         }
     }
 
+    /**
+     * Calculates the mean bid and ask rates using the Python calculator.
+     *
+     * @param bids Array of bid prices.
+     * @param asks Array of ask prices.
+     * @return {@link MeanRate} containing the calculated mean bid and ask.
+     * @throws CalculatorException If calculation fails.
+     */
     @Override
     public MeanRate calculateMeanRate(Double[] bids, Double[] asks) throws CalculatorException {
         try (Context context = Context.newBuilder("python")
                 .allowAllAccess(true)
                 .build()) {
             Value module = context.eval(source);
-
             Value m_calculateMeanRate = module.getMember("calculate_mean_rate");
             Value result = m_calculateMeanRate.execute(bids, asks);
 
@@ -66,13 +96,23 @@ public class PythonCalculator implements IRateCalculator {
         }
     }
 
+    /**
+     * Calculates a {@link CalculatedRate} for a given raw rate type using USD mid rate,
+     * bids, and asks via the Python calculator.
+     *
+     * @param type   Raw rate type identifier.
+     * @param usdmid USD mid price.
+     * @param bids   Array of bid prices.
+     * @param asks   Array of ask prices.
+     * @return {@link CalculatedRate} result for the specified rate type.
+     * @throws CalculatorException If calculation fails.
+     */
     @Override
     public CalculatedRate calculateForRawRateType(String type, Double usdmid, Double[] bids, Double[] asks) throws CalculatorException {
         try (Context context = Context.newBuilder("python")
                 .allowAllAccess(true)
                 .build()) {
             Value module = context.eval(source);
-
             Value calculateForType = module.getMember("calculate_for_raw_rate_type");
             Value result = calculateForType.execute(usdmid, bids, asks);
 
@@ -85,13 +125,20 @@ public class PythonCalculator implements IRateCalculator {
         }
     }
 
+    /**
+     * Calculates the USD/TRY exchange rate using the Python calculator.
+     *
+     * @param bids Array of bid prices.
+     * @param asks Array of ask prices.
+     * @return {@link CalculatedRate} for USD/TRY.
+     * @throws CalculatorException If calculation fails.
+     */
     @Override
     public CalculatedRate calculateForUSD_TRY(Double[] bids, Double[] asks) throws CalculatorException {
         try (Context context = Context.newBuilder("python")
                 .allowAllAccess(true)
                 .build()) {
             Value module = context.eval(source);
-
             Value m_calculateForUSD_TRY = module.getMember("calculate_for_USD_TRY");
             Value result = m_calculateForUSD_TRY.execute(bids, asks);
 
@@ -106,7 +153,14 @@ public class PythonCalculator implements IRateCalculator {
         }
     }
 
-
+    /**
+     * Checks whether the incoming raw rate differs from the mean rate by at least 1%.
+     *
+     * @param incomingRate The raw incoming rate.
+     * @param meanRate     The calculated mean rate.
+     * @return true if difference is at least 1%, false otherwise.
+     * @throws CalculatorException If the calculation fails.
+     */
     @Override
     public boolean hasAtLeastOnePercentDiff(RawRate incomingRate, MeanRate meanRate) throws CalculatorException {
         try (Context context = Context.newBuilder("python")
@@ -124,6 +178,14 @@ public class PythonCalculator implements IRateCalculator {
         }
     }
 
+    /**
+     * Calculates the USD mid price from bids and asks using the Python calculator.
+     *
+     * @param bids Array of bid prices.
+     * @param asks Array of ask prices.
+     * @return Calculated USD mid price as a Double.
+     * @throws CalculatorException If calculation fails.
+     */
     @Override
     public Double calculateUSDMID(Double[] bids, Double[] asks) throws CalculatorException {
         try (Context context = Context.newBuilder("python")
@@ -140,21 +202,41 @@ public class PythonCalculator implements IRateCalculator {
         }
     }
 
+    /**
+     * Returns the strategy identifier for this calculator.
+     *
+     * @return The string "PYTHON".
+     */
     @Override
     public String getStrategy() {
         return "PYTHON";
     }
 
+    /**
+     * Returns the path of the loaded Python calculator script.
+     *
+     * @return Path string of the Python source file.
+     */
     @Override
     public String getPath() {
         return path;
     }
 
+    /**
+     * Returns the logger instance used by this class.
+     *
+     * @return Logger instance.
+     */
     @Override
     public Logger getLogger() {
         return LOGGER;
     }
 
+    /**
+     * Sets the path of the Python calculator script.
+     *
+     * @param path Path string.
+     */
     private void setPath(String path) {
         this.path = path;
     }

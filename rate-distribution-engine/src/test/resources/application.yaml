@@ -1,0 +1,51 @@
+spring:
+  application:
+    name: "RateDistributionEngine"
+  profiles:
+    active: test
+  data:
+    redis:
+      host: redis
+      port: 5322
+  cache:
+    type: simple
+  kafka:
+    bootstrap-servers: dummy:1234
+  mail:
+    host: smtp.gmail.com
+    port: 587
+    username: A
+    password: B
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
+
+app:
+  coordinator:
+    subscriber-bindings:
+      - name: "RestSubscriber"
+        enabled: false
+        configName: "rest-config.yaml"
+        jarName: "rest-subscriber-0.0.1.jar"
+        classPath: "com.berkepite.RateDistributionEngine.RestSubscriber.RestSubscriber"
+        configClassPath: "com.berkepite.RateDistributionEngine.RestSubscriber.RestConfig"
+      - name: "TCPSubscriber"
+        enabled: false
+        configName: "tcp-config.yaml"
+        jarName: "tcp-subscriber-0.0.1.jar"
+        classPath: "com.berkepite.RateDistributionEngine.TCPSubscriber.TCPSubscriber"
+        configClassPath: "com.berkepite.RateDistributionEngine.TCPSubscriber.TCPConfig"
+    rates: USD_TRY,GBP_USD
+  rate-calculation-strategy: JAVASCRIPT
+  rate-calculator-path: src/test/resources/rate_calculators/js-test-valid.mjs
+  kafka:
+    raw-rate-topic: raw_rates
+    calc-rate-topic: calc_rates
+  email:
+    group-file: false
+    enabled: false
+  api:
+    password: 1234

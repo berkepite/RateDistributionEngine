@@ -20,9 +20,11 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 
 /**
- * The BloombergRestSubscriber connects to the Bloomberg REST API to subscribe to rates
- * and handle the communication with the server.
- * It manages connection retries, rate subscriptions, and rate updates.
+ * RestSubscriber is responsible for subscribing to currency rate updates from a REST API.
+ * It manages HTTP connections, subscription lifecycle, and forwards rate updates to a coordinator.
+ * <p>
+ * This class handles connection health checks, subscription requests, rate update polling,
+ * and retries on failure with configurable limits and intervals.
  */
 public class RestSubscriber implements ISubscriber {
     private static final Logger LOGGER = LogManager.getLogger(RestSubscriber.class);
@@ -36,6 +38,12 @@ public class RestSubscriber implements ISubscriber {
     private volatile Map<String, Boolean> ratesToSubscribe;
     private volatile boolean isRequesting = false;
 
+    /**
+     * Constructs a RestSubscriber with the given coordinator and subscriber configuration.
+     *
+     * @param coordinator The coordinator to notify about subscription events and rate updates.
+     * @param config      The subscriber configuration (cast to RestConfig).
+     */
     public RestSubscriber(ICoordinator coordinator, ISubscriberConfig config) {
         this.config = (RestConfig) config;
         this.coordinator = coordinator;
@@ -46,7 +54,9 @@ public class RestSubscriber implements ISubscriber {
     }
 
     /**
-     * Initializes the subscriber and prepares it for connection by setting up necessary shutdown hooks and credentials.
+     * Initializes the subscriber, setting up credentials and shutdown hook.
+     *
+     * @throws Exception If initialization fails.
      */
     public void init() throws Exception {
         try {
@@ -65,8 +75,9 @@ public class RestSubscriber implements ISubscriber {
     }
 
     /**
-     * Attempts to connect to the Bloomberg REST API and checks the health of the connection.
-     * If successful, it notifies the coordinator.
+     * Connects to the REST API by performing a health check.
+     *
+     * @throws Exception If connection or health check fails.
      */
     @Override
     public void connect() throws Exception {
@@ -78,6 +89,11 @@ public class RestSubscriber implements ISubscriber {
         }
     }
 
+    /**
+     * Attempts to connect by sending a health check request with retry logic.
+     *
+     * @throws SubscriberException If health check fails after retries.
+     */
     private void tryConnect() throws SubscriberException {
         HttpRequest healthRequest = createHealthRequest();
 
@@ -95,10 +111,10 @@ public class RestSubscriber implements ISubscriber {
     }
 
     /**
-     * Subscribes to a list of rates based on the provided list of rate enums.
-     * It sends subscription requests to the Bloomberg REST API.
+     * Subscribes to the given list of currency rates.
+     * Starts polling for rate updates in separate threads.
      *
-     * @param rates the list of rates to subscribe to
+     * @param rates List of rate identifiers to subscribe to.
      */
     @Override
     public void subscribe(List<String> rates) {
@@ -124,8 +140,14 @@ public class RestSubscriber implements ISubscriber {
         }
     }
 
+    /**
+     * Tries to subscribe to a single rate endpoint, with retries.
+     * Starts a background thread to keep polling the rate updates.
+     *
+     * @param endpoint The rate endpoint to subscribe to.
+     * @throws SubscriberException If subscription fails.
+     */
     private void trySubscribeToRate(String endpoint) throws SubscriberException {
-        // Attempt to subscribe to each rate endpoint
         HttpRequest req = createRateRequest(endpoint);
 
         executeWithRetry("Subscribing to rate: %s".formatted(endpoint), config.getHealthRequestRetryLimit(), config.getRequestInterval(), () -> {
@@ -152,9 +174,11 @@ public class RestSubscriber implements ISubscriber {
     }
 
     /**
-     * Subscribes to a specific rate endpoint by sending repeated requests with retries.
+     * Polls the rate endpoint repeatedly to get updates and notify the coordinator.
+     * Stops polling when unsubscribed or thread interrupted.
      *
-     * @param endpoint the endpoint to subscribe to
+     * @param endpoint The rate endpoint to poll.
+     * @throws SubscriberException If requests fail or thread is interrupted.
      */
     private void subscribeToRate(String endpoint) throws SubscriberException {
         HttpRequest req = createRateRequest(endpoint);
@@ -165,7 +189,6 @@ public class RestSubscriber implements ISubscriber {
                 throw new SubscriberConnectionException("Subscribing thread interrupted for rate: %s ".formatted(endpoint));
             }
 
-            // if ratesToSubscribe map does contain a key with an endpoint, and it has a false value, then break the loop
             while (isRequesting && ratesToSubscribe.get(endpoint) && !Thread.currentThread().isInterrupted()) {
                 HttpResponse<String> response = httpClient.send(req, HttpResponse.BodyHandlers.ofString());
 
@@ -186,6 +209,12 @@ public class RestSubscriber implements ISubscriber {
         });
     }
 
+    /**
+     * Unsubscribes from the given list of currency rates.
+     * Stops polling the rates and notifies the coordinator.
+     *
+     * @param rates List of rate identifiers to unsubscribe from.
+     */
     @Override
     public void unSubscribe(List<String> rates) {
         List<String> endpoints = rateMapper.mapRateEnumToEndpoints(rates);
@@ -195,6 +224,9 @@ public class RestSubscriber implements ISubscriber {
         coordinator.onUnSubscribe(this, rates);
     }
 
+    /**
+     * Disconnects the subscriber by stopping all ongoing requests and closing the HTTP client.
+     */
     @Override
     public void disConnect() {
         isRequesting = false;
@@ -223,15 +255,21 @@ public class RestSubscriber implements ISubscriber {
         return LOGGER;
     }
 
+    /**
+     * Sets a custom HttpClient, mainly for testing purposes.
+     *
+     * @param httpClient The HttpClient instance to use.
+     */
     public void setHttpClient(HttpClient httpClient) {
         this.httpClient = httpClient;
     }
 
     /**
-     * Creates an HTTP request to subscribe to a specific rate endpoint.
+     * Creates an HTTP request for a specific currency rate endpoint.
      *
-     * @param endpoint the endpoint to send the request to
-     * @return the constructed HTTP request
+     * @param endpoint The rate endpoint to request.
+     * @return The constructed HttpRequest.
+     * @throws SubscriberException If request creation fails.
      */
     private HttpRequest createRateRequest(String endpoint) throws SubscriberException {
         try {
@@ -247,9 +285,10 @@ public class RestSubscriber implements ISubscriber {
     }
 
     /**
-     * Creates an HTTP health check request.
+     * Creates an HTTP request to check the health of the REST API.
      *
-     * @return the constructed HTTP health check request
+     * @return The constructed health check HttpRequest.
+     * @throws SubscriberException If request creation fails.
      */
     private HttpRequest createHealthRequest() throws SubscriberException {
         try {
@@ -263,6 +302,12 @@ public class RestSubscriber implements ISubscriber {
         }
     }
 
+    /**
+     * Finds the root cause of a throwable by traversing the cause chain.
+     *
+     * @param throwable The throwable to analyze.
+     * @return The root cause throwable.
+     */
     private Throwable getRootCause(Throwable throwable) {
         Throwable cause = throwable;
         while (cause.getCause() != null) {
@@ -271,6 +316,16 @@ public class RestSubscriber implements ISubscriber {
         return cause;
     }
 
+    /**
+     * Executes an operation with retry logic.
+     * Retries the operation up to retryLimit times, waiting intervalMillis between attempts.
+     *
+     * @param operationDesc  Description of the operation (for logging).
+     * @param retryLimit     Number of retries allowed.
+     * @param intervalMillis Wait interval between retries in milliseconds.
+     * @param operation      The operation to execute that may throw exceptions.
+     * @throws SubscriberConnectionException If all retries fail.
+     */
     private void executeWithRetry(String operationDesc,
                                   int retryLimit,
                                   int intervalMillis,

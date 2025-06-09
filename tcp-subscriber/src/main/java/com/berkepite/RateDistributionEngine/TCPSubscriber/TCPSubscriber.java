@@ -19,11 +19,22 @@ import java.util.List;
 import java.util.concurrent.*;
 
 /**
- * TCPSubscriber is a subscriber that connects to the  TCP service to subscribe to rate updates.
- * It listens for incoming rate data and handles connection errors and subscription management.
+ * TCPSubscriber connects to a TCP-based rate service to subscribe to currency rate updates.
+ * <p>
+ * It manages the connection lifecycle including authentication, subscription management,
+ * and asynchronous listening for incoming rate data.
+ * </p>
+ * <p>
+ * The subscriber handles retry logic on connection failures and notifies a coordinator
+ * about rate updates, connection status, and errors.
+ * </p>
+ * <p>
+ * It supports dynamic subscription and unsubscription to specific rate endpoints,
+ * and maintains internal thread pools to process incoming data asynchronously.
+ * </p>
  */
-
 public class TCPSubscriber implements ISubscriber {
+
     private final TCPConfig config;
     private final RateMapper rateMapper;
     private final ICoordinator coordinator;
@@ -37,6 +48,12 @@ public class TCPSubscriber implements ISubscriber {
     private volatile boolean isListeningForInitialResponses = true;
     private volatile boolean isListeningForRates = true;
 
+    /**
+     * Constructs a TCPSubscriber with the given coordinator and configuration.
+     *
+     * @param coordinator the coordinator that handles subscriber events
+     * @param config      the subscriber configuration (must be of type {@link TCPConfig})
+     */
     public TCPSubscriber(ICoordinator coordinator, ISubscriberConfig config) {
         this.rateMapper = new RateMapper();
         this.config = (TCPConfig) config;
@@ -44,6 +61,13 @@ public class TCPSubscriber implements ISubscriber {
         this.coordinator = coordinator;
     }
 
+    /**
+     * Initializes the TCP connection and prepares input/output streams.
+     *
+     * @throws SubscriberConnectionException if the host cannot be resolved,
+     *                                       port is invalid, or I/O error occurs
+     * @throws SubscriberException           for any unexpected errors
+     */
     @Override
     public void init() throws Exception {
         try {
@@ -51,9 +75,11 @@ public class TCPSubscriber implements ISubscriber {
             this.writer = new PrintWriter(socket.getOutputStream(), true);
             this.reader = new BufferedReader(new InputStreamReader(socket.getInputStream()));
         } catch (UnknownHostException e) {
-            throw new SubscriberConnectionException("The IP address of the host could not be determined! : %s".formatted(config.getUrl()), e);
+            throw new SubscriberConnectionException(
+                    "The IP address of the host could not be determined! : %s".formatted(config.getUrl()), e);
         } catch (IllegalArgumentException e) {
-            throw new SubscriberConnectionException("The Port number is out of range : %s (should be 0-65535)!".formatted(config.getPort()), e);
+            throw new SubscriberConnectionException(
+                    "The Port number is out of range : %s (should be 0-65535)!".formatted(config.getPort()), e);
         } catch (IOException e) {
             throw new SubscriberConnectionException("An I/O error has occurred!", e);
         } catch (Exception e) {
@@ -62,7 +88,7 @@ public class TCPSubscriber implements ISubscriber {
 
         Runtime.getRuntime().addShutdownHook(new Thread(() -> {
             try {
-                socket.shutdownInput(); // Shutdown input stream
+                socket.shutdownInput();
             } catch (Exception e) {
                 LOGGER.warn("{}", e.getMessage());
             }
@@ -75,26 +101,26 @@ public class TCPSubscriber implements ISubscriber {
         }, "shutdown-hook-" + config.getName()));
     }
 
-
     /**
-     * Connects to the CNN TCP server using the provided URL and port.
-     * Handles initial authentication and prepares to listen for rate updates.
+     * Connects to the TCP server and performs authentication using credentials.
+     * Listens for initial authentication responses from the server.
+     *
+     * @throws Exception if any connection or communication error occurs
      */
     @Override
     public void connect() throws Exception {
         String credentials = config.getUsername() + ":" + config.getPassword();
-        writer.println(credentials);  // Send credentials for authentication
+        writer.println(credentials);
 
-        // Listen for the server's initial response
         String response;
         while (isListeningForInitialResponses && (response = reader.readLine()) != null) {
-            handleInitialResponses(response); // Handle the response from the server
+            handleInitialResponses(response);
         }
     }
 
     /**
-     * Disconnects from the CNN TCP service.
-     * Stops listening for rate updates and notifies the coordinator.
+     * Disconnects from the TCP service by stopping rate listening
+     * and notifying the coordinator of disconnection.
      */
     @Override
     public void disConnect() {
@@ -102,6 +128,13 @@ public class TCPSubscriber implements ISubscriber {
         coordinator.onDisConnect(this);
     }
 
+    /**
+     * Subscribes to a list of rate types. Combines configured include/exclude lists,
+     * maps rate types to endpoints, and sends subscription requests.
+     * Starts asynchronous listening for incoming rate updates.
+     *
+     * @param rates list of rate types to subscribe to
+     */
     @Override
     public void subscribe(List<String> rates) {
         List<String> ratesToSubscribe = new ArrayList<>(rates);
@@ -114,28 +147,35 @@ public class TCPSubscriber implements ISubscriber {
         }
 
         LOGGER.info("{} trying to subscribe to {} ", config.getName(), ratesToSubscribe);
-        List<String> endpoints = rateMapper.mapRateEnumToEndpoints(ratesToSubscribe);  // Map rate enums to endpoints
+        List<String> endpoints = rateMapper.mapRateEnumToEndpoints(ratesToSubscribe);
 
         executorService.execute(this::listen);
 
         for (String endpoint : endpoints) {
-            writer.println("sub|" + endpoint);  // Send subscription request to the server
+            writer.println("sub|" + endpoint);
         }
     }
 
+    /**
+     * Unsubscribes from the specified rates by sending unsubscription requests
+     * and notifying the coordinator.
+     *
+     * @param rates list of rate types to unsubscribe from
+     */
     @Override
     public void unSubscribe(List<String> rates) {
         List<String> endpoints = rateMapper.mapRateEnumToEndpoints(rates);
 
         for (String endpoint : endpoints) {
-            writer.println("unsub|" + endpoint);  // Send unsubscription request to the server
+            writer.println("unsub|" + endpoint);
             coordinator.onUnSubscribe(this, List.of(endpoint));
         }
     }
 
     /**
-     * Listens for incoming rate data from the server asynchronously.
-     * Reads data from the server and handles the responses.
+     * Asynchronous listening loop for incoming rate data.
+     * Handles retries with configurable limits and intervals.
+     * Notifies coordinator on errors or when retry limit is exceeded.
      */
     private void listen() {
         int retryLimit = config.getRequestRetryLimit();
@@ -148,7 +188,7 @@ public class TCPSubscriber implements ISubscriber {
                     if ((response = reader.readLine()) != null) {
                         final String data = response;
                         if (!data.isEmpty()) {
-                            executorService.execute(() -> handleResponses(data));  // Process the incoming data
+                            executorService.execute(() -> handleResponses(data));
                         }
                     } else {
                         throw new SubscriberConnectionException("Server sent null.");
@@ -175,20 +215,20 @@ public class TCPSubscriber implements ISubscriber {
 
             if (retryLimit < 0) {
                 LOGGER.warn("The listener ({}) stopped listening because retry limit exceeded.", config.getName());
-                executorService.shutdown();  // Shutdown the executor when done listening
+                executorService.shutdown();
                 disConnect();
 
                 coordinator.onSubscriberError(this,
                         new SubscriberConnectionLostException("The listener (%s) stopped listening because retry limit exceeded.".formatted(config.getName())));
             }
         }
-
     }
 
     /**
-     * Handles incoming rate data by creating a RawRate object and notifying the coordinator.
+     * Handles incoming raw data from the TCP server by mapping it to a RawRate object,
+     * and notifies the coordinator with the updated rate.
      *
-     * @param data the raw data received from the server
+     * @param data raw string data received from the server
      */
     private void handleResponses(final String data) {
         try {
@@ -200,21 +240,23 @@ public class TCPSubscriber implements ISubscriber {
     }
 
     /**
-     * Handles the initial responses from the server, including authentication success or failure.
+     * Processes the initial authentication response from the server.
+     * Handles success or failure by adjusting listener state and notifying coordinator.
      *
-     * @param response the response received from the server
+     * @param response the initial server response string
      */
     private void handleInitialResponses(String response) {
         LOGGER.info("Received the following initial responses: {}", response);
 
         if (response.equals("AUTH SUCCESS")) {
-            isListeningForInitialResponses = false;  // Stop listening for initial responses after subscription
-            coordinator.onConnect(this);  // Notify the coordinator if authentication is successful
+            isListeningForInitialResponses = false;
+            coordinator.onConnect(this);
         } else if (response.equals("AUTH FAILED")) {
             disConnect();
             coordinator.onSubscriberError(this, new SubscriberBadCredentialsException("Authentication failed."));
         }
     }
+
 
     @Override
     public ICoordinator getCoordinator() {

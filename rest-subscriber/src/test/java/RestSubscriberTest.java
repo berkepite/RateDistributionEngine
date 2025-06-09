@@ -68,7 +68,7 @@ public class RestSubscriberTest {
         subscriber.connect();
 
         // Assert
-        verify(coordinator).onConnectionError(eq(subscriber), any());
+        verify(coordinator).onSubscriberError(eq(subscriber), any());
     }
 
     @Test
@@ -96,6 +96,6 @@ public class RestSubscriberTest {
         subscriber.subscribe(List.of("USD_TRY"));
 
         // Assert
-        verify(coordinator).onConnectionError(eq(subscriber), any());
+        verify(coordinator).onSubscriberError(eq(subscriber), any());
     }
 }

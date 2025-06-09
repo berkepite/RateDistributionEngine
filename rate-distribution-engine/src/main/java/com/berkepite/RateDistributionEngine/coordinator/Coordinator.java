@@ -1,9 +1,7 @@
 package com.berkepite.RateDistributionEngine.coordinator;
 
-import com.berkepite.RateDistributionEngine.common.calculator.ICalculatorFactory;
 import com.berkepite.RateDistributionEngine.common.exception.subscriber.SubscriberConnectionException;
 import com.berkepite.RateDistributionEngine.common.exception.subscriber.SubscriberInitException;
-import com.berkepite.RateDistributionEngine.email.EmailService;
 import com.berkepite.RateDistributionEngine.common.calculator.IRateCalculator;
 import com.berkepite.RateDistributionEngine.common.coordinator.ICoordinator;
 import com.berkepite.RateDistributionEngine.common.coordinator.ICoordinatorConfig;
@@ -30,7 +28,14 @@ import java.util.*;
 
 /**
  * Coordinator class responsible for managing subscribers and processing rates.
- * It implements {@link CommandLineRunner} and {@link ICoordinator} interfaces to manage application startup and subscriber events.
+ * <p>
+ * On application startup, it loads subscriber classes, manages subscriber connections,
+ * and processes incoming rate data.
+ * </p>
+ * <p>
+ * Implements {@link CommandLineRunner} to perform startup logic,
+ * and {@link ICoordinator} for coordinator-specific functionality.
+ * </p>
  */
 @Component
 public class Coordinator implements CommandLineRunner, ICoordinator {
@@ -46,12 +51,14 @@ public class Coordinator implements CommandLineRunner, ICoordinator {
     private List<ISubscriber> subscribers;
 
     /**
-     * Constructor for initializing the Coordinator with necessary services.
+     * Constructs the Coordinator with the required services and configurations.
      *
-     * @param coordinatorConfig the configuration class for the coordinator
-     * @param rateManager       the service for managing rates
-     * @param subscriberLoader  the loader for subscribers
-     * @param executorService   the thread pool executor for managing async tasks
+     * @param exceptionHandler  Handler for managing exceptions related to subscribers and calculators.
+     * @param ratesLoader       Loader that provides the list of rates.
+     * @param coordinatorConfig Coordinator configuration object.
+     * @param rateManager       Service responsible for managing rate data.
+     * @param subscriberLoader  Service for loading subscriber instances.
+     * @param executorService   Thread pool executor for managing asynchronous tasks.
      */
     @Autowired
     public Coordinator(ExceptionHandler exceptionHandler, IRatesLoader ratesLoader, ICoordinatorConfig coordinatorConfig, IRateManager rateManager, ISubscriberLoader subscriberLoader, @Qualifier("coordinatorExecutor") ThreadPoolTaskExecutor executorService) {
@@ -64,9 +71,11 @@ public class Coordinator implements CommandLineRunner, ICoordinator {
     }
 
     /**
-     * Initializes the coordinator by setting up shutdown hooks.
-     * Initializes the subscriber list
-     * This method is called after the constructor.
+     * Initializes the coordinator after construction.
+     * <p>
+     * Loads subscriber classes based on configuration, initializes them,
+     * and adds a JVM shutdown hook to properly shut down the executor.
+     * </p>
      */
     @PostConstruct
     private void init() {
@@ -91,6 +100,13 @@ public class Coordinator implements CommandLineRunner, ICoordinator {
 
     }
 
+    /**
+     * Initializes all loaded subscribers.
+     * <p>
+     * If a subscriber fails to initialize, it is removed from the active subscriber list
+     * and the error is handled accordingly.
+     * </p>
+     */
     private void initSubscribers() {
         Iterator<ISubscriber> iterator = subscribers.iterator();
 
@@ -110,9 +126,12 @@ public class Coordinator implements CommandLineRunner, ICoordinator {
     }
 
     /**
-     * Runs the coordinator by binding subscribers and initiating connections.
+     * Called on application startup.
+     * <p>
+     * Initiates connection for all loaded subscribers asynchronously.
+     * </p>
      *
-     * @param args command line arguments passed to the application
+     * @param args Command line arguments passed to the application.
      */
     @Override
     public void run(String... args) {
@@ -128,9 +147,10 @@ public class Coordinator implements CommandLineRunner, ICoordinator {
     }
 
     /**
-     * Loads subscriber classes based on the provided configurations.
+     * Loads subscriber instances from their binding configurations.
      *
-     * @param subscriberBindingConfigs list of subscriber binding configurations
+     * @param subscriberBindingConfigs List of subscriber binding configurations.
+     * @param subscribers              List to populate with loaded subscribers.
      */
     private void loadSubscriberClasses(List<ISubscriberBindingConfig> subscriberBindingConfigs, List<ISubscriber> subscribers) {
         subscriberBindingConfigs.forEach(subscriberBindingConfig -> {
@@ -148,9 +168,12 @@ public class Coordinator implements CommandLineRunner, ICoordinator {
     }
 
     /**
-     * Handles the connection event for a subscriber.
+     * Called when a subscriber successfully connects.
+     * <p>
+     * Triggers subscription to the list of available rates asynchronously.
+     * </p>
      *
-     * @param subscriber the subscriber that has connected
+     * @param subscriber The subscriber that connected.
      */
     @Override
     public void onConnect(ISubscriber subscriber) {
@@ -168,9 +191,9 @@ public class Coordinator implements CommandLineRunner, ICoordinator {
     }
 
     /**
-     * Handles the subscription event for a subscriber.
+     * Called when a subscriber successfully subscribes to rates.
      *
-     * @param subscriber the subscriber that has subscribed
+     * @param subscriber The subscriber that subscribed.
      */
     @Override
     public void onSubscribe(ISubscriber subscriber) {
@@ -180,10 +203,10 @@ public class Coordinator implements CommandLineRunner, ICoordinator {
     }
 
     /**
-     * Handles the unsubscription event for a subscriber.
+     * Called when a subscriber unsubscribes from one or more rates.
      *
-     * @param subscriber the subscriber that has unsubscribed
-     * @param rates      d
+     * @param subscriber The subscriber that unsubscribed.
+     * @param rates      List of rate names unsubscribed from.
      */
     @Override
     public void onUnSubscribe(ISubscriber subscriber, List<String> rates) {
@@ -193,9 +216,9 @@ public class Coordinator implements CommandLineRunner, ICoordinator {
     }
 
     /**
-     * Handles the disconnection event for a subscriber.
+     * Called when a subscriber disconnects.
      *
-     * @param subscriber the subscriber that has disconnected
+     * @param subscriber The subscriber that disconnected.
      */
     @Override
     public void onDisConnect(ISubscriber subscriber) {
@@ -205,10 +228,10 @@ public class Coordinator implements CommandLineRunner, ICoordinator {
     }
 
     /**
-     * Handles the event when a rate is available from a subscriber.
+     * Called when a rate becomes available from a subscriber.
      *
-     * @param subscriber the subscriber providing the rate
-     * @param rate       the available rate
+     * @param subscriber The subscriber providing the rate.
+     * @param rate       The available rate string.
      */
     @Override
     public void onRateAvailable(ISubscriber subscriber, String rate) {
@@ -216,10 +239,13 @@ public class Coordinator implements CommandLineRunner, ICoordinator {
     }
 
     /**
-     * Handles the event when a rate update is received from a subscriber.
+     * Called when a rate update is received from a subscriber.
+     * <p>
+     * The update is processed asynchronously by the rate manager unless the executor is shut down.
+     * </p>
      *
-     * @param subscriber the subscriber providing the rate update
-     * @param rate       the rate
+     * @param subscriber The subscriber providing the rate update.
+     * @param rate       The rate update data.
      */
     @Override
     public void onRateUpdate(ISubscriber subscriber, RawRate rate) {
@@ -237,16 +263,34 @@ public class Coordinator implements CommandLineRunner, ICoordinator {
         }
     }
 
+    /**
+     * Called when a subscriber-related error occurs.
+     *
+     * @param subscriber The subscriber that caused the error.
+     * @param e          The exception representing the error.
+     */
     @Override
     public void onSubscriberError(ISubscriber subscriber, SubscriberException e) {
         exceptionHandler.handle(e, subscriber);
     }
 
+    /**
+     * Called when a calculator-related error occurs.
+     *
+     * @param calculator The calculator that caused the error.
+     * @param e          The exception representing the error.
+     */
     @Override
     public void onCalculatorError(IRateCalculator calculator, CalculatorException e) {
         exceptionHandler.handle(e, calculator);
     }
 
+    /**
+     * Connects a subscriber by name.
+     *
+     * @param subscriberName Name of the subscriber to connect.
+     * @return Result message indicating success or failure.
+     */
     @Override
     public String connect(String subscriberName) {
         try {
@@ -262,6 +306,12 @@ public class Coordinator implements CommandLineRunner, ICoordinator {
         }
     }
 
+    /**
+     * Disconnects a subscriber by name.
+     *
+     * @param subscriberName Name of the subscriber to disconnect.
+     * @return Result message indicating success or failure.
+     */
     @Override
     public String disconnect(String subscriberName) {
         try {
@@ -277,6 +327,13 @@ public class Coordinator implements CommandLineRunner, ICoordinator {
         }
     }
 
+    /**
+     * Subscribes a subscriber to specified rates.
+     *
+     * @param subscriberName Name of the subscriber.
+     * @param rates          List of rate names to subscribe to.
+     * @return Result message indicating success or failure.
+     */
     @Override
     public String subscribe(String subscriberName, List<String> rates) {
         try {
@@ -292,6 +349,13 @@ public class Coordinator implements CommandLineRunner, ICoordinator {
         }
     }
 
+    /**
+     * Unsubscribes a subscriber from specified rates.
+     *
+     * @param subscriberName Name of the subscriber.
+     * @param rates          List of rate names to unsubscribe from.
+     * @return Result message indicating success or failure.
+     */
     @Override
     public String unSubscribe(String subscriberName, List<String> rates) {
         try {
@@ -308,9 +372,9 @@ public class Coordinator implements CommandLineRunner, ICoordinator {
     }
 
     /**
-     * Returns the list of subscribers.
+     * Returns the list of all loaded subscribers.
      *
-     * @return the list of subscribers
+     * @return List of subscribers.
      */
     @Override
     public List<ISubscriber> getSubscribers() {
@@ -318,9 +382,9 @@ public class Coordinator implements CommandLineRunner, ICoordinator {
     }
 
     /**
-     * Returns the coordinator configuration.
+     * Returns the coordinator's configuration.
      *
-     * @return the coordinator configuration
+     * @return Coordinator configuration object.
      */
     @Override
     public ICoordinatorConfig getConfig() {

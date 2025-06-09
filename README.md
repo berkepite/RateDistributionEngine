@@ -31,7 +31,7 @@ rates from multiple sources.
 ## 🚀 Getting Started
 
 1. **Prerequisites**
-    - Java 17 or higher
+    - Java 23 or higher
     - Docker and Docker Compose
 
 2. **Installation**

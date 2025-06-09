@@ -39,8 +39,12 @@ rates from multiple sources.
    git clone https://github.com/berkepite/RateDistributionEngine.git
    cd RateDistributionEngine
    ```
+3. **Create env file**
 
-3. **Running the Application**
+    Create the .env file or rename the example file to .env and replace it with your own values.
+   > If you dont want to use email service, just set it to false in the docker-compose file.
+
+5. **Running the Application**
    ```bash
    # Start all required services (Kafka, Redis, PostgreSQL, OpenSearch)
    docker-compose up -d

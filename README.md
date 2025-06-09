@@ -36,7 +36,7 @@ rates from multiple sources.
 
 2. **Installation**
    ```bash
-   git clone [repository-url]
+   git clone https://github.com/berkepite/RateDistributionEngine.git
    cd RateDistributionEngine
    ```
 
@@ -87,8 +87,6 @@ graph LR
 | Logging            | Log4j2                |
 | Log Management     | Filebeat & Logstash   |
 | Monitoring         | OpenSearch Dashboards |
-
-Tabii! İşte İngilizce ve README’ye eklemeye uygun şekilde kısaltılmış hali:
 
 ---
 

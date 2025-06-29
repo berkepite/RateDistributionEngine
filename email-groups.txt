@@ -1,3 +1,3 @@
 fatal:berke.pite@ogr.sakarya.edu.tr,berkepite@hotmail.com
 info:berke.pite@ogr.sakarya.edu.tr
-warn:berkepite@hotmail.com
+warn:berkepite@hotmail.com,berke.pite@ogr.sakarya.edu.tr

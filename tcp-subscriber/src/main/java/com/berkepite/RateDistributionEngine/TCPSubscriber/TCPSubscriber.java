@@ -41,9 +41,9 @@ public class TCPSubscriber implements ISubscriber {
     private final Logger LOGGER = LogManager.getLogger(TCPSubscriber.class);
     private final ExecutorService executorService;
 
-    private Socket socket;
-    private PrintWriter writer;
-    private BufferedReader reader;
+    private volatile Socket socket;
+    private volatile PrintWriter writer;
+    private volatile BufferedReader reader;
 
     private volatile boolean isListeningForInitialResponses = true;
     private volatile boolean isListeningForRates = true;
@@ -70,25 +70,11 @@ public class TCPSubscriber implements ISubscriber {
      */
     @Override
     public void init() throws Exception {
-        try {
-            this.socket = new Socket(config.getUrl(), config.getPort());
-            this.writer = new PrintWriter(socket.getOutputStream(), true);
-            this.reader = new BufferedReader(new InputStreamReader(socket.getInputStream()));
-        } catch (UnknownHostException e) {
-            throw new SubscriberConnectionException(
-                    "The IP address of the host could not be determined! : %s".formatted(config.getUrl()), e);
-        } catch (IllegalArgumentException e) {
-            throw new SubscriberConnectionException(
-                    "The Port number is out of range : %s (should be 0-65535)!".formatted(config.getPort()), e);
-        } catch (IOException e) {
-            throw new SubscriberConnectionException("An I/O error has occurred!", e);
-        } catch (Exception e) {
-            throw new SubscriberException("An unexpected error has occurred!", e);
-        }
+        openSocket();
 
         Runtime.getRuntime().addShutdownHook(new Thread(() -> {
             try {
-                socket.shutdownInput();
+                socket.close();
             } catch (Exception e) {
                 LOGGER.warn("{}", e.getMessage());
             }
@@ -109,6 +95,10 @@ public class TCPSubscriber implements ISubscriber {
      */
     @Override
     public void connect() throws Exception {
+        openSocket();
+
+        isListeningForInitialResponses = true;
+        isListeningForRates = true;
         String credentials = config.getUsername() + ":" + config.getPassword();
         writer.println(credentials);
 
@@ -124,7 +114,15 @@ public class TCPSubscriber implements ISubscriber {
      */
     @Override
     public void disConnect() {
+        isListeningForInitialResponses = false;
         isListeningForRates = false;
+
+        try {
+            socket.close();
+        } catch (IOException e) {
+            LOGGER.error("IOException has occurred!", e);
+        }
+
         coordinator.onDisConnect(this);
     }
 
@@ -257,6 +255,23 @@ public class TCPSubscriber implements ISubscriber {
         }
     }
 
+    private void openSocket() throws SubscriberException {
+        try {
+            this.socket = new Socket(config.getUrl(), config.getPort());
+            this.writer = new PrintWriter(socket.getOutputStream(), true);
+            this.reader = new BufferedReader(new InputStreamReader(socket.getInputStream()));
+        } catch (UnknownHostException e) {
+            throw new SubscriberConnectionException(
+                    "The IP address of the host could not be determined! : %s".formatted(config.getUrl()), e);
+        } catch (IllegalArgumentException e) {
+            throw new SubscriberConnectionException(
+                    "The Port number is out of range : %s (should be 0-65535)!".formatted(config.getPort()), e);
+        } catch (IOException e) {
+            throw new SubscriberConnectionException("An I/O error has occurred!", e);
+        } catch (Exception e) {
+            throw new SubscriberException("An unexpected error has occurred!", e);
+        }
+    }
 
     @Override
     public ICoordinator getCoordinator() {

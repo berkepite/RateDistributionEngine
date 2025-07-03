@@ -99,6 +99,7 @@ public class TCPSubscriber implements ISubscriber {
 
         isListeningForInitialResponses = true;
         isListeningForRates = true;
+
         String credentials = config.getUsername() + ":" + config.getPassword();
         writer.println(credentials);
 
@@ -213,7 +214,6 @@ public class TCPSubscriber implements ISubscriber {
 
             if (retryLimit < 0) {
                 LOGGER.warn("The listener ({}) stopped listening because retry limit exceeded.", config.getName());
-                executorService.shutdown();
                 disConnect();
 
                 coordinator.onSubscriberError(this,

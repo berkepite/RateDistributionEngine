@@ -231,12 +231,6 @@ public class RestSubscriber implements ISubscriber {
     public void disConnect() {
         isRequesting = false;
 
-        try {
-            httpClient.close();
-        } catch (Exception e) {
-            LOGGER.warn("Failed to close HTTP client: {}", e.getMessage());
-        }
-
         coordinator.onDisConnect(this);
     }
 
